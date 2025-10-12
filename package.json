@@ -1,0 +1,45 @@
+{
+  "name": "pranav-portfolio-website",
+  "version": "1.0.0",
+  "description": "A modern portfolio website with glassmorphism design, built with HTML, CSS, JavaScript, Node.js, and MongoDB",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "npm run dev:backend",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && live-server --port=3000",
+    "install:backend": "cd backend && npm install",
+    "install:all": "npm run install:backend",
+    "build": "echo 'No build process needed for static frontend'",
+    "test": "cd backend && npm test",
+    "lint": "cd backend && npm run lint",
+    "format": "cd backend && npm run format"
+  },
+  "keywords": [
+    "portfolio",
+    "website",
+    "glassmorphism",
+    "responsive",
+    "modern",
+    "nodejs",
+    "express",
+    "mongodb",
+    "cloudflare",
+    "html",
+    "css",
+    "javascript"
+  ],
+  "author": "Pranav Badgi",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pranavbadgi/portfolio-website.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pranavbadgi/portfolio-website/issues"
+  },
+  "homepage": "https://pranavbadgi.com"
+}
