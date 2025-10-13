@@ -6,6 +6,7 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const Project = require('../models/Project');
+const { adminAuth } = require('../middleware/adminAuth');
 
 const router = express.Router();
 
@@ -240,7 +241,7 @@ router.get('/:slug', [
  * @desc    Create new project (Admin only - to be implemented)
  * @access  Private
  */
-router.post('/', [
+router.post('/', adminAuth, [
   body('title').isLength({ min: 1, max: 100 }).trim().withMessage('Title is required and must be less than 100 characters'),
   body('description').isLength({ min: 1, max: 500 }).trim().withMessage('Description is required and must be less than 500 characters'),
   body('technologies').isArray({ min: 1 }).withMessage('At least one technology is required'),
@@ -284,7 +285,7 @@ router.post('/', [
  * @desc    Update project (Admin only - to be implemented)
  * @access  Private
  */
-router.put('/:slug', [
+router.put('/:slug', adminAuth, [
   param('slug').isLength({ min: 1 }).trim().withMessage('Slug is required'),
   body('title').optional().isLength({ min: 1, max: 100 }).trim().withMessage('Title must be less than 100 characters'),
   body('description').optional().isLength({ min: 1, max: 500 }).trim().withMessage('Description must be less than 500 characters'),
@@ -331,7 +332,7 @@ router.put('/:slug', [
  * @desc    Delete project (Admin only - to be implemented)
  * @access  Private
  */
-router.delete('/:slug', [
+router.delete('/:slug', adminAuth, [
   param('slug').isLength({ min: 1 }).trim().withMessage('Slug is required')
 ], handleValidationErrors, async (req, res) => {
   try {
