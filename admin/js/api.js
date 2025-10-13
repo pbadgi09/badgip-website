@@ -5,7 +5,7 @@
 
 class API {
     constructor() {
-        this.baseURL = 'https://badgip-website-production.up.railway.app/api';
+        this.baseURL = 'https://pranav-portfolio-backend-production.up.railway.app/api';
         this.timeout = 30000; // 30 seconds
         this.init();
     }
@@ -46,6 +46,9 @@ class API {
         };
 
         try {
+            console.log(`Making API request to: ${url}`);
+            console.log('Request options:', requestOptions);
+            
             // Create timeout promise
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error('Request timeout')), this.timeout);
@@ -54,6 +57,8 @@ class API {
             // Make the request
             const fetchPromise = fetch(url, requestOptions);
             const response = await Promise.race([fetchPromise, timeoutPromise]);
+            
+            console.log(`API response status: ${response.status} ${response.statusText}`);
 
             // Handle response
             if (!response.ok) {

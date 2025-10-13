@@ -36,19 +36,54 @@ class ImageManager {
 
     async loadImages() {
         try {
-            // Load image statistics for the images tab overview
-            const response = await window.api.getImageStats();
+            console.log('ImageManager: Starting to load images overview');
             
-            if (response.success) {
-                this.updateImageStats(response.data);
+            // Try to load image statistics for the images tab overview
+            try {
+                console.log('ImageManager: Fetching image stats');
+                const response = await window.api.getImageStats();
+                console.log('ImageManager: Image stats response:', response);
+                
+                if (response && response.success) {
+                    this.updateImageStats(response.data);
+                } else {
+                    console.warn('ImageManager: Image stats request failed or returned no data');
+                    // Set default stats if API fails
+                    this.updateImageStats({
+                        totalImagesCount: 0,
+                        blogImagesCount: 0,
+                        projectImagesCount: 0,
+                        storageUsedMB: 0,
+                        categories: {}
+                    });
+                }
+            } catch (statsError) {
+                console.error('ImageManager: Error fetching image stats:', statsError);
+                // Set default stats if API fails
+                this.updateImageStats({
+                    totalImagesCount: 0,
+                    blogImagesCount: 0,
+                    projectImagesCount: 0,
+                    storageUsedMB: 0,
+                    categories: {}
+                });
             }
             
-            // Load recent images
-            await this.loadRecentImages();
+            // Try to load recent images
+            try {
+                console.log('ImageManager: Loading recent images');
+                await this.loadRecentImages();
+            } catch (recentError) {
+                console.error('ImageManager: Error loading recent images:', recentError);
+                // Show empty state if recent images fail to load
+                this.renderRecentImages([]);
+            }
+            
+            console.log('ImageManager: Finished loading images overview');
             
         } catch (error) {
-            console.error('Error loading images overview:', error);
-            window.api.handleError(error, 'loading images');
+            console.error('ImageManager: Critical error loading images overview:', error);
+            window.auth.showToast('Unable to load images. The image management system may not be available.', 'warning');
         }
     }
 

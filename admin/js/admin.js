@@ -174,33 +174,49 @@ class AdminDashboard {
 
     async loadTabContent(tabName) {
         try {
+            console.log(`Loading content for tab: ${tabName}`);
             switch (tabName) {
                 case 'projects':
                     if (window.projectsManager) {
+                        console.log('Loading projects...');
                         await window.projectsManager.loadProjects();
+                    } else {
+                        console.error('projectsManager not found');
                     }
                     break;
                 case 'blog':
                     if (window.blogManager) {
+                        console.log('Loading blog posts...');
                         await window.blogManager.loadBlogPosts();
+                    } else {
+                        console.error('blogManager not found');
                     }
                     break;
                 case 'youtube':
                     if (window.youtubeManager) {
+                        console.log('Loading YouTube videos...');
                         await window.youtubeManager.loadVideos();
+                    } else {
+                        console.error('youtubeManager not found');
                     }
                     break;
                 case 'images':
                     if (window.imageManager) {
+                        console.log('Loading images...');
                         await window.imageManager.loadImages();
+                    } else {
+                        console.error('imageManager not found');
                     }
                     break;
                 case 'dashboard':
+                    console.log('Refreshing dashboard stats...');
                     await this.refreshStats();
                     break;
             }
+            console.log(`Successfully loaded ${tabName} content`);
         } catch (error) {
             console.error(`Error loading ${tabName} content:`, error);
+            window.auth.showToast(`Failed to load ${tabName} content: ${error.message}`, 'error');
         }
     }
 
