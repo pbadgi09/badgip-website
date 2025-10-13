@@ -447,6 +447,15 @@ class BlogManager {
             const formData = this.collectBlogFormData();
             formData.status = status;
             
+            // Check for duplicate slug if creating new post
+            if (!this.currentPost) {
+                const duplicateSlug = await this.checkAndFixDuplicateSlug(formData.seo.slug);
+                formData.seo.slug = duplicateSlug;
+            }
+            
+            // Add debug logging
+            console.log('Blog form data being sent:', JSON.stringify(formData, null, 2));
+            
             let response;
             if (this.currentPost) {
                 response = await window.api.updateBlogPost(this.currentPost.seo?.slug || this.currentPost._id, formData);
@@ -460,15 +469,31 @@ class BlogManager {
                 }
             }
             
+            console.log('Blog API response:', response);
+            
             if (!silent) {
                 window.hideModal('blogModal');
                 await this.loadBlogPosts();
             }
             
         } catch (error) {
-            console.error('Error saving blog post:', error);
+            console.error('Detailed error saving blog post:', {
+                error: error,
+                message: error.message,
+                stack: error.stack,
+                formData: this.collectBlogFormData()
+            });
             if (!silent) {
-                window.api.handleError(error, 'saving blog post');
+                // Show more specific error message
+                let errorMessage = 'Failed to save blog post';
+                if (error.message.includes('already exists')) {
+                    errorMessage = 'A post with this title already exists. Please use a different title.';
+                } else if (error.message.includes('validation')) {
+                    errorMessage = 'Please check all required fields and try again.';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                window.auth.showToast(errorMessage, 'error');
             }
         } finally {
             if (!silent) {
@@ -570,12 +595,55 @@ class BlogManager {
     }
 
     generateSlug(title) {
-        return title
+        if (!title || typeof title !== 'string') {
+            return 'untitled-post-' + Date.now();
+        }
+        
+        let slug = title
             .toLowerCase()
             .replace(/[^a-z0-9\s-]/g, '')
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
             .replace(/^-+|-+$/g, '');
+            
+        // Fallback if slug is empty after processing
+        if (!slug || slug.length < 3) {
+            slug = 'blog-post-' + Date.now();
+        }
+        
+        return slug;
+    }
+
+    async checkAndFixDuplicateSlug(originalSlug) {
+        try {
+            let testSlug = originalSlug;
+            let counter = 1;
+            
+            // Check if slug already exists
+            while (true) {
+                try {
+                    await window.api.getBlogPost(testSlug);
+                    // If we get here, slug exists, try next variation
+                    testSlug = `${originalSlug}-${counter}`;
+                    counter++;
+                } catch (error) {
+                    // If we get 404, slug is available
+                    if (error.message.includes('404') || error.message.includes('not found')) {
+                        return testSlug;
+                    }
+                    // For other errors, use original slug and let backend handle it
+                    return originalSlug;
+                }
+                
+                // Safety limit to prevent infinite loop
+                if (counter > 100) {
+                    return originalSlug + '-' + Date.now();
+                }
+            }
+        } catch (error) {
+            console.log('Error checking duplicate slug, using original:', error);
+            return originalSlug;
+        }
     }
 
     populateBlogForm(post) {

@@ -8,6 +8,9 @@
 // Application Configuration
 // ==============================================
 const CONFIG = {
+  // Version for cache busting
+  VERSION: '1.0.1-blog-fix',
+  
   // API endpoints - connected to Railway backend
   API_BASE_URL: 'https://badgip-website-production.up.railway.app/api',
   
@@ -548,10 +551,15 @@ class ContactForm {
 // ==============================================
 class ContentManager {
   constructor() {
+    console.log('📦 BLOG DEBUG: JavaScript version loaded:', CONFIG.VERSION);
+    console.log('🔄 BLOG DEBUG: ContentManager constructor starting');
+    
     this.projectsContainer = document.getElementById('projects-grid');
     this.blogContainer = document.getElementById('blog-grid');
     this.youtubeContainer = document.getElementById('youtube-grid');
     this.loadMoreProjectsBtn = document.getElementById('load-more-projects');
+    
+    console.log('🔄 BLOG DEBUG: blogContainer found:', !!this.blogContainer);
     
     this.currentProjectPage = 1;
     this.projectsPerPage = 6;
@@ -778,25 +786,38 @@ class ContentManager {
 
   async loadBlogPosts() {
     try {
-      console.log('📝 Fetching blog posts from API...');
-      const response = await fetch(`${CONFIG.API_BASE_URL}/blog?limit=3&featured=true`);
+      console.log('🔄 BLOG DEBUG: Starting loadBlogPosts function');
+      console.log('🔄 BLOG DEBUG: API URL:', `${CONFIG.API_BASE_URL}/blog?limit=3`);
+      console.log('🔄 BLOG DEBUG: blogContainer element:', this.blogContainer);
+      
+      const response = await fetch(`${CONFIG.API_BASE_URL}/blog?limit=3`);
+      console.log('🔄 BLOG DEBUG: Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('🔄 BLOG DEBUG: Raw API response:', data);
+        
         const posts = data.success ? data.data.posts : [];
-        console.log('📝 Received blog posts:', posts.length);
+        console.log('📝 BLOG DEBUG: Processed posts:', posts);
+        console.log('📝 BLOG DEBUG: Posts length:', posts.length);
         
         if (posts.length > 0) {
+          console.log('✅ BLOG DEBUG: Found posts, calling renderBlogPosts');
           this.renderBlogPosts(posts);
+          console.log('✅ BLOG DEBUG: Called renderBlogPosts, now showing section');
           this.showSection('blog');
+          console.log('✅ BLOG DEBUG: Blog section should now be visible');
           return true;
         } else {
-          console.log('⚠️ No blog posts found, hiding blog section');
+          console.log('⚠️ BLOG DEBUG: No blog posts found, hiding blog section');
           this.hideSection('blog');
           return false;
         }
+      } else {
+        console.error('❌ BLOG DEBUG: Response not OK:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('❌ Error loading blog posts:', error);
+      console.error('❌ BLOG DEBUG: Error loading blog posts:', error);
       this.hideSection('blog');
       return false;
     }
