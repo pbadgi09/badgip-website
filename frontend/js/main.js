@@ -603,15 +603,29 @@ class ContentManager {
   
   async fetchProjects(page = 1) {
     try {
-      const response = await fetch(`${CONFIG.API_BASE_URL}/projects?page=${page}&limit=${this.projectsPerPage}`);
+      const url = `${CONFIG.API_BASE_URL}/projects?page=${page}&limit=${this.projectsPerPage}`;
+      console.log('🌐 Fetching from URL:', url);
+      
+      const response = await fetch(url);
+      console.log('📡 Response status:', response.status, response.statusText);
+      
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
-      return data.success ? data.data.projects : [];
+      console.log('📦 API Response:', data);
+      
+      if (data.success && data.data && data.data.projects) {
+        console.log('✅ Successfully parsed projects:', data.data.projects.length);
+        return data.data.projects;
+      } else {
+        console.log('⚠️ API response structure unexpected:', data);
+        return [];
+      }
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error('❌ Error fetching projects:', error);
+      console.log('🔄 Using fallback sample projects');
       // Fallback to sample projects if API fails
       return this.generateSampleProjects(3);
     }
@@ -642,14 +656,25 @@ class ContentManager {
   }
   
   renderProjects(projects, append = false) {
+    console.log('🎨 Rendering projects:', { projects: projects.length, append, containerExists: !!this.projectsContainer });
+    
+    if (!this.projectsContainer) {
+      console.error('❌ Projects container not found! Looking for element with ID: projects-grid');
+      return;
+    }
+    
     if (!append) {
+      console.log('🧹 Clearing existing content from projects container');
       this.projectsContainer.innerHTML = '';
     }
     
-    projects.forEach(project => {
+    projects.forEach((project, index) => {
+      console.log(`📝 Creating project card ${index + 1}:`, project.title);
       const projectCard = this.createProjectCard(project);
       this.projectsContainer.appendChild(projectCard);
     });
+    
+    console.log('✅ Projects rendering complete. Container children:', this.projectsContainer.children.length);
   }
   
   createProjectCard(project) {
@@ -717,22 +742,30 @@ class ContentManager {
   }
   
   async loadSampleContent() {
+    console.log('🚀 Starting to load content from API...');
+    
     try {
       // Load initial projects
+      console.log('📂 Fetching projects from API...');
       const projects = await this.fetchProjects(1);
+      console.log('📊 Received projects:', projects);
+      
       if (projects.length > 0) {
+        console.log('✅ Rendering projects:', projects.length);
         this.renderProjects(projects);
         this.currentProjectPage = 1;
+      } else {
+        console.log('⚠️ No projects found, container exists:', !!this.projectsContainer);
       }
       
       // Load blog posts and YouTube videos
       await this.loadBlogPosts();
       await this.loadYouTubeVideos();
       
-      console.log('Content management system initialized with real data');
+      console.log('✅ Content management system initialized with real data');
     } catch (error) {
-      console.error('Error loading initial content:', error);
-      console.log('Content management system initialized with fallback data');
+      console.error('❌ Error loading initial content:', error);
+      console.log('🔄 Content management system initialized with fallback data');
     }
   }
 

@@ -65,7 +65,9 @@ const corsOptions = {
       'https://itspranavbadgi.com',
       'https://www.itspranavbadgi.com',
       'https://pranavbadgi.com',
-      'https://www.pranavbadgi.com'
+      'https://www.pranavbadgi.com',
+      // Railway frontend domain if different
+      'https://badgip-website-production.up.railway.app'
     ];
     
     // Allow local file access and localhost variations for development
