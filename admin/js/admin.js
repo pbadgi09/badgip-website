@@ -190,6 +190,11 @@ class AdminDashboard {
                         await window.youtubeManager.loadVideos();
                     }
                     break;
+                case 'images':
+                    if (window.imageManager) {
+                        await window.imageManager.loadImages();
+                    }
+                    break;
                 case 'dashboard':
                     await this.refreshStats();
                     break;

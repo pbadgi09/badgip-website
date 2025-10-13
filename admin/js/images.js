@@ -34,6 +34,102 @@ class ImageManager {
         }
     }
 
+    async loadImages() {
+        try {
+            // Load image statistics for the images tab overview
+            const response = await window.api.getImageStats();
+            
+            if (response.success) {
+                this.updateImageStats(response.data);
+            }
+            
+            // Load recent images
+            await this.loadRecentImages();
+            
+        } catch (error) {
+            console.error('Error loading images overview:', error);
+            window.api.handleError(error, 'loading images');
+        }
+    }
+
+    async loadRecentImages() {
+        try {
+            const response = await window.api.getImages({ limit: 6, sortBy: 'createdAt', sortOrder: 'desc' });
+            
+            if (response.success) {
+                this.renderRecentImages(response.data.images);
+            }
+        } catch (error) {
+            console.error('Error loading recent images:', error);
+        }
+    }
+
+    updateImageStats(stats) {
+        const elements = {
+            totalImagesCount: document.getElementById('totalImagesCount'),
+            blogImagesCount: document.getElementById('blogImagesCount'),
+            projectImagesCount: document.getElementById('projectImagesCount'),
+            storageUsedMB: document.getElementById('storageUsedMB')
+        };
+
+        Object.entries(elements).forEach(([key, element]) => {
+            if (element) {
+                const value = stats[key] || 0;
+                element.textContent = value;
+            }
+        });
+
+        // Update category stats if available
+        if (stats.categories) {
+            this.renderCategoryStats(stats.categories);
+        }
+    }
+
+    renderRecentImages(images) {
+        const container = document.getElementById('recentImagesGrid');
+        if (!container) return;
+
+        if (images.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-images fa-2x"></i>
+                    <p>No images uploaded yet</p>
+                    <button class="btn btn-primary" onclick="imageManager.showUploadModal()">
+                        <i class="fas fa-upload"></i> Upload First Image
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = images.map(image => `
+            <div class="recent-image-item">
+                <div class="recent-image-thumbnail">
+                    <img src="${image.thumbnailUrl}" alt="${image.alt}" loading="lazy">
+                </div>
+                <div class="recent-image-info">
+                    <div class="recent-image-title">${image.title}</div>
+                    <div class="recent-image-meta">
+                        <span class="recent-image-category">${image.seo?.category || 'general'}</span>
+                        <span class="recent-image-date">${window.adminDashboard.formatDate(image.createdAt)}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    renderCategoryStats(categories) {
+        const container = document.getElementById('imageCategoryStats');
+        if (!container) return;
+
+        container.innerHTML = Object.entries(categories).map(([category, count]) => `
+            <div class="category-stat-item">
+                <span class="category-name">${category}</span>
+                <span class="category-count">${count}</span>
+            </div>
+        `).join('');
+    }
+
     createImageModal() {
         const modalContainer = document.getElementById('modalContainer');
         if (!modalContainer) return;
@@ -848,6 +944,85 @@ imageStyles.textContent = `
         justify-content: center;
         gap: 0.25rem;
         margin-top: 1rem;
+    }
+    
+    .recent-images-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .recent-image-item {
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        background: var(--white);
+        transition: transform 0.2s ease;
+    }
+    
+    .recent-image-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .recent-image-thumbnail {
+        aspect-ratio: 16/9;
+        overflow: hidden;
+    }
+    
+    .recent-image-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .recent-image-info {
+        padding: 0.75rem;
+    }
+    
+    .recent-image-title {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .recent-image-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+    
+    .recent-image-category {
+        background: var(--gray-100);
+        padding: 0.125rem 0.5rem;
+        border-radius: 9999px;
+        text-transform: capitalize;
+    }
+    
+    .category-stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--gray-100);
+    }
+    
+    .category-stat-item:last-child {
+        border-bottom: none;
+    }
+    
+    .category-name {
+        text-transform: capitalize;
+        color: var(--gray-700);
+    }
+    
+    .category-count {
+        font-weight: 600;
+        color: var(--primary-color);
     }
 `;
 document.head.appendChild(imageStyles);

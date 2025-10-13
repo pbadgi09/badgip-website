@@ -256,6 +256,10 @@ class API {
         return await this.delete(`/images/${imageId}`);
     }
 
+    async getImageStats() {
+        return await this.get('/images/stats');
+    }
+
     // IMAGE ASSOCIATION API METHODS
     async associateImage(imageId, contentType, contentId, role = 'gallery', displayOrder = 0, caption = '') {
         return await this.post('/image-associations', {

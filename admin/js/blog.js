@@ -737,10 +737,7 @@ class BlogManager {
             featuredImage: featuredImage ? {
                 url: featuredImage.url,
                 alt: featuredImage.alt
-            } : {
-                url: 'https://via.placeholder.com/800x400/6366f1/ffffff?text=Blog+Post+Image',
-                alt: title + ' - Featured Image'
-            },
+            } : null,
             seo: {
                 slug: slug,
                 metaDescription: document.getElementById('blogMetaDescription').value.trim(),

@@ -694,8 +694,8 @@ class ContentManager {
     
     console.log('📦 Created card element:', card);
     
-    // Handle both API data structure and sample data structure
-    const projectImage = project.primaryImage?.url || project.image || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=Project+Image';
+    // Handle both API data structure and sample data structure  
+    const projectImage = project.primaryImage?.url || project.image || null;
     const liveUrl = project.links?.live || project.liveUrl || '';
     const githubUrl = project.links?.github || project.githubUrl || '';
     const technologies = project.technologies || [];
@@ -715,8 +715,8 @@ class ContentManager {
     `;
     
     card.innerHTML = `
-      <div class="project-image" style="height: 200px; background: #6366f1; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
-        ${project.title} - Image
+      <div class="project-image" style="height: 200px; ${projectImage ? `background-image: url('${projectImage}'); background-size: cover; background-position: center;` : 'background: #6c7293; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); font-size: 18px;'} border-radius: 16px 16px 0 0;">
+        ${!projectImage ? 'No Image' : ''}
       </div>
       <div class="project-content" style="padding: 20px; color: white;">
         <h3 class="project-title" style="margin: 0 0 10px 0; color: white; font-size: 20px;">${project.title}</h3>
