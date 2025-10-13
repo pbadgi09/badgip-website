@@ -155,7 +155,7 @@ projectSchema.virtual('primaryImage').get(function() {
 
 // Generate slug from title before saving
 projectSchema.pre('save', function(next) {
-  if (!this.seo.slug && this.title) {
+  if ((!this.seo.slug || this.seo.slug === '') && this.title) {
     this.seo.slug = this.title
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
