@@ -71,6 +71,11 @@
                     </a>
                 </li>
                 <li>
+                    <a href="#images" class="nav-link" data-tab="images">
+                        <i class="fas fa-images"></i> Images
+                    </a>
+                </li>
+                <li>
                     <a href="#settings" class="nav-link" data-tab="settings">
                         <i class="fas fa-cog"></i> Settings
                     </a>
@@ -236,6 +241,62 @@
                 </div>
             </section>
 
+            <!-- Images Tab -->
+            <section id="images-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>Image Library</h2>
+                    <div class="header-actions">
+                        <button id="addImageBtn" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload Images
+                        </button>
+                        <button id="imageLibraryBtn" class="btn btn-outline">
+                            <i class="fas fa-images"></i> Browse Library
+                        </button>
+                    </div>
+                </div>
+
+                <div class="images-overview">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalImagesCount">0</div>
+                            <div class="stat-label">Total Images</div>
+                            <div class="stat-icon"><i class="fas fa-images"></i></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="blogImagesCount">0</div>
+                            <div class="stat-label">Blog Images</div>
+                            <div class="stat-icon"><i class="fas fa-blog"></i></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="projectImagesCount">0</div>
+                            <div class="stat-label">Project Images</div>
+                            <div class="stat-icon"><i class="fas fa-code"></i></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="storageUsedMB">0</div>
+                            <div class="stat-label">Storage Used (MB)</div>
+                            <div class="stat-icon"><i class="fas fa-hdd"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="recent-images">
+                        <h3>Recent Uploads</h3>
+                        <div id="recentImagesGrid" class="recent-images-grid">
+                            <div class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin"></i> Loading recent images...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="image-categories">
+                        <h3>Image Categories</h3>
+                        <div class="category-stats" id="imageCategoryStats">
+                            <!-- Category breakdown will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Settings Tab -->
             <section id="settings-tab" class="tab-content">
                 <div class="content-header">
@@ -284,5 +345,6 @@
     <script src="js/projects.js"></script>
     <script src="js/blog.js"></script>
     <script src="js/youtube.js"></script>
+    <script src="js/images.js"></script>
 </body>
 </html>

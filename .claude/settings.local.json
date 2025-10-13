@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(claude doctor)"
+      "Bash(claude doctor)",
+      "Bash(git push:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(grep:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

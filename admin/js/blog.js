@@ -227,16 +227,25 @@ class BlogManager {
                             </div>
                             
                             <div class="form-group">
-                                <label for="blogFeaturedImage">Featured Image</label>
-                                <div class="file-input-wrapper">
-                                    <input type="file" id="blogFeaturedImage" accept="image/*">
-                                    <div class="file-input-display">
-                                        <i class="fas fa-image"></i>
-                                        <div>Upload featured image</div>
-                                        <div class="field-help">Optional cover image for your blog post</div>
+                                <label for="blogImages">Blog Images</label>
+                                <div class="image-selection-wrapper">
+                                    <div class="image-selection-header">
+                                        <button type="button" class="btn btn-outline" id="selectBlogImagesBtn">
+                                            <i class="fas fa-images"></i> Select from Library
+                                        </button>
+                                        <button type="button" class="btn btn-outline" id="uploadNewBlogImagesBtn">
+                                            <i class="fas fa-upload"></i> Upload New Images
+                                        </button>
                                     </div>
+                                    <div class="selected-images-container" id="blogSelectedImages">
+                                        <div class="no-images-placeholder">
+                                            <i class="fas fa-image fa-2x"></i>
+                                            <p>No images selected</p>
+                                            <p class="text-small">Select images from the library or upload new ones</p>
+                                        </div>
+                                    </div>
+                                    <div class="field-help">Select images for your blog post. The first image will be used as the featured image.</div>
                                 </div>
-                                <div class="image-preview" id="blogImagePreview"></div>
                             </div>
                             
                             <div class="form-group">
@@ -302,8 +311,9 @@ class BlogManager {
     bindBlogFormEvents() {
         const form = document.getElementById('blogForm');
         const tagInput = document.getElementById('blogTagInput');
-        const imageInput = document.getElementById('blogFeaturedImage');
         const saveDraftBtn = document.getElementById('saveDraftBtn');
+        const selectImagesBtn = document.getElementById('selectBlogImagesBtn');
+        const uploadImagesBtn = document.getElementById('uploadNewBlogImagesBtn');
 
         // Form submission
         form.addEventListener('submit', (e) => this.handleBlogSubmit(e, 'published'));
@@ -314,10 +324,18 @@ class BlogManager {
         // Tags functionality
         this.setupTagInput(tagInput);
 
-        // Image upload
-        if (imageInput) {
-            imageInput.addEventListener('change', (e) => this.handleImageUpload(e));
+        // Image selection from library
+        if (selectImagesBtn) {
+            selectImagesBtn.addEventListener('click', () => this.selectImagesFromLibrary());
         }
+
+        // Upload new images
+        if (uploadImagesBtn) {
+            uploadImagesBtn.addEventListener('click', () => this.uploadNewImages());
+        }
+
+        // Listen for image selection events
+        window.addEventListener('imagesSelected', (e) => this.handleImageSelection(e.detail.images));
 
         // Auto-save setup
         if (window.adminDashboard) {
@@ -399,6 +417,132 @@ class BlogManager {
         });
     }
 
+    // Initialize selected images array
+    selectedImages = [];
+
+    selectImagesFromLibrary() {
+        // Open the image library modal
+        if (window.imageManager) {
+            window.imageManager.showImageLibrary();
+        }
+    }
+
+    uploadNewImages() {
+        // Open the image upload modal
+        if (window.imageManager) {
+            window.imageManager.showUploadModal();
+        }
+    }
+
+    handleImageSelection(images) {
+        this.selectedImages = images;
+        this.renderSelectedImages();
+    }
+
+    renderSelectedImages() {
+        const container = document.getElementById('blogSelectedImages');
+        
+        if (this.selectedImages.length === 0) {
+            container.innerHTML = `
+                <div class="no-images-placeholder">
+                    <i class="fas fa-image fa-2x"></i>
+                    <p>No images selected</p>
+                    <p class="text-small">Select images from the library or upload new ones</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.selectedImages.map((image, index) => `
+            <div class="selected-image-item" data-image-id="${image._id}">
+                <div class="selected-image-thumbnail">
+                    <img src="${image.thumbnailUrl}" alt="${image.alt}">
+                    ${index === 0 ? '<div class="featured-badge">Featured</div>' : ''}
+                </div>
+                <div class="selected-image-info">
+                    <div class="image-title">${image.title}</div>
+                    <div class="image-actions">
+                        <select class="image-role-select" data-image-id="${image._id}">
+                            <option value="featured" ${index === 0 ? 'selected' : ''}>Featured</option>
+                            <option value="gallery" ${index > 0 ? 'selected' : ''}>Gallery</option>
+                            <option value="inline">Inline</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="blogManager.moveImageUp(${index})" ${index === 0 ? 'disabled' : ''}>
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="blogManager.moveImageDown(${index})" ${index === this.selectedImages.length - 1 ? 'disabled' : ''}>
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="blogManager.removeSelectedImage(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    removeSelectedImage(index) {
+        this.selectedImages.splice(index, 1);
+        this.renderSelectedImages();
+    }
+
+    moveImageUp(index) {
+        if (index > 0) {
+            [this.selectedImages[index - 1], this.selectedImages[index]] = 
+            [this.selectedImages[index], this.selectedImages[index - 1]];
+            this.renderSelectedImages();
+        }
+    }
+
+    moveImageDown(index) {
+        if (index < this.selectedImages.length - 1) {
+            [this.selectedImages[index], this.selectedImages[index + 1]] = 
+            [this.selectedImages[index + 1], this.selectedImages[index]];
+            this.renderSelectedImages();
+        }
+    }
+
+    async handleImageAssociations(blogPost, selectedImages) {
+        try {
+            console.log('Creating image associations for blog post:', blogPost.seo?.slug || blogPost._id);
+            
+            // Remove existing associations for this blog post (if updating)
+            if (this.currentPost) {
+                // TODO: Remove old associations - for now we'll just add new ones
+            }
+            
+            // Create new associations
+            const associations = [];
+            for (let i = 0; i < selectedImages.length; i++) {
+                const image = selectedImages[i];
+                const role = i === 0 ? 'featured' : 'gallery';
+                
+                try {
+                    const association = await window.api.associateImage(
+                        image._id,
+                        'blog',
+                        blogPost.seo?.slug || blogPost._id,
+                        role,
+                        i // display order
+                    );
+                    
+                    associations.push(association);
+                    console.log(`Associated image ${image.title} with blog post`);
+                } catch (error) {
+                    console.error('Error associating image:', image.title, error);
+                    // Continue with other images even if one fails
+                }
+            }
+            
+            console.log(`Successfully created ${associations.length} image associations`);
+        } catch (error) {
+            console.error('Error handling image associations:', error);
+            // Don't fail the entire blog post creation if image associations fail
+            window.auth.showToast('Blog post saved, but some images could not be associated', 'warning');
+        }
+    }
+
     async handleImageUpload(e) {
         const files = Array.from(e.target.files);
         const preview = document.getElementById('blogImagePreview');
@@ -470,6 +614,11 @@ class BlogManager {
             }
             
             console.log('Blog API response:', response);
+            
+            // Handle image associations if blog post was created/updated successfully
+            if (response.success && this.selectedImages.length > 0) {
+                await this.handleImageAssociations(response.data.post, formData.selectedImages);
+            }
             
             if (!silent) {
                 window.hideModal('blogModal');
@@ -575,6 +724,9 @@ class BlogManager {
         const title = document.getElementById('blogTitle').value.trim();
         const slug = this.generateSlug(title);
 
+        // Get featured image from selected images
+        const featuredImage = this.selectedImages.length > 0 ? this.selectedImages[0] : null;
+
         return {
             title: title,
             category: document.getElementById('blogCategory').value,
@@ -582,7 +734,10 @@ class BlogManager {
             content: document.getElementById('blogContent').value.trim(),
             tags: this.tags,
             featured: document.getElementById('blogFeatured').checked,
-            featuredImage: {
+            featuredImage: featuredImage ? {
+                url: featuredImage.url,
+                alt: featuredImage.alt
+            } : {
                 url: 'https://via.placeholder.com/800x400/6366f1/ffffff?text=Blog+Post+Image',
                 alt: title + ' - Featured Image'
             },
@@ -590,7 +745,9 @@ class BlogManager {
                 slug: slug,
                 metaDescription: document.getElementById('blogMetaDescription').value.trim(),
                 keywords: keywords
-            }
+            },
+            // Include selected images for association
+            selectedImages: this.selectedImages
         };
     }
 
@@ -664,8 +821,9 @@ class BlogManager {
     resetBlogForm() {
         document.getElementById('blogForm').reset();
         this.tags = [];
+        this.selectedImages = [];
         this.renderTags();
-        document.getElementById('blogImagePreview').innerHTML = '';
+        this.renderSelectedImages();
         this.displayFormErrors({});
     }
 
@@ -757,6 +915,106 @@ blogStyles.textContent = `
     
     .seo-section[open] summary {
         margin-bottom: 1rem;
+    }
+    
+    /* Image selection styles */
+    .image-selection-wrapper {
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        background: var(--white);
+    }
+    
+    .image-selection-header {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .selected-images-container {
+        min-height: 100px;
+        border: 2px dashed var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+    }
+    
+    .no-images-placeholder {
+        text-align: center;
+        color: var(--gray-500);
+        padding: 2rem 0;
+    }
+    
+    .no-images-placeholder i {
+        color: var(--gray-300);
+        margin-bottom: 0.5rem;
+    }
+    
+    .no-images-placeholder .text-small {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    
+    .selected-image-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        margin-bottom: 0.5rem;
+        background: var(--white);
+    }
+    
+    .selected-image-thumbnail {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        overflow: hidden;
+        border-radius: var(--border-radius);
+    }
+    
+    .selected-image-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .featured-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--primary-color);
+        color: white;
+        font-size: 0.625rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 9999px;
+        font-weight: 500;
+    }
+    
+    .selected-image-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .image-title {
+        font-weight: 500;
+        color: var(--gray-900);
+    }
+    
+    .image-actions {
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+    }
+    
+    .image-role-select {
+        width: 100px;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        font-size: 0.75rem;
     }
 `;
 document.head.appendChild(blogStyles);

@@ -22,6 +22,8 @@ const blogRoutes = require('./routes/blog');
 const youtubeRoutes = require('./routes/youtube');
 const contactRoutes = require('./routes/contact');
 const uploadRoutes = require('./routes/upload');
+const imageRoutes = require('./routes/images');
+const imageAssociationRoutes = require('./routes/imageAssociations');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -153,6 +155,8 @@ app.use('/api/blog', blogRoutes);
 app.use('/api/youtube', youtubeRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/images', imageRoutes);
+app.use('/api/image-associations', imageAssociationRoutes);
 
 // ==============================================
 // Frontend Routes (SPA Support)

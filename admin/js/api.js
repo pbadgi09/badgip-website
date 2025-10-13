@@ -235,6 +235,65 @@ class API {
         return await this.upload('/upload/multiple', formData);
     }
 
+    // IMAGE MANAGEMENT API METHODS
+    async uploadImages(formData) {
+        return await this.upload('/images/upload', formData);
+    }
+
+    async getImages(params = {}) {
+        return await this.get('/images', params);
+    }
+
+    async getImage(imageId) {
+        return await this.get(`/images/${imageId}`);
+    }
+
+    async updateImage(imageId, imageData) {
+        return await this.put(`/images/${imageId}`, imageData);
+    }
+
+    async deleteImage(imageId) {
+        return await this.delete(`/images/${imageId}`);
+    }
+
+    // IMAGE ASSOCIATION API METHODS
+    async associateImage(imageId, contentType, contentId, role = 'gallery', displayOrder = 0, caption = '') {
+        return await this.post('/image-associations', {
+            imageId,
+            contentType,
+            contentId,
+            role,
+            displayOrder,
+            caption
+        });
+    }
+
+    async getContentImages(contentType, contentId, role = null) {
+        const endpoint = `/image-associations/content/${contentType}/${contentId}`;
+        const params = role ? { role } : {};
+        return await this.get(endpoint, params);
+    }
+
+    async getFeaturedImage(contentType, contentId) {
+        return await this.get(`/image-associations/featured/${contentType}/${contentId}`);
+    }
+
+    async updateImageAssociation(imageId, contentType, contentId, updateData) {
+        return await this.put(`/image-associations/${imageId}/${contentType}/${contentId}`, updateData);
+    }
+
+    async removeImageAssociation(imageId, contentType, contentId) {
+        return await this.delete(`/image-associations/${imageId}/${contentType}/${contentId}`);
+    }
+
+    async bulkAssociateImages(associations) {
+        return await this.post('/image-associations/bulk', { associations });
+    }
+
+    async reorderContentImages(contentType, contentId, imageOrders) {
+        return await this.put(`/image-associations/reorder/${contentType}/${contentId}`, { imageOrders });
+    }
+
     // UTILITY METHODS
     async testConnection() {
         try {

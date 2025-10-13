@@ -1,0 +1,11 @@
+# Image Assets Directory
+
+This directory contains all website images organized by upload date.
+
+## Structure:
+- `uploads/YYYY/MM/` - Original uploaded images  
+- `thumbnails/YYYY/MM/` - Generated thumbnail versions
+- Images are managed via admin panel and stored with metadata in database
+
+## Usage:
+Images are referenced by relative paths like `/assets/images/uploads/2025/01/image-name.jpg`
