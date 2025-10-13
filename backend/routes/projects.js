@@ -275,7 +275,7 @@ router.post('/', adminAuth, [
     res.status(500).json({
       success: false,
       message: 'Failed to create project',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: error.message // Temporarily show error in production for debugging
     });
   }
 });
