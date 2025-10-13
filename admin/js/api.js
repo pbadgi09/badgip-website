@@ -5,7 +5,7 @@
 
 class API {
     constructor() {
-        this.baseURL = 'https://pranav-portfolio-backend-production.up.railway.app/api';
+        this.baseURL = 'https://badgip-website-production.up.railway.app/api';
         this.timeout = 30000; // 30 seconds
         this.init();
     }
