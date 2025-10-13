@@ -266,14 +266,31 @@ class AdminDashboard {
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
             
+            console.log('Testing API connection to:', window.api.baseURL);
+            
+            // First test basic connectivity
             const result = await window.api.testConnection();
+            console.log('API test result:', result);
             
             if (result.success) {
                 window.auth.showToast('Connection successful!', 'success');
                 button.innerHTML = '<i class="fas fa-check"></i> Connected';
+                
+                // Also test a simple endpoint
+                try {
+                    console.log('Testing projects endpoint...');
+                    const projectsTest = await window.api.getProjects({ limit: 1 });
+                    console.log('Projects test result:', projectsTest);
+                    
+                    window.auth.showToast(`API working! Found ${projectsTest.data?.pagination?.totalItems || 0} projects`, 'success');
+                } catch (endpointError) {
+                    console.error('Endpoint test failed:', endpointError);
+                    window.auth.showToast(`Connection OK but endpoints may have issues: ${endpointError.message}`, 'warning');
+                }
+                
                 setTimeout(() => {
                     button.innerHTML = originalText;
-                }, 2000);
+                }, 3000);
             } else {
                 window.auth.showToast(`Connection failed: ${result.error}`, 'error');
                 button.innerHTML = '<i class="fas fa-times"></i> Failed';
@@ -282,7 +299,8 @@ class AdminDashboard {
                 }, 2000);
             }
         } catch (error) {
-            window.auth.showToast('Connection test failed', 'error');
+            console.error('Connection test error:', error);
+            window.auth.showToast(`Connection test failed: ${error.message}`, 'error');
             button.innerHTML = '<i class="fas fa-times"></i> Failed';
             setTimeout(() => {
                 button.innerHTML = originalText;
