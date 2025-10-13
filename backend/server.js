@@ -55,7 +55,7 @@ app.use(helmet({
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, etc.)
+    // Allow requests with no origin (mobile apps, file://, etc.)
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
@@ -68,7 +68,13 @@ const corsOptions = {
       'https://www.pranavbadgi.com'
     ];
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Allow local file access and localhost variations for development
+    if (process.env.NODE_ENV === 'development' || 
+        origin === 'null' || 
+        origin.startsWith('file://') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1') ||
+        allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
