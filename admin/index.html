@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Admin Dashboard</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/forms.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1><i class="fas fa-user-shield"></i> Admin Access</h1>
+                <p>Enter your admin password to continue</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <input type="password" id="adminPassword" placeholder="Admin Password" required>
+                    <i class="fas fa-lock"></i>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <div id="loginError" class="error-message" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Admin Dashboard -->
+    <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-left">
+                <h1><i class="fas fa-tachometer-alt"></i> Portfolio Admin</h1>
+            </div>
+            <div class="header-right">
+                <span class="user-info">
+                    <i class="fas fa-user"></i> Admin
+                </span>
+                <button id="logoutBtn" class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="admin-nav">
+            <ul class="nav-tabs">
+                <li>
+                    <a href="#dashboard" class="nav-link active" data-tab="dashboard">
+                        <i class="fas fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="#projects" class="nav-link" data-tab="projects">
+                        <i class="fas fa-code"></i> Projects
+                    </a>
+                </li>
+                <li>
+                    <a href="#blog" class="nav-link" data-tab="blog">
+                        <i class="fas fa-blog"></i> Blog
+                    </a>
+                </li>
+                <li>
+                    <a href="#youtube" class="nav-link" data-tab="youtube">
+                        <i class="fab fa-youtube"></i> YouTube
+                    </a>
+                </li>
+                <li>
+                    <a href="#settings" class="nav-link" data-tab="settings">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Dashboard Tab -->
+            <section id="dashboard-tab" class="tab-content active">
+                <div class="content-header">
+                    <h2>Dashboard Overview</h2>
+                    <p>Manage your portfolio content from here</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="projectsCount">0</h3>
+                            <p>Projects</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-blog"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="blogCount">0</h3>
+                            <p>Blog Posts</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fab fa-youtube"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="youtubeCount">0</h3>
+                            <p>YouTube Videos</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalViews">0</h3>
+                            <p>Total Views</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h3>Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="switchTab('projects')">
+                            <i class="fas fa-plus"></i> Add Project
+                        </button>
+                        <button class="btn btn-primary" onclick="switchTab('blog')">
+                            <i class="fas fa-plus"></i> Add Blog Post
+                        </button>
+                        <button class="btn btn-primary" onclick="switchTab('youtube')">
+                            <i class="fas fa-plus"></i> Add YouTube Video
+                        </button>
+                        <button class="btn btn-outline" onclick="window.open('https://itspranavbadgi.com', '_blank')">
+                            <i class="fas fa-external-link-alt"></i> View Website
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Projects Tab -->
+            <section id="projects-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>Projects Management</h2>
+                    <button id="addProjectBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add New Project
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <div class="search-filter-bar">
+                        <div class="search-box">
+                            <input type="text" id="projectSearch" placeholder="Search projects...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <select id="projectFilter" class="filter-select">
+                            <option value="">All Categories</option>
+                            <option value="web">Web</option>
+                            <option value="mobile">Mobile</option>
+                            <option value="desktop">Desktop</option>
+                            <option value="api">API</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div id="projectsList" class="content-list">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading projects...
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Blog Tab -->
+            <section id="blog-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>Blog Management</h2>
+                    <button id="addBlogBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add New Post
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <div class="search-filter-bar">
+                        <div class="search-box">
+                            <input type="text" id="blogSearch" placeholder="Search blog posts...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <select id="blogFilter" class="filter-select">
+                            <option value="">All Posts</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </div>
+                    
+                    <div id="blogList" class="content-list">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading blog posts...
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- YouTube Tab -->
+            <section id="youtube-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>YouTube Videos</h2>
+                    <button id="addYouTubeBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add YouTube Video
+                    </button>
+                </div>
+                
+                <div class="content-body">
+                    <div class="search-filter-bar">
+                        <div class="search-box">
+                            <input type="text" id="youtubeSearch" placeholder="Search videos...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                    
+                    <div id="youtubeList" class="content-list">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading YouTube videos...
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Tab -->
+            <section id="settings-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>Settings</h2>
+                    <p>Configure your admin panel and API settings</p>
+                </div>
+                
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <h3><i class="fas fa-server"></i> API Configuration</h3>
+                        <div class="form-group">
+                            <label for="apiUrl">Backend API URL</label>
+                            <input type="url" id="apiUrl" value="https://pranav-portfolio-backend-production.up.railway.app/api">
+                        </div>
+                        <button class="btn btn-outline">Test Connection</button>
+                    </div>
+                    
+                    <div class="setting-card">
+                        <h3><i class="fas fa-palette"></i> Preferences</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="darkMode"> Enable Dark Mode
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="autoSave" checked> Auto-save Drafts
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Modals will be loaded here -->
+    <div id="modalContainer"></div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/projects.js"></script>
+    <script src="js/blog.js"></script>
+    <script src="js/youtube.js"></script>
+</body>
+</html>
