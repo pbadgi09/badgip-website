@@ -692,35 +692,31 @@ class ContentManager {
     const githubUrl = project.links?.github || project.githubUrl || '';
     const technologies = project.technologies || [];
     
+    // Add inline styles to ensure visibility
+    card.style.cssText = `
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      min-height: 400px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      visibility: visible !important;
+      display: block !important;
+      opacity: 1 !important;
+    `;
+    
     card.innerHTML = `
-      <div class="project-image">
-        <img src="${projectImage}" alt="${project.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/400x200/6366f1/ffffff?text=Project+Image'">
-        <div class="project-overlay">
-          <div class="project-links">
-            ${liveUrl && liveUrl !== '#' && liveUrl !== '' ? `
-              <a href="${liveUrl}" class="project-link" aria-label="View Live Demo" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
-                </svg>
-              </a>
-            ` : ''}
-            ${githubUrl && githubUrl !== '#' && githubUrl !== '' ? `
-              <a href="${githubUrl}" class="project-link" aria-label="View Source Code" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>
-                </svg>
-              </a>
-            ` : ''}
-          </div>
-        </div>
+      <div class="project-image" style="height: 200px; background: #6366f1; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
+        ${project.title} - Image
       </div>
-      <div class="project-content">
-        <h3 class="project-title">${project.title}</h3>
-        <p class="project-description">${project.description}</p>
-        <div class="project-tech">
-          ${technologies.map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
+      <div class="project-content" style="padding: 20px; color: white;">
+        <h3 class="project-title" style="margin: 0 0 10px 0; color: white; font-size: 20px;">${project.title}</h3>
+        <p class="project-description" style="margin: 0 0 15px 0; color: rgba(255,255,255,0.8);">${project.description}</p>
+        <div class="project-tech" style="display: flex; flex-wrap: wrap; gap: 8px;">
+          ${technologies.map(tech => `<span style="background: #6366f1; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px;">${tech}</span>`).join('')}
         </div>
-        ${project.featured ? '<div class="project-featured-badge">Featured</div>' : ''}
+        ${project.featured ? '<div style="position: absolute; top: 10px; right: 10px; background: #06b6d4; color: white; padding: 4px 12px; border-radius: 20px; font-size: 10px; text-transform: uppercase;">Featured</div>' : ''}
       </div>
     `;
     
