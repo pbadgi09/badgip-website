@@ -67,6 +67,11 @@ class AdminDashboard {
             // Show loading state
             this.showStatsLoading(true);
 
+            // Check if we're running locally and show CORS warning
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                window.auth.showToast('Running locally: CORS errors expected. Use https://itspranavbadgi.com/admin/ for full functionality.', 'warning', 10000);
+            }
+
             // Fetch stats from API
             const stats = await window.api.getStats();
             this.stats = stats;
@@ -79,7 +84,13 @@ class AdminDashboard {
 
         } catch (error) {
             console.error('Error loading dashboard data:', error);
-            window.api.handleError(error, 'loading dashboard');
+            
+            // Show specific CORS guidance
+            if (error.message.includes('CORS')) {
+                window.auth.showToast('CORS Error: Please access the admin panel at https://itspranavbadgi.com/admin/ instead of localhost', 'error', 15000);
+            } else {
+                window.api.handleError(error, 'loading dashboard');
+            }
         } finally {
             this.showStatsLoading(false);
         }

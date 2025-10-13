@@ -28,6 +28,8 @@ class API {
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-Admin-Key': 'admin123' // Admin authentication key
             },
+            mode: 'cors',
+            credentials: 'omit',
             timeout: this.timeout
         };
 
@@ -81,6 +83,8 @@ class API {
                 throw new Error('Request timed out. Please check your connection and try again.');
             } else if (error.message.includes('Failed to fetch')) {
                 throw new Error('Unable to connect to the server. Please check your internet connection.');
+            } else if (error.message.includes('CORS') || error.message.includes('blocked')) {
+                throw new Error('CORS error: The backend server needs to allow requests from localhost:8080. Please contact the administrator or run the admin panel from the same domain as the website.');
             } else {
                 throw error;
             }
