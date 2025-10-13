@@ -625,9 +625,9 @@ class ContentManager {
       }
     } catch (error) {
       console.error('❌ Error fetching projects:', error);
-      console.log('🔄 Using fallback sample projects');
-      // Fallback to sample projects if API fails
-      return this.generateSampleProjects(3);
+      console.log('🔄 No fallback projects - returning empty array');
+      // Return empty array instead of sample projects
+      return [];
     }
   }
   
@@ -753,14 +753,19 @@ class ContentManager {
       if (projects.length > 0) {
         console.log('✅ Rendering projects:', projects.length);
         this.renderProjects(projects);
+        this.showSection('projects');
         this.currentProjectPage = 1;
       } else {
-        console.log('⚠️ No projects found, container exists:', !!this.projectsContainer);
+        console.log('⚠️ No projects found, hiding projects section');
+        this.hideSection('projects');
       }
       
       // Load blog posts and YouTube videos
-      await this.loadBlogPosts();
-      await this.loadYouTubeVideos();
+      const blogHasContent = await this.loadBlogPosts();
+      const youtubeHasContent = await this.loadYouTubeVideos();
+      
+      // Update navigation based on available content
+      this.updateNavigation(projects.length > 0, blogHasContent, youtubeHasContent);
       
       console.log('✅ Content management system initialized with real data');
     } catch (error) {
@@ -771,27 +776,53 @@ class ContentManager {
 
   async loadBlogPosts() {
     try {
+      console.log('📝 Fetching blog posts from API...');
       const response = await fetch(`${CONFIG.API_BASE_URL}/blog?limit=3&featured=true`);
       if (response.ok) {
         const data = await response.json();
         const posts = data.success ? data.data.posts : [];
-        this.renderBlogPosts(posts);
+        console.log('📝 Received blog posts:', posts.length);
+        
+        if (posts.length > 0) {
+          this.renderBlogPosts(posts);
+          this.showSection('blog');
+          return true;
+        } else {
+          console.log('⚠️ No blog posts found, hiding blog section');
+          this.hideSection('blog');
+          return false;
+        }
       }
     } catch (error) {
-      console.error('Error loading blog posts:', error);
+      console.error('❌ Error loading blog posts:', error);
+      this.hideSection('blog');
+      return false;
     }
   }
 
   async loadYouTubeVideos() {
     try {
+      console.log('🎥 Fetching YouTube videos from API...');
       const response = await fetch(`${CONFIG.API_BASE_URL}/youtube?limit=3&featured=true`);
       if (response.ok) {
         const data = await response.json();
         const videos = data.success ? data.data.videos : [];
-        this.renderYouTubeVideos(videos);
+        console.log('🎥 Received YouTube videos:', videos.length);
+        
+        if (videos.length > 0) {
+          this.renderYouTubeVideos(videos);
+          this.showSection('youtube');
+          return true;
+        } else {
+          console.log('⚠️ No YouTube videos found, hiding YouTube section');
+          this.hideSection('youtube');
+          return false;
+        }
       }
     } catch (error) {
-      console.error('Error loading YouTube videos:', error);
+      console.error('❌ Error loading YouTube videos:', error);
+      this.hideSection('youtube');
+      return false;
     }
   }
 
@@ -836,6 +867,42 @@ class ContentManager {
         </div>
       </div>
     `).join('');
+  }
+
+  showSection(sectionName) {
+    const section = document.getElementById(sectionName);
+    if (section) {
+      section.style.display = 'block';
+      console.log(`✅ Showing ${sectionName} section`);
+    }
+  }
+
+  hideSection(sectionName) {
+    const section = document.getElementById(sectionName);
+    if (section) {
+      section.style.display = 'none';
+      console.log(`🙈 Hiding ${sectionName} section`);
+    }
+  }
+
+  updateNavigation(hasProjects, hasBlog, hasYoutube) {
+    console.log('🧭 Updating navigation:', { hasProjects, hasBlog, hasYoutube });
+    
+    // Find navigation links
+    const projectsLink = document.querySelector('a[data-section="projects"]');
+    const blogLink = document.querySelector('a[data-section="blog"]');
+    const youtubeLink = document.querySelector('a[data-section="youtube"]');
+    
+    // Hide/show navigation links based on content availability
+    if (projectsLink) {
+      projectsLink.style.display = hasProjects ? 'block' : 'none';
+    }
+    if (blogLink) {
+      blogLink.style.display = hasBlog ? 'block' : 'none';
+    }
+    if (youtubeLink) {
+      youtubeLink.style.display = hasYoutube ? 'block' : 'none';
+    }
   }
 }
 
