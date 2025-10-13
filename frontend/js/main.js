@@ -683,24 +683,24 @@ class ContentManager {
     card.setAttribute('data-project', project._id || project.id);
     
     // Handle both API data structure and sample data structure
-    const projectImage = project.primaryImage?.url || project.image || 'assets/images/project-placeholder.jpg';
-    const liveUrl = project.links?.live || project.liveUrl || '#';
-    const githubUrl = project.links?.github || project.githubUrl || '#';
+    const projectImage = project.primaryImage?.url || project.image || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=Project+Image';
+    const liveUrl = project.links?.live || project.liveUrl || '';
+    const githubUrl = project.links?.github || project.githubUrl || '';
     const technologies = project.technologies || [];
     
     card.innerHTML = `
       <div class="project-image">
-        <img src="${projectImage}" alt="${project.title}" loading="lazy" onerror="this.src='assets/images/project-placeholder.jpg'">
+        <img src="${projectImage}" alt="${project.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/400x200/6366f1/ffffff?text=Project+Image'">
         <div class="project-overlay">
           <div class="project-links">
-            ${liveUrl && liveUrl !== '#' ? `
+            ${liveUrl && liveUrl !== '#' && liveUrl !== '' ? `
               <a href="${liveUrl}" class="project-link" aria-label="View Live Demo" target="_blank" rel="noopener">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
                 </svg>
               </a>
             ` : ''}
-            ${githubUrl && githubUrl !== '#' ? `
+            ${githubUrl && githubUrl !== '#' && githubUrl !== '' ? `
               <a href="${githubUrl}" class="project-link" aria-label="View Source Code" target="_blank" rel="noopener">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>
