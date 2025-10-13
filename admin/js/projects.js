@@ -51,12 +51,28 @@ class ProjectsManager {
             this.isLoading = true;
             this.showLoading(true);
 
+            console.log('ProjectsManager: Fetching projects with limit 50');
             const response = await window.api.getProjects({ limit: 50 });
-            this.projects = response.data?.projects || [];
+            console.log('ProjectsManager: Full API response:', response);
+            
+            // Handle different possible response structures
+            let projects = [];
+            if (response.data?.projects) {
+                projects = response.data.projects;
+            } else if (response.projects) {
+                projects = response.projects;
+            } else if (Array.isArray(response.data)) {
+                projects = response.data;
+            } else if (Array.isArray(response)) {
+                projects = response;
+            }
+            
+            console.log('ProjectsManager: Parsed projects array:', projects);
+            this.projects = projects;
             
             this.renderProjects();
         } catch (error) {
-            console.error('Error loading projects:', error);
+            console.error('ProjectsManager: Error loading projects:', error);
             window.api.handleError(error, 'loading projects');
         } finally {
             this.isLoading = false;

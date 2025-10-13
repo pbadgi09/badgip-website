@@ -41,12 +41,28 @@ class YouTubeManager {
             this.isLoading = true;
             this.showLoading(true);
 
+            console.log('YouTubeManager: Fetching videos with limit 50');
             const response = await window.api.getYouTubeVideos({ limit: 50 });
-            this.videos = response.data?.videos || [];
+            console.log('YouTubeManager: Full API response:', response);
+            
+            // Handle different possible response structures
+            let videos = [];
+            if (response.data?.videos) {
+                videos = response.data.videos;
+            } else if (response.videos) {
+                videos = response.videos;
+            } else if (Array.isArray(response.data)) {
+                videos = response.data;
+            } else if (Array.isArray(response)) {
+                videos = response;
+            }
+            
+            console.log('YouTubeManager: Parsed videos array:', videos);
+            this.videos = videos;
             
             this.renderVideos();
         } catch (error) {
-            console.error('Error loading YouTube videos:', error);
+            console.error('YouTubeManager: Error loading YouTube videos:', error);
             window.api.handleError(error, 'loading YouTube videos');
         } finally {
             this.isLoading = false;

@@ -51,12 +51,28 @@ class BlogManager {
             this.isLoading = true;
             this.showLoading(true);
 
+            console.log('BlogManager: Fetching blog posts with limit 50');
             const response = await window.api.getBlogPosts({ limit: 50 });
-            this.posts = response.data?.posts || [];
+            console.log('BlogManager: Full API response:', response);
+            
+            // Handle different possible response structures
+            let posts = [];
+            if (response.data?.posts) {
+                posts = response.data.posts;
+            } else if (response.posts) {
+                posts = response.posts;
+            } else if (Array.isArray(response.data)) {
+                posts = response.data;
+            } else if (Array.isArray(response)) {
+                posts = response;
+            }
+            
+            console.log('BlogManager: Parsed posts array:', posts);
+            this.posts = posts;
             
             this.renderPosts();
         } catch (error) {
-            console.error('Error loading blog posts:', error);
+            console.error('BlogManager: Error loading blog posts:', error);
             window.api.handleError(error, 'loading blog posts');
         } finally {
             this.isLoading = false;
