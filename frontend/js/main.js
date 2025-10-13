@@ -8,8 +8,8 @@
 // Application Configuration
 // ==============================================
 const CONFIG = {
-  // API endpoints (will be configured when backend is ready)
-  API_BASE_URL: '/api',
+  // API endpoints - connected to Railway backend
+  API_BASE_URL: 'https://badgip-website-production.up.railway.app/api',
   
   // Animation settings
   SCROLL_OFFSET: 100,
@@ -602,16 +602,19 @@ class ContentManager {
   }
   
   async fetchProjects(page = 1) {
-    // Simulate API call - replace with actual endpoint
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (page > 2) {
-          resolve([]); // No more projects
-        } else {
-          resolve(this.generateSampleProjects(3));
-        }
-      }, 1000);
-    });
+    try {
+      const response = await fetch(`${CONFIG.API_BASE_URL}/projects?page=${page}&limit=${this.projectsPerPage}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.success ? data.data.projects : [];
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      // Fallback to sample projects if API fails
+      return this.generateSampleProjects(3);
+    }
   }
   
   generateSampleProjects(count) {
@@ -652,23 +655,33 @@ class ContentManager {
   createProjectCard(project) {
     const card = document.createElement('div');
     card.className = 'project-card glass-card fade-in';
-    card.setAttribute('data-project', project.id);
+    card.setAttribute('data-project', project._id || project.id);
+    
+    // Handle both API data structure and sample data structure
+    const projectImage = project.primaryImage?.url || project.image || 'assets/images/project-placeholder.jpg';
+    const liveUrl = project.links?.live || project.liveUrl || '#';
+    const githubUrl = project.links?.github || project.githubUrl || '#';
+    const technologies = project.technologies || [];
     
     card.innerHTML = `
       <div class="project-image">
-        <img src="${project.image}" alt="${project.title}" loading="lazy">
+        <img src="${projectImage}" alt="${project.title}" loading="lazy" onerror="this.src='assets/images/project-placeholder.jpg'">
         <div class="project-overlay">
           <div class="project-links">
-            <a href="${project.liveUrl}" class="project-link" aria-label="View Live Demo" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
-              </svg>
-            </a>
-            <a href="${project.githubUrl}" class="project-link" aria-label="View Source Code" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>
-              </svg>
-            </a>
+            ${liveUrl && liveUrl !== '#' ? `
+              <a href="${liveUrl}" class="project-link" aria-label="View Live Demo" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                </svg>
+              </a>
+            ` : ''}
+            ${githubUrl && githubUrl !== '#' ? `
+              <a href="${githubUrl}" class="project-link" aria-label="View Source Code" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>
+                </svg>
+              </a>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -676,8 +689,9 @@ class ContentManager {
         <h3 class="project-title">${project.title}</h3>
         <p class="project-description">${project.description}</p>
         <div class="project-tech">
-          ${project.technologies.map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
+          ${technologies.map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
         </div>
+        ${project.featured ? '<div class="project-featured-badge">Featured</div>' : ''}
       </div>
     `;
     
@@ -702,9 +716,93 @@ class ContentManager {
     thumbnailContainer.appendChild(iframe);
   }
   
-  loadSampleContent() {
-    // This would be replaced with actual API calls
-    console.log('Content management system initialized');
+  async loadSampleContent() {
+    try {
+      // Load initial projects
+      const projects = await this.fetchProjects(1);
+      if (projects.length > 0) {
+        this.renderProjects(projects);
+        this.currentProjectPage = 1;
+      }
+      
+      // Load blog posts and YouTube videos
+      await this.loadBlogPosts();
+      await this.loadYouTubeVideos();
+      
+      console.log('Content management system initialized with real data');
+    } catch (error) {
+      console.error('Error loading initial content:', error);
+      console.log('Content management system initialized with fallback data');
+    }
+  }
+
+  async loadBlogPosts() {
+    try {
+      const response = await fetch(`${CONFIG.API_BASE_URL}/blog?limit=3&featured=true`);
+      if (response.ok) {
+        const data = await response.json();
+        const posts = data.success ? data.data.posts : [];
+        this.renderBlogPosts(posts);
+      }
+    } catch (error) {
+      console.error('Error loading blog posts:', error);
+    }
+  }
+
+  async loadYouTubeVideos() {
+    try {
+      const response = await fetch(`${CONFIG.API_BASE_URL}/youtube?limit=3&featured=true`);
+      if (response.ok) {
+        const data = await response.json();
+        const videos = data.success ? data.data.videos : [];
+        this.renderYouTubeVideos(videos);
+      }
+    } catch (error) {
+      console.error('Error loading YouTube videos:', error);
+    }
+  }
+
+  renderBlogPosts(posts) {
+    if (!this.blogContainer || posts.length === 0) return;
+    
+    this.blogContainer.innerHTML = posts.map(post => `
+      <article class="blog-card glass-card fade-in">
+        <div class="blog-content">
+          <h3 class="blog-title">${post.title}</h3>
+          <p class="blog-excerpt">${post.excerpt || post.description}</p>
+          <div class="blog-meta">
+            <span class="blog-date">${new Date(post.createdAt).toLocaleDateString()}</span>
+            <span class="blog-category">${post.category}</span>
+          </div>
+          <a href="#" class="blog-link">Read More</a>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  renderYouTubeVideos(videos) {
+    if (!this.youtubeContainer || videos.length === 0) return;
+    
+    this.youtubeContainer.innerHTML = videos.map(video => `
+      <div class="video-card glass-card fade-in" data-video-url="${video.embedUrl}">
+        <div class="video-thumbnail">
+          <img src="${video.thumbnail}" alt="${video.title}" loading="lazy">
+          <div class="play-button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5,3 19,12 5,21"/>
+            </svg>
+          </div>
+        </div>
+        <div class="video-content">
+          <h3 class="video-title">${video.title}</h3>
+          <p class="video-description">${video.description || ''}</p>
+          <div class="video-meta">
+            <span class="video-views">${video.metrics?.views || 0} views</span>
+            <span class="video-date">${new Date(video.publishedAt || video.createdAt).toLocaleDateString()}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
   }
 }
 

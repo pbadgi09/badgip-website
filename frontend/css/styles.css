@@ -607,6 +607,7 @@ a:hover {
 }
 
 .project-card {
+  position: relative;
   padding: 0;
   overflow: hidden;
   transition: all var(--transition-medium);
@@ -705,6 +706,21 @@ a:hover {
   border-radius: var(--radius-full);
   font-size: var(--text-sm);
   font-weight: 500;
+}
+
+.project-featured-badge {
+  position: absolute;
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+  background: var(--accent-color);
+  color: var(--white);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 10;
 }
 
 /* ==============================================

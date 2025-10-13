@@ -504,8 +504,11 @@ class ProjectsManager {
     }
 
     collectProjectFormData() {
+        const title = document.getElementById('projectTitle').value.trim();
+        const slug = this.generateSlug(title);
+        
         return {
-            title: document.getElementById('projectTitle').value.trim(),
+            title: title,
             description: document.getElementById('projectDescription').value.trim(),
             longDescription: document.getElementById('projectLongDescription').value.trim(),
             category: document.getElementById('projectCategory').value,
@@ -516,9 +519,21 @@ class ProjectsManager {
                 live: document.getElementById('projectLiveUrl').value.trim(),
                 github: document.getElementById('projectGithubUrl').value.trim(),
                 demo: document.getElementById('projectDemoUrl').value.trim()
+            },
+            seo: {
+                slug: slug
             }
             // Note: Image upload will be handled separately
         };
+    }
+
+    generateSlug(title) {
+        return title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
     }
 
     populateProjectForm(project) {
