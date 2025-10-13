@@ -686,20 +686,6 @@ class ContentManager {
     
     console.log('📦 Created card element:', card);
     
-    // Simple test card first
-    card.innerHTML = `
-      <div style="background: rgba(255,255,255,0.1); padding: 20px; margin: 10px; border-radius: 10px; color: white;">
-        <h3>${project.title}</h3>
-        <p>${project.description}</p>
-        <p>Tech: ${(project.technologies || []).join(', ')}</p>
-      </div>
-    `;
-    
-    console.log('✅ Simple test card created');
-    return card;
-    
-    // Complex card code (commented out for now)
-    /*
     // Handle both API data structure and sample data structure
     const projectImage = project.primaryImage?.url || project.image || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=Project+Image';
     const liveUrl = project.links?.live || project.liveUrl || '';
@@ -738,11 +724,9 @@ class ContentManager {
       </div>
     `;
     
-    console.log('✅ Project card HTML created:', card.innerHTML.substring(0, 100) + '...');
-    console.log('📏 Card dimensions:', { width: card.offsetWidth, height: card.offsetHeight });
+    console.log('✅ Project card HTML created with proper styling');
     
     return card;
-    */
   }
   
   handleVideoPlay(videoCard) {
