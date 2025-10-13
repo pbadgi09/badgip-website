@@ -882,6 +882,9 @@ class BlogManager {
 
         if (show) {
             container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading blog posts...</div>';
+        } else {
+            // Clear loading - renderPosts() will set the real content
+            container.innerHTML = '';
         }
     }
 

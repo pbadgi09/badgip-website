@@ -633,6 +633,9 @@ class YouTubeManager {
 
         if (show) {
             container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading YouTube videos...</div>';
+        } else {
+            // Clear loading - renderVideos() will set the real content
+            container.innerHTML = '';
         }
     }
 }

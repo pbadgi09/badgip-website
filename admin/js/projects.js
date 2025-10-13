@@ -621,6 +621,9 @@ class ProjectsManager {
 
         if (show) {
             container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading projects...</div>';
+        } else {
+            // Clear loading - renderProjects() will set the real content
+            container.innerHTML = '';
         }
     }
 
