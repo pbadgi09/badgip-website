@@ -547,18 +547,35 @@ class BlogManager {
             .map(k => k.trim())
             .filter(k => k);
 
+        const title = document.getElementById('blogTitle').value.trim();
+        const slug = this.generateSlug(title);
+
         return {
-            title: document.getElementById('blogTitle').value.trim(),
+            title: title,
             category: document.getElementById('blogCategory').value,
             excerpt: document.getElementById('blogExcerpt').value.trim(),
             content: document.getElementById('blogContent').value.trim(),
             tags: this.tags,
             featured: document.getElementById('blogFeatured').checked,
+            featuredImage: {
+                url: 'https://via.placeholder.com/800x400/6366f1/ffffff?text=Blog+Post+Image',
+                alt: title + ' - Featured Image'
+            },
             seo: {
+                slug: slug,
                 metaDescription: document.getElementById('blogMetaDescription').value.trim(),
                 keywords: keywords
             }
         };
+    }
+
+    generateSlug(title) {
+        return title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
     }
 
     populateBlogForm(post) {

@@ -831,44 +831,84 @@ class ContentManager {
   renderBlogPosts(posts) {
     if (!this.blogContainer || posts.length === 0) return;
     
-    this.blogContainer.innerHTML = posts.map(post => `
-      <article class="blog-card glass-card fade-in">
-        <div class="blog-content">
-          <h3 class="blog-title">${post.title}</h3>
-          <p class="blog-excerpt">${post.excerpt || post.description}</p>
-          <div class="blog-meta">
-            <span class="blog-date">${new Date(post.createdAt).toLocaleDateString()}</span>
-            <span class="blog-category">${post.category}</span>
-          </div>
-          <a href="#" class="blog-link">Read More</a>
+    this.blogContainer.innerHTML = '';
+    
+    posts.forEach(post => {
+      const blogCard = document.createElement('article');
+      blogCard.className = 'blog-card glass-card fade-in';
+      blogCard.style.cssText = `
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        min-height: 300px;
+        margin-bottom: 20px;
+        padding: 20px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        visibility: visible !important;
+        display: block !important;
+        opacity: 1 !important;
+        color: white;
+      `;
+      
+      blogCard.innerHTML = `
+        <h3 style="margin: 0 0 10px 0; color: white; font-size: 20px;">${post.title}</h3>
+        <p style="margin: 0 0 15px 0; color: rgba(255,255,255,0.8);">${post.excerpt || post.description}</p>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; font-size: 14px; color: rgba(255,255,255,0.7);">
+          <span>${new Date(post.createdAt).toLocaleDateString()}</span>
+          <span>${post.category}</span>
         </div>
-      </article>
-    `).join('');
+        <a href="#" style="color: #6366f1; text-decoration: none;">Read More</a>
+      `;
+      
+      this.blogContainer.appendChild(blogCard);
+    });
   }
 
   renderYouTubeVideos(videos) {
     if (!this.youtubeContainer || videos.length === 0) return;
     
-    this.youtubeContainer.innerHTML = videos.map(video => `
-      <div class="video-card glass-card fade-in" data-video-url="${video.embedUrl}">
-        <div class="video-thumbnail">
-          <img src="${video.thumbnail}" alt="${video.title}" loading="lazy">
-          <div class="play-button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    this.youtubeContainer.innerHTML = '';
+    
+    videos.forEach(video => {
+      const videoCard = document.createElement('div');
+      videoCard.className = 'video-card glass-card fade-in';
+      videoCard.setAttribute('data-video-url', video.embedUrl);
+      videoCard.style.cssText = `
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        min-height: 350px;
+        margin-bottom: 20px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        visibility: visible !important;
+        display: block !important;
+        opacity: 1 !important;
+        overflow: hidden;
+      `;
+      
+      videoCard.innerHTML = `
+        <div style="height: 200px; background: #dc2626; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; position: relative;">
+          <img src="${video.thumbnail}" alt="${video.title}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <svg viewBox="0 0 24 24" fill="white" style="width: 24px; height: 24px; margin-left: 3px;">
               <polygon points="5,3 19,12 5,21"/>
             </svg>
           </div>
         </div>
-        <div class="video-content">
-          <h3 class="video-title">${video.title}</h3>
-          <p class="video-description">${video.description || ''}</p>
-          <div class="video-meta">
-            <span class="video-views">${video.metrics?.views || 0} views</span>
-            <span class="video-date">${new Date(video.publishedAt || video.createdAt).toLocaleDateString()}</span>
+        <div style="padding: 20px; color: white;">
+          <h3 style="margin: 0 0 10px 0; color: white; font-size: 18px;">${video.title}</h3>
+          <p style="margin: 0 0 15px 0; color: rgba(255,255,255,0.8); font-size: 14px;">${video.description || ''}</p>
+          <div style="display: flex; gap: 15px; font-size: 12px; color: rgba(255,255,255,0.7);">
+            <span>${video.metrics?.views || 0} views</span>
+            <span>${new Date(video.publishedAt || video.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
+      
+      this.youtubeContainer.appendChild(videoCard);
+    });
   }
 
   showSection(sectionName) {
