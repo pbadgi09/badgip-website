@@ -114,8 +114,64 @@ async function editProject(projectId) {
         return;
     }
     
-    // For now, just show an alert - we can implement proper editing later
-    alert(`Edit project: ${project.title}\n\nThis will be implemented with a simple form that saves via GitHub API.`);
+    // Simple prompt-based editing
+    const title = prompt('Project Title:', project.title);
+    if (title === null) return; // User cancelled
+    
+    const description = prompt('Short Description:', project.description);
+    if (description === null) return;
+    
+    const longDescription = prompt('Detailed Description (optional):', project.longDescription || '');
+    if (longDescription === null) return;
+    
+    const technologies = prompt('Technologies (comma-separated):', project.technologies.join(', '));
+    if (technologies === null) return;
+    
+    const category = prompt('Category (web/mobile/desktop/api/other):', project.category);
+    if (category === null) return;
+    
+    const status = prompt('Status (completed/in-progress/planned):', project.status);
+    if (status === null) return;
+    
+    const featured = confirm('Is this a featured project?');
+    
+    const liveUrl = prompt('Live URL (optional):', project.links?.live || '');
+    if (liveUrl === null) return;
+    
+    const githubUrl = prompt('GitHub URL (optional):', project.links?.github || '');
+    if (githubUrl === null) return;
+    
+    const demoUrl = prompt('Demo URL (optional):', project.links?.demo || '');
+    if (demoUrl === null) return;
+    
+    // Prepare updated project data
+    const updatedProject = {
+        title: title.trim(),
+        description: description.trim(),
+        longDescription: longDescription.trim(),
+        technologies: technologies.split(',').map(tech => tech.trim()).filter(tech => tech),
+        category: category.trim(),
+        status: status.trim(),
+        featured: featured,
+        links: {
+            live: liveUrl.trim(),
+            github: githubUrl.trim(),
+            demo: demoUrl.trim()
+        }
+    };
+    
+    try {
+        console.log('Updating project:', updatedProject);
+        const response = await window.api.updateProject(projectId, updatedProject);
+        if (response.success) {
+            alert('Project updated successfully!');
+            // Reload the data
+            await loadProjectsData();
+        }
+    } catch (error) {
+        console.error('Error updating project:', error);
+        alert(`Error updating project: ${error.message}`);
+    }
 }
 
 async function deleteProject(projectId, projectTitle) {
@@ -137,8 +193,68 @@ async function deleteProject(projectId, projectTitle) {
     }
 }
 
-function showAddProjectForm() {
-    alert('Add Project form will be implemented with a simple form that saves via GitHub API.');
+async function showAddProjectForm() {
+    // Simple prompt-based project creation
+    const title = prompt('Project Title:');
+    if (!title) return; // User cancelled or empty
+    
+    const description = prompt('Short Description:');
+    if (!description) return;
+    
+    const longDescription = prompt('Detailed Description (optional):', '');
+    if (longDescription === null) return;
+    
+    const technologies = prompt('Technologies (comma-separated):');
+    if (!technologies) return;
+    
+    const category = prompt('Category (web/mobile/desktop/api/other):', 'web');
+    if (!category) return;
+    
+    const status = prompt('Status (completed/in-progress/planned):', 'completed');
+    if (!status) return;
+    
+    const featured = confirm('Is this a featured project?');
+    
+    const liveUrl = prompt('Live URL (optional):', '');
+    if (liveUrl === null) return;
+    
+    const githubUrl = prompt('GitHub URL (optional):', '');
+    if (githubUrl === null) return;
+    
+    const demoUrl = prompt('Demo URL (optional):', '');
+    if (demoUrl === null) return;
+    
+    // Prepare new project data
+    const newProject = {
+        title: title.trim(),
+        description: description.trim(),
+        longDescription: longDescription.trim(),
+        technologies: technologies.split(',').map(tech => tech.trim()).filter(tech => tech),
+        category: category.trim(),
+        status: status.trim(),
+        featured: featured,
+        links: {
+            live: liveUrl.trim(),
+            github: githubUrl.trim(),
+            demo: demoUrl.trim()
+        },
+        seo: {
+            slug: title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '')
+        }
+    };
+    
+    try {
+        console.log('Creating new project:', newProject);
+        const response = await window.api.createProject(newProject);
+        if (response.success) {
+            alert('Project created successfully!');
+            // Reload the data
+            await loadProjectsData();
+        }
+    } catch (error) {
+        console.error('Error creating project:', error);
+        alert(`Error creating project: ${error.message}`);
+    }
 }
 
 // Initialize when page loads
