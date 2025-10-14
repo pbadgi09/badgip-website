@@ -1,0 +1,41 @@
+{
+  "posts": [
+    {
+      "author": {
+        "name": "Pranav Badgi",
+        "email": "hello@pranavbadgi.com"
+      },
+      "featuredImage": {
+        "url": "",
+        "alt": "Pranav's First Blog - Featured Image"
+      },
+      "metrics": {
+        "views": 0,
+        "likes": 0,
+        "shares": 0,
+        "comments": 0
+      },
+      "seo": {
+        "slug": "pranavs-first-blog",
+        "metaDescription": "",
+        "keywords": []
+      },
+      "_id": "68ec98d4f4538ae9c8b78f8d",
+      "title": "Pranav's First Blog",
+      "excerpt": "My first blog",
+      "category": "review",
+      "tags": [],
+      "status": "published",
+      "featured": false,
+      "readTime": 1,
+      "publishedAt": "2025-10-13T06:14:44.851Z",
+      "images": [],
+      "lastModified": "2025-10-13T06:14:44.853Z",
+      "createdAt": "2025-10-13T06:14:44.853Z",
+      "updatedAt": "2025-10-13T06:14:44.853Z",
+      "url": "/blog/pranavs-first-blog",
+      "formattedDate": "October 13, 2025",
+      "id": "68ec98d4f4538ae9c8b78f8d"
+    }
+  ]
+}

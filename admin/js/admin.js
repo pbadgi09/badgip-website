@@ -33,12 +33,17 @@ class AdminDashboard {
         });
 
         // Settings events
-        const apiUrlInput = document.getElementById('apiUrl');
+        const githubTokenInput = document.getElementById('githubToken');
+        const githubRepoInput = document.getElementById('githubRepo');
         const darkModeToggle = document.getElementById('darkMode');
         const autoSaveToggle = document.getElementById('autoSave');
 
-        if (apiUrlInput) {
-            apiUrlInput.addEventListener('change', () => this.updateApiUrl());
+        if (githubTokenInput) {
+            githubTokenInput.addEventListener('change', () => this.updateGitHubToken());
+        }
+
+        if (githubRepoInput) {
+            githubRepoInput.addEventListener('change', () => this.updateGitHubRepo());
         }
 
         if (darkModeToggle) {
@@ -75,8 +80,8 @@ class AdminDashboard {
             // Update dashboard stats
             this.updateStatsDisplay(stats);
 
-            // Load initial tab content
-            await this.loadTabContent(this.currentTab);
+            // Don't load initial tab content - let it load when user clicks tabs
+            // This prevents timing issues with manager initialization
 
         } catch (error) {
             console.error('Error loading dashboard data:', error);
@@ -177,6 +182,7 @@ class AdminDashboard {
     async loadTabContent(tabName) {
         try {
             console.log(`Loading content for tab: ${tabName}`);
+            
             switch (tabName) {
                 case 'projects':
                     if (window.projectsManager) {
@@ -184,6 +190,7 @@ class AdminDashboard {
                         await window.projectsManager.loadProjects();
                     } else {
                         console.error('projectsManager not found');
+                        window.auth.showToast('Projects manager not available', 'error');
                     }
                     break;
                 case 'blog':
@@ -192,6 +199,7 @@ class AdminDashboard {
                         await window.blogManager.loadBlogPosts();
                     } else {
                         console.error('blogManager not found');
+                        window.auth.showToast('Blog manager not available', 'error');
                     }
                     break;
                 case 'youtube':
@@ -200,6 +208,7 @@ class AdminDashboard {
                         await window.youtubeManager.loadVideos();
                     } else {
                         console.error('youtubeManager not found');
+                        window.auth.showToast('YouTube manager not available', 'error');
                     }
                     break;
                 case 'images':
@@ -208,6 +217,7 @@ class AdminDashboard {
                         await window.imageManager.loadImages();
                     } else {
                         console.error('imageManager not found');
+                        window.auth.showToast('Images manager not available', 'error');
                     }
                     break;
                 case 'dashboard':
@@ -236,9 +246,13 @@ class AdminDashboard {
         // Load saved settings
         const darkMode = localStorage.getItem('dark_mode') === 'true';
         const autoSave = localStorage.getItem('auto_save') !== 'false'; // Default true
+        const githubToken = localStorage.getItem('github_token') || '';
+        const githubRepo = localStorage.getItem('github_repo') || 'pranavbadgi/Pranav-s-Website';
 
         const darkModeToggle = document.getElementById('darkMode');
         const autoSaveToggle = document.getElementById('autoSave');
+        const githubTokenInput = document.getElementById('githubToken');
+        const githubRepoInput = document.getElementById('githubRepo');
 
         if (darkModeToggle) {
             darkModeToggle.checked = darkMode;
@@ -250,13 +264,29 @@ class AdminDashboard {
         if (autoSaveToggle) {
             autoSaveToggle.checked = autoSave;
         }
+
+        if (githubTokenInput) {
+            githubTokenInput.value = githubToken;
+        }
+
+        if (githubRepoInput) {
+            githubRepoInput.value = githubRepo;
+        }
     }
 
-    updateApiUrl() {
-        const apiUrlInput = document.getElementById('apiUrl');
-        if (apiUrlInput && apiUrlInput.value.trim()) {
-            window.api.setBaseURL(apiUrlInput.value.trim());
-            window.auth.showToast('API URL updated successfully', 'success');
+    updateGitHubToken() {
+        const tokenInput = document.getElementById('githubToken');
+        if (tokenInput && tokenInput.value.trim()) {
+            window.api.setGitHubToken(tokenInput.value.trim());
+            window.auth.showToast('GitHub token updated successfully', 'success');
+        }
+    }
+
+    updateGitHubRepo() {
+        const repoInput = document.getElementById('githubRepo');
+        if (repoInput && repoInput.value.trim()) {
+            window.api.setGitHubRepo(repoInput.value.trim());
+            window.auth.showToast('GitHub repository updated successfully', 'success');
         }
     }
 

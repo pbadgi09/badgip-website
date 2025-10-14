@@ -1,42 +1,41 @@
 /**
- * API Communication Module
- * Handles all communication with the backend API
+ * GitHub API Communication Module
+ * Handles all communication with GitHub for data management
  */
 
 class API {
     constructor() {
-        this.baseURL = 'https://badgip-website-production.up.railway.app/api';
+        this.githubRepo = 'pranavbadgi/Pranav-s-Website'; // Replace with your GitHub repo
+        this.githubToken = localStorage.getItem('github_token') || '';
+        this.githubBaseURL = 'https://api.github.com';
         this.timeout = 30000; // 30 seconds
         this.init();
     }
 
     init() {
-        // Load saved API URL from settings
-        const savedURL = localStorage.getItem('api_url');
-        if (savedURL) {
-            this.baseURL = savedURL;
+        // Load saved GitHub token from settings
+        const savedToken = localStorage.getItem('github_token');
+        if (savedToken) {
+            this.githubToken = savedToken;
         }
     }
 
-    // Generic request method
-    async request(endpoint, options = {}) {
-        const url = `${this.baseURL}${endpoint}`;
+    // Generic GitHub API request method
+    async githubRequest(endpoint, options = {}) {
+        if (!this.githubToken) {
+            throw new Error('GitHub token not configured. Please set your GitHub Personal Access Token in settings.');
+        }
+
+        const url = `${this.githubBaseURL}${endpoint}`;
         
         const defaultOptions = {
             headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-Admin-Key': 'admin123' // Admin authentication key
+                'Authorization': `token ${this.githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
             },
-            mode: 'cors',
-            credentials: 'omit',
             timeout: this.timeout
         };
-
-        // Add CSRF token for non-GET requests
-        if (options.method && options.method !== 'GET') {
-            defaultOptions.headers['X-CSRF-Token'] = window.auth?.getCSRFToken();
-        }
 
         const requestOptions = {
             ...defaultOptions,
@@ -48,7 +47,7 @@ class API {
         };
 
         try {
-            console.log(`Making API request to: ${url}`);
+            console.log(`Making GitHub API request to: ${url}`);
             console.log('Request options:', requestOptions);
             
             // Create timeout promise
@@ -60,7 +59,7 @@ class API {
             const fetchPromise = fetch(url, requestOptions);
             const response = await Promise.race([fetchPromise, timeoutPromise]);
             
-            console.log(`API response status: ${response.status} ${response.statusText}`);
+            console.log(`GitHub API response status: ${response.status} ${response.statusText}`);
 
             // Handle response
             if (!response.ok) {
@@ -68,123 +67,378 @@ class API {
                 throw new Error(errorData?.message || `HTTP ${response.status}: ${response.statusText}`);
             }
 
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                return await response.json();
-            } else {
-                return await response.text();
-            }
+            return await response.json();
 
         } catch (error) {
-            console.error('API Request failed:', error);
+            console.error('GitHub API Request failed:', error);
             
             // Handle specific error types
             if (error.message === 'Request timeout') {
                 throw new Error('Request timed out. Please check your connection and try again.');
             } else if (error.message.includes('Failed to fetch')) {
-                throw new Error('Unable to connect to the server. Please check your internet connection.');
-            } else if (error.message.includes('CORS') || error.message.includes('blocked')) {
-                throw new Error('CORS error: The backend server needs to allow requests from localhost:8080. Please contact the administrator or run the admin panel from the same domain as the website.');
+                throw new Error('Unable to connect to GitHub. Please check your internet connection.');
+            } else if (error.message.includes('Bad credentials')) {
+                throw new Error('Invalid GitHub token. Please check your Personal Access Token.');
             } else {
                 throw error;
             }
         }
     }
 
-    // GET request
-    async get(endpoint, params = {}) {
-        const queryString = new URLSearchParams(params).toString();
-        const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-        
-        return await this.request(url, {
-            method: 'GET'
-        });
+    // Helper method to read file contents
+    async getFileContent(filePath) {
+        try {
+            const response = await this.githubRequest(`/repos/${this.githubRepo}/contents/${filePath}`);
+            return {
+                content: JSON.parse(atob(response.content)),
+                sha: response.sha
+            };
+        } catch (error) {
+            if (error.message.includes('404')) {
+                // File doesn't exist, return empty structure
+                return { content: null, sha: null };
+            }
+            throw error;
+        }
     }
 
-    // POST request
-    async post(endpoint, data = {}) {
-        return await this.request(endpoint, {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
-    }
+    // Helper method to update file contents
+    async updateFileContent(filePath, content, commitMessage, sha = null) {
+        const body = {
+            message: commitMessage,
+            content: btoa(JSON.stringify(content, null, 2)),
+            branch: 'main'
+        };
 
-    // PUT request
-    async put(endpoint, data = {}) {
-        return await this.request(endpoint, {
+        if (sha) {
+            body.sha = sha;
+        }
+
+        return await this.githubRequest(`/repos/${this.githubRepo}/contents/${filePath}`, {
             method: 'PUT',
-            body: JSON.stringify(data)
+            body: JSON.stringify(body)
         });
     }
 
-    // DELETE request
-    async delete(endpoint) {
-        return await this.request(endpoint, {
-            method: 'DELETE'
-        });
-    }
-
-    // File upload request
-    async upload(endpoint, formData) {
-        return await this.request(endpoint, {
-            method: 'POST',
-            body: formData,
-            headers: {} // Let browser set content-type for FormData
-        });
-    }
-
-    // PROJECTS API METHODS
+    // PROJECTS API METHODS (GitHub-based)
     async getProjects(params = {}) {
-        return await this.get('/projects', params);
+        try {
+            const { content } = await this.getFileContent('data/projects.json');
+            const projects = content?.projects || [];
+            
+            // Apply client-side filtering/pagination if needed
+            let filteredProjects = projects;
+            
+            if (params.category) {
+                filteredProjects = projects.filter(p => p.category === params.category);
+            }
+            
+            if (params.featured) {
+                filteredProjects = projects.filter(p => p.featured);
+            }
+            
+            // Simple pagination
+            const limit = parseInt(params.limit) || 10;
+            const page = parseInt(params.page) || 1;
+            const start = (page - 1) * limit;
+            const end = start + limit;
+            
+            return {
+                success: true,
+                data: {
+                    projects: filteredProjects.slice(start, end),
+                    pagination: {
+                        totalItems: filteredProjects.length,
+                        totalPages: Math.ceil(filteredProjects.length / limit),
+                        currentPage: page,
+                        limit: limit
+                    }
+                }
+            };
+        } catch (error) {
+            console.error('Error getting projects:', error);
+            throw error;
+        }
     }
 
     async getProject(slug) {
-        return await this.get(`/projects/${slug}`);
+        try {
+            const { content } = await this.getFileContent('data/projects.json');
+            const projects = content?.projects || [];
+            const project = projects.find(p => p.seo?.slug === slug || p._id === slug);
+            
+            if (!project) {
+                throw new Error('Project not found');
+            }
+            
+            return {
+                success: true,
+                data: { project }
+            };
+        } catch (error) {
+            console.error('Error getting project:', error);
+            throw error;
+        }
     }
 
     async createProject(projectData) {
-        return await this.post('/projects', projectData);
+        try {
+            const { content, sha } = await this.getFileContent('data/projects.json');
+            const projects = content?.projects || [];
+            
+            // Generate new ID
+            const newProject = {
+                ...projectData,
+                _id: Date.now().toString(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            projects.push(newProject);
+            
+            await this.updateFileContent('data/projects.json', { projects }, `Add new project: ${projectData.title}`, sha);
+            
+            return {
+                success: true,
+                data: { project: newProject }
+            };
+        } catch (error) {
+            console.error('Error creating project:', error);
+            throw error;
+        }
     }
 
     async updateProject(slug, projectData) {
-        return await this.put(`/projects/${slug}`, projectData);
+        try {
+            const { content, sha } = await this.getFileContent('data/projects.json');
+            const projects = content?.projects || [];
+            const index = projects.findIndex(p => p.seo?.slug === slug || p._id === slug);
+            
+            if (index === -1) {
+                throw new Error('Project not found');
+            }
+            
+            projects[index] = {
+                ...projects[index],
+                ...projectData,
+                updatedAt: new Date().toISOString()
+            };
+            
+            await this.updateFileContent('data/projects.json', { projects }, `Update project: ${projectData.title || projects[index].title}`, sha);
+            
+            return {
+                success: true,
+                data: { project: projects[index] }
+            };
+        } catch (error) {
+            console.error('Error updating project:', error);
+            throw error;
+        }
     }
 
     async deleteProject(slug) {
-        return await this.delete(`/projects/${slug}`);
+        try {
+            const { content, sha } = await this.getFileContent('data/projects.json');
+            const projects = content?.projects || [];
+            const index = projects.findIndex(p => p.seo?.slug === slug || p._id === slug);
+            
+            if (index === -1) {
+                throw new Error('Project not found');
+            }
+            
+            const deletedProject = projects[index];
+            projects.splice(index, 1);
+            
+            await this.updateFileContent('data/projects.json', { projects }, `Delete project: ${deletedProject.title}`, sha);
+            
+            return {
+                success: true,
+                data: { message: 'Project deleted successfully' }
+            };
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            throw error;
+        }
     }
 
     async getFeaturedProjects(limit = 6) {
-        return await this.get('/projects/featured', { limit });
+        return await this.getProjects({ featured: true, limit });
     }
 
     async getProjectCategories() {
-        return await this.get('/projects/categories');
+        try {
+            const { content } = await this.getFileContent('data/projects.json');
+            const projects = content?.projects || [];
+            const categories = [...new Set(projects.map(p => p.category))];
+            return {
+                success: true,
+                data: { categories }
+            };
+        } catch (error) {
+            console.error('Error getting project categories:', error);
+            throw error;
+        }
     }
 
     async getProjectTechnologies() {
-        return await this.get('/projects/technologies');
+        try {
+            const { content } = await this.getFileContent('data/projects.json');
+            const projects = content?.projects || [];
+            const technologies = [...new Set(projects.flatMap(p => p.technologies || []))];
+            return {
+                success: true,
+                data: { technologies }
+            };
+        } catch (error) {
+            console.error('Error getting project technologies:', error);
+            throw error;
+        }
     }
 
-    // BLOG API METHODS
+    // BLOG API METHODS (GitHub-based)
     async getBlogPosts(params = {}) {
-        return await this.get('/blog', params);
+        try {
+            const { content } = await this.getFileContent('data/blog.json');
+            const posts = content?.posts || [];
+            
+            // Apply client-side filtering
+            let filteredPosts = posts;
+            
+            if (params.category) {
+                filteredPosts = posts.filter(p => p.category === params.category);
+            }
+            
+            if (params.featured) {
+                filteredPosts = posts.filter(p => p.featured);
+            }
+            
+            if (params.status) {
+                filteredPosts = posts.filter(p => p.status === params.status);
+            }
+            
+            // Simple pagination
+            const limit = parseInt(params.limit) || 10;
+            const page = parseInt(params.page) || 1;
+            const start = (page - 1) * limit;
+            const end = start + limit;
+            
+            return {
+                success: true,
+                data: {
+                    posts: filteredPosts.slice(start, end),
+                    pagination: {
+                        totalItems: filteredPosts.length,
+                        totalPages: Math.ceil(filteredPosts.length / limit),
+                        currentPage: page,
+                        limit: limit
+                    }
+                }
+            };
+        } catch (error) {
+            console.error('Error getting blog posts:', error);
+            throw error;
+        }
     }
 
     async getBlogPost(slug) {
-        return await this.get(`/blog/${slug}`);
+        try {
+            const { content } = await this.getFileContent('data/blog.json');
+            const posts = content?.posts || [];
+            const post = posts.find(p => p.seo?.slug === slug || p._id === slug);
+            
+            if (!post) {
+                throw new Error('Blog post not found');
+            }
+            
+            return {
+                success: true,
+                data: { post }
+            };
+        } catch (error) {
+            console.error('Error getting blog post:', error);
+            throw error;
+        }
     }
 
     async createBlogPost(postData) {
-        return await this.post('/blog', postData);
+        try {
+            const { content, sha } = await this.getFileContent('data/blog.json');
+            const posts = content?.posts || [];
+            
+            // Generate new ID
+            const newPost = {
+                ...postData,
+                _id: Date.now().toString(),
+                publishedAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            posts.push(newPost);
+            
+            await this.updateFileContent('data/blog.json', { posts }, `Add new blog post: ${postData.title}`, sha);
+            
+            return {
+                success: true,
+                data: { post: newPost }
+            };
+        } catch (error) {
+            console.error('Error creating blog post:', error);
+            throw error;
+        }
     }
 
     async updateBlogPost(slug, postData) {
-        return await this.put(`/blog/${slug}`, postData);
+        try {
+            const { content, sha } = await this.getFileContent('data/blog.json');
+            const posts = content?.posts || [];
+            const index = posts.findIndex(p => p.seo?.slug === slug || p._id === slug);
+            
+            if (index === -1) {
+                throw new Error('Blog post not found');
+            }
+            
+            posts[index] = {
+                ...posts[index],
+                ...postData,
+                updatedAt: new Date().toISOString()
+            };
+            
+            await this.updateFileContent('data/blog.json', { posts }, `Update blog post: ${postData.title || posts[index].title}`, sha);
+            
+            return {
+                success: true,
+                data: { post: posts[index] }
+            };
+        } catch (error) {
+            console.error('Error updating blog post:', error);
+            throw error;
+        }
     }
 
     async deleteBlogPost(slug) {
-        return await this.delete(`/blog/${slug}`);
+        try {
+            const { content, sha } = await this.getFileContent('data/blog.json');
+            const posts = content?.posts || [];
+            const index = posts.findIndex(p => p.seo?.slug === slug || p._id === slug);
+            
+            if (index === -1) {
+                throw new Error('Blog post not found');
+            }
+            
+            const deletedPost = posts[index];
+            posts.splice(index, 1);
+            
+            await this.updateFileContent('data/blog.json', { posts }, `Delete blog post: ${deletedPost.title}`, sha);
+            
+            return {
+                success: true,
+                data: { message: 'Blog post deleted successfully' }
+            };
+        } catch (error) {
+            console.error('Error deleting blog post:', error);
+            throw error;
+        }
     }
 
     async getFeaturedPosts(limit = 3) {
@@ -199,25 +453,149 @@ class API {
         return await this.get('/blog/tags');
     }
 
-    // YOUTUBE API METHODS
+    // YOUTUBE API METHODS (GitHub-based)
     async getYouTubeVideos(params = {}) {
-        return await this.get('/youtube', params);
+        try {
+            const { content } = await this.getFileContent('data/youtube.json');
+            const videos = content?.videos || [];
+            
+            // Apply client-side filtering
+            let filteredVideos = videos;
+            
+            if (params.category) {
+                filteredVideos = videos.filter(v => v.category === params.category);
+            }
+            
+            if (params.featured) {
+                filteredVideos = videos.filter(v => v.featured);
+            }
+            
+            if (params.isActive !== undefined) {
+                filteredVideos = videos.filter(v => v.isActive === params.isActive);
+            }
+            
+            // Simple pagination
+            const limit = parseInt(params.limit) || 10;
+            const page = parseInt(params.page) || 1;
+            const start = (page - 1) * limit;
+            const end = start + limit;
+            
+            return {
+                success: true,
+                data: {
+                    videos: filteredVideos.slice(start, end),
+                    pagination: {
+                        totalItems: filteredVideos.length,
+                        totalPages: Math.ceil(filteredVideos.length / limit),
+                        currentPage: page,
+                        limit: limit
+                    }
+                }
+            };
+        } catch (error) {
+            console.error('Error getting YouTube videos:', error);
+            throw error;
+        }
     }
 
     async getYouTubeVideo(id) {
-        return await this.get(`/youtube/${id}`);
+        try {
+            const { content } = await this.getFileContent('data/youtube.json');
+            const videos = content?.videos || [];
+            const video = videos.find(v => v._id === id || v.videoId === id);
+            
+            if (!video) {
+                throw new Error('YouTube video not found');
+            }
+            
+            return {
+                success: true,
+                data: { video }
+            };
+        } catch (error) {
+            console.error('Error getting YouTube video:', error);
+            throw error;
+        }
     }
 
     async createYouTubeVideo(videoData) {
-        return await this.post('/youtube', videoData);
+        try {
+            const { content, sha } = await this.getFileContent('data/youtube.json');
+            const videos = content?.videos || [];
+            
+            // Generate new ID
+            const newVideo = {
+                ...videoData,
+                _id: Date.now().toString(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            videos.push(newVideo);
+            
+            await this.updateFileContent('data/youtube.json', { videos }, `Add new YouTube video: ${videoData.title}`, sha);
+            
+            return {
+                success: true,
+                data: { video: newVideo }
+            };
+        } catch (error) {
+            console.error('Error creating YouTube video:', error);
+            throw error;
+        }
     }
 
     async updateYouTubeVideo(id, videoData) {
-        return await this.put(`/youtube/${id}`, videoData);
+        try {
+            const { content, sha } = await this.getFileContent('data/youtube.json');
+            const videos = content?.videos || [];
+            const index = videos.findIndex(v => v._id === id || v.videoId === id);
+            
+            if (index === -1) {
+                throw new Error('YouTube video not found');
+            }
+            
+            videos[index] = {
+                ...videos[index],
+                ...videoData,
+                updatedAt: new Date().toISOString()
+            };
+            
+            await this.updateFileContent('data/youtube.json', { videos }, `Update YouTube video: ${videoData.title || videos[index].title}`, sha);
+            
+            return {
+                success: true,
+                data: { video: videos[index] }
+            };
+        } catch (error) {
+            console.error('Error updating YouTube video:', error);
+            throw error;
+        }
     }
 
     async deleteYouTubeVideo(id) {
-        return await this.delete(`/youtube/${id}`);
+        try {
+            const { content, sha } = await this.getFileContent('data/youtube.json');
+            const videos = content?.videos || [];
+            const index = videos.findIndex(v => v._id === id || v.videoId === id);
+            
+            if (index === -1) {
+                throw new Error('YouTube video not found');
+            }
+            
+            const deletedVideo = videos[index];
+            videos.splice(index, 1);
+            
+            await this.updateFileContent('data/youtube.json', { videos }, `Delete YouTube video: ${deletedVideo.title}`, sha);
+            
+            return {
+                success: true,
+                data: { message: 'YouTube video deleted successfully' }
+            };
+        } catch (error) {
+            console.error('Error deleting YouTube video:', error);
+            throw error;
+        }
     }
 
     // CONTACT API METHODS
@@ -244,9 +622,12 @@ class API {
         return await this.upload('/upload/multiple', formData);
     }
 
-    // IMAGE MANAGEMENT API METHODS
+    // IMAGE MANAGEMENT API METHODS (GitHub-based)
     async uploadImages(formData) {
-        return await this.upload('/images/upload', formData);
+        // For GitHub-based system, we'll handle image uploads differently
+        // Images can be uploaded to GitHub or use external services like Cloudinary
+        console.warn('Image upload needs to be implemented for GitHub-based system');
+        throw new Error('Image upload not yet implemented for GitHub-based system. Use external image hosting or upload manually to GitHub.');
     }
 
     async getImages(params = {}) {
@@ -310,8 +691,17 @@ class API {
     // UTILITY METHODS
     async testConnection() {
         try {
-            const response = await this.get('/health');
-            return { success: true, data: response };
+            // Test GitHub API connection
+            const response = await this.githubRequest(`/repos/${this.githubRepo}`);
+            return { 
+                success: true, 
+                data: {
+                    repo: response.name,
+                    owner: response.owner.login,
+                    private: response.private,
+                    message: `Connected to ${response.full_name}`
+                }
+            };
         } catch (error) {
             return { success: false, error: error.message };
         }
@@ -396,13 +786,33 @@ class API {
     }
 
     // Settings methods
+    setGitHubToken(token) {
+        this.githubToken = token;
+        localStorage.setItem('github_token', token);
+    }
+
+    getGitHubToken() {
+        return this.githubToken;
+    }
+
+    setGitHubRepo(repo) {
+        this.githubRepo = repo;
+        localStorage.setItem('github_repo', repo);
+    }
+
+    getGitHubRepo() {
+        return this.githubRepo;
+    }
+
+    // Legacy methods for compatibility
     setBaseURL(url) {
-        this.baseURL = url.replace(/\/$/, ''); // Remove trailing slash
-        localStorage.setItem('api_url', this.baseURL);
+        // For GitHub-based system, this could set the repo
+        console.warn('setBaseURL is deprecated. Use setGitHubRepo instead.');
     }
 
     getBaseURL() {
-        return this.baseURL;
+        // Return the data URL for compatibility
+        return '/data';
     }
 
     // Statistics methods

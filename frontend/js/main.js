@@ -9,10 +9,10 @@
 // ==============================================
 const CONFIG = {
   // Version for cache busting
-  VERSION: '1.0.1-blog-fix',
+  VERSION: '2.0.0-github-data',
   
-  // API endpoints - connected to Railway backend
-  API_BASE_URL: 'https://badgip-website-production.up.railway.app/api',
+  // Data endpoints - GitHub-hosted JSON files
+  DATA_BASE_URL: '/data',
   
   // Animation settings
   SCROLL_OFFSET: 100,
@@ -437,7 +437,7 @@ class ContactForm {
     
     // Actual implementation would be:
     /*
-    const response = await fetch(`${CONFIG.API_BASE_URL}/contact`, {
+    const response = await fetch('https://formspree.io/f/YOUR_FORM_ID', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -611,7 +611,7 @@ class ContentManager {
   
   async fetchProjects(page = 1) {
     try {
-      const url = `${CONFIG.API_BASE_URL}/projects?page=${page}&limit=${this.projectsPerPage}`;
+      const url = `${CONFIG.DATA_BASE_URL}/projects.json`;
       console.log('🌐 Fetching from URL:', url);
       
       const response = await fetch(url);
@@ -622,11 +622,16 @@ class ContentManager {
       }
       
       const data = await response.json();
-      console.log('📦 API Response:', data);
+      console.log('📦 JSON Response:', data);
       
-      if (data.success && data.data && data.data.projects) {
-        console.log('✅ Successfully parsed projects:', data.data.projects.length);
-        return data.data.projects;
+      if (data && data.projects) {
+        // Implement client-side pagination
+        const startIndex = (page - 1) * this.projectsPerPage;
+        const endIndex = startIndex + this.projectsPerPage;
+        const paginatedProjects = data.projects.slice(startIndex, endIndex);
+        
+        console.log('✅ Successfully parsed projects:', paginatedProjects.length);
+        return paginatedProjects;
       } else {
         console.log('⚠️ API response structure unexpected:', data);
         return [];
@@ -787,17 +792,17 @@ class ContentManager {
   async loadBlogPosts() {
     try {
       console.log('🔄 BLOG DEBUG: Starting loadBlogPosts function');
-      console.log('🔄 BLOG DEBUG: API URL:', `${CONFIG.API_BASE_URL}/blog?limit=3`);
+      console.log('🔄 BLOG DEBUG: Data URL:', `${CONFIG.DATA_BASE_URL}/blog.json`);
       console.log('🔄 BLOG DEBUG: blogContainer element:', this.blogContainer);
       
-      const response = await fetch(`${CONFIG.API_BASE_URL}/blog?limit=3`);
+      const response = await fetch(`${CONFIG.DATA_BASE_URL}/blog.json`);
       console.log('🔄 BLOG DEBUG: Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🔄 BLOG DEBUG: Raw API response:', data);
+        console.log('🔄 BLOG DEBUG: Raw JSON response:', data);
         
-        const posts = data.success ? data.data.posts : [];
+        const posts = data.posts ? data.posts.slice(0, 3) : [];
         console.log('📝 BLOG DEBUG: Processed posts:', posts);
         console.log('📝 BLOG DEBUG: Posts length:', posts.length);
         
@@ -825,11 +830,11 @@ class ContentManager {
 
   async loadYouTubeVideos() {
     try {
-      console.log('🎥 Fetching YouTube videos from API...');
-      const response = await fetch(`${CONFIG.API_BASE_URL}/youtube?limit=3&featured=true`);
+      console.log('🎥 Fetching YouTube videos from JSON...');
+      const response = await fetch(`${CONFIG.DATA_BASE_URL}/youtube.json`);
       if (response.ok) {
         const data = await response.json();
-        const videos = data.success ? data.data.videos : [];
+        const videos = data.videos ? data.videos.filter(v => v.featured).slice(0, 3) : [];
         console.log('🎥 Received YouTube videos:', videos.length);
         
         if (videos.length > 0) {
