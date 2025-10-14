@@ -6,20 +6,15 @@
 // Simple projects management without complex classes
 window.projectsData = [];
 
-// Load projects data from JSON
+// Load projects data from GitHub API
 async function loadProjectsData() {
     try {
-        console.log('Loading projects from JSON...');
-        const response = await fetch('/data/projects.json');
-        if (response.ok) {
-            const data = await response.json();
-            window.projectsData = data.projects || [];
-            console.log('Loaded projects:', window.projectsData.length);
-            displayProjects();
-            return true;
-        } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+        console.log('Loading projects from GitHub API...');
+        const response = await window.api.getProjects({ limit: 50 });
+        window.projectsData = response.data?.projects || [];
+        console.log('Loaded projects:', window.projectsData.length);
+        displayProjects();
+        return true;
     } catch (error) {
         console.error('Error loading projects:', error);
         document.getElementById('projectsList').innerHTML = `
