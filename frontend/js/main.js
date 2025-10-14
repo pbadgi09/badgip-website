@@ -1061,33 +1061,55 @@ class SettingsManager {
       console.error('Error loading settings:', error);
       // Use default settings if loading fails
       this.settings = this.getDefaultSettings();
+      console.log('Applying default settings due to loading error');
       this.applySettings();
-      throw error;
+      // Don't throw error - let app continue with defaults
+      return this.settings;
     }
   }
 
   applySettings() {
-    if (!this.settings) return;
+    if (!this.settings) {
+      console.warn('No settings available to apply');
+      return;
+    }
+    
+    console.log('🎨 Applying settings...', this.settings);
     
     // Apply colors to CSS variables
+    console.log('⚡ Applying colors...');
     this.applyColors();
     
     // Apply meta information
+    console.log('📄 Applying meta tags...');
     this.applyMeta();
     
     // Apply dynamic content
+    console.log('📝 Applying content...');
     this.applyContent();
+    
+    console.log('✅ Settings application completed');
   }
 
   applyColors() {
     const colors = this.settings.colors;
+    if (!colors) {
+      console.warn('No colors in settings');
+      return;
+    }
+    
     const root = document.documentElement;
+    console.log('🎨 Color settings:', colors);
     
     // Apply color variables
     Object.keys(colors).forEach(colorKey => {
       const cssVarName = this.colorKeyToCSSVar(colorKey);
-      root.style.setProperty(cssVarName, colors[colorKey]);
+      const colorValue = colors[colorKey];
+      console.log(`Setting ${cssVarName} = ${colorValue}`);
+      root.style.setProperty(cssVarName, colorValue);
     });
+    
+    console.log('✅ Colors applied successfully');
   }
 
   colorKeyToCSSVar(key) {
@@ -1136,16 +1158,26 @@ class SettingsManager {
 
   applyHeroContent() {
     const hero = this.settings.hero;
+    if (!hero) {
+      console.warn('No hero settings found');
+      return;
+    }
+    
+    console.log('🦸 Hero settings:', hero);
     
     // Update hero text elements
+    console.log('Updating hero text elements...');
     this.updateTextContent('.greeting', hero.greeting);
     this.updateTextContent('.name', hero.name);
     this.updateTextContent('.hero-subtitle', hero.subtitle);
     this.updateTextContent('.hero-description', hero.description);
     
-    // Update hero buttons
-    this.updateButtonContent('.btn.btn-primary', hero.primaryButton.text, hero.primaryButton.link);
-    this.updateButtonContent('.btn.btn-secondary', hero.secondaryButton.text, hero.secondaryButton.link);
+    // Update hero buttons with more specific selectors
+    console.log('Updating hero buttons...');
+    this.updateButtonContent('.hero-buttons .btn.btn-primary', hero.primaryButton?.text, hero.primaryButton?.link);
+    this.updateButtonContent('.hero-buttons .btn.btn-secondary', hero.secondaryButton?.text, hero.secondaryButton?.link);
+    
+    console.log('✅ Hero content applied');
   }
 
   applyNavigationContent() {
@@ -1263,17 +1295,39 @@ class SettingsManager {
   }
 
   updateTextContent(selector, text) {
+    console.log(`🎯 Updating "${selector}" with text: "${text}"`);
     const element = document.querySelector(selector);
-    if (element && text) {
-      element.textContent = text;
+    if (!element) {
+      console.warn(`❌ Element not found: ${selector}`);
+      return;
     }
+    if (!text) {
+      console.warn(`❌ No text provided for: ${selector}`);
+      return;
+    }
+    
+    const oldText = element.textContent;
+    element.textContent = text;
+    console.log(`✅ Updated "${selector}": "${oldText}" → "${text}"`);
   }
 
   updateButtonContent(selector, text, href) {
+    console.log(`🔘 Updating button "${selector}" with text: "${text}", href: "${href}"`);
     const button = document.querySelector(selector);
-    if (button) {
-      if (text) button.textContent = text;
-      if (href) button.setAttribute('href', href);
+    if (!button) {
+      console.warn(`❌ Button not found: ${selector}`);
+      return;
+    }
+    
+    if (text) {
+      const oldText = button.textContent;
+      button.textContent = text;
+      console.log(`✅ Button text updated: "${oldText}" → "${text}"`);
+    }
+    if (href) {
+      const oldHref = button.getAttribute('href');
+      button.setAttribute('href', href);
+      console.log(`✅ Button href updated: "${oldHref}" → "${href}"`);
     }
   }
 
