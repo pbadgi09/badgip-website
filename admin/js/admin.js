@@ -247,7 +247,7 @@ class AdminDashboard {
         const darkMode = localStorage.getItem('dark_mode') === 'true';
         const autoSave = localStorage.getItem('auto_save') !== 'false'; // Default true
         const githubToken = localStorage.getItem('github_token') || '';
-        const githubRepo = localStorage.getItem('github_repo') || 'pranavbadgi/Pranav-s-Website';
+        const githubRepo = localStorage.getItem('github_repo') || 'pbadgi09/badgip-website';
 
         const darkModeToggle = document.getElementById('darkMode');
         const autoSaveToggle = document.getElementById('autoSave');

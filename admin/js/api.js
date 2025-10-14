@@ -5,7 +5,7 @@
 
 class API {
     constructor() {
-        this.githubRepo = 'pranavbadgi/Pranav-s-Website'; // Replace with your GitHub repo
+        this.githubRepo = 'pbadgi09/badgip-website'; // Replace with your GitHub repo
         this.githubToken = localStorage.getItem('github_token') || '';
         this.githubBaseURL = 'https://api.github.com';
         this.timeout = 30000; // 30 seconds
