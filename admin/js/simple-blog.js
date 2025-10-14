@@ -73,7 +73,7 @@ function displayBlogPosts() {
                 <button class="btn btn-sm btn-primary" onclick="editBlogPost('${post._id}')">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteBlogPost('${post._id}', '${post.title}')">
+                <button class="btn btn-sm btn-danger" data-post-id="${post._id}" data-post-title="${post.title}" onclick="deleteBlogPostSafe(this)">
                     <i class="fas fa-trash"></i> Delete
                 </button>
             </div>
@@ -174,6 +174,12 @@ async function editBlogPost(postId) {
         console.error('Error updating blog post:', error);
         alert(`Error updating blog post: ${error.message}`);
     }
+}
+
+function deleteBlogPostSafe(button) {
+    const postId = button.dataset.postId;
+    const postTitle = button.dataset.postTitle;
+    deleteBlogPost(postId, postTitle);
 }
 
 async function deleteBlogPost(postId, postTitle) {
