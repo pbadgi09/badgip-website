@@ -323,12 +323,7 @@ class YouTubeManager {
         // Tags functionality
         this.setupTagInput(tagInput);
 
-        // Auto-save setup
-        if (window.adminDashboard) {
-            window.adminDashboard.setupAutoSave(form, (type) => {
-                console.log('Auto-saving YouTube video draft...');
-            });
-        }
+        // Auto-save removed for simplicity
     }
 
     setupTagInput(input) {

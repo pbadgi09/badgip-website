@@ -306,13 +306,7 @@ class ProjectsManager {
             imagesInput.addEventListener('change', (e) => this.handleImageUpload(e));
         }
 
-        // Auto-save setup
-        if (window.adminDashboard) {
-            window.adminDashboard.setupAutoSave(form, (type) => {
-                // Save draft logic here
-                console.log('Auto-saving project draft...');
-            });
-        }
+        // Auto-save removed for simplicity
     }
 
     setupTechnologyInput(input) {

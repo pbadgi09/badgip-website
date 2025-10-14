@@ -353,12 +353,7 @@ class BlogManager {
         // Listen for image selection events
         window.addEventListener('imagesSelected', (e) => this.handleImageSelection(e.detail.images));
 
-        // Auto-save setup
-        if (window.adminDashboard) {
-            window.adminDashboard.setupAutoSave(form, (type) => {
-                this.handleBlogSubmit(null, 'draft', true); // Silent auto-save
-            });
-        }
+        // Auto-save removed for simplicity
 
         // Live character count for excerpt
         const excerptInput = document.getElementById('blogExcerpt');
