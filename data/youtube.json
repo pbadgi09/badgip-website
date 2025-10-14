@@ -1,3 +1,21 @@
 {
-  "videos": []
+  "videos": [
+    {
+      "videoId": "k3-SdXglLAQ",
+      "title": "Our best game of foot tennis yet?",
+      "description": "",
+      "url": "https://www.youtube.com/watch?v=k3-SdXglLAQ",
+      "embedUrl": "https://www.youtube.com/embed/k3-SdXglLAQ",
+      "thumbnail": "https://img.youtube.com/vi/k3-SdXglLAQ/maxresdefault.jpg",
+      "thumbnailMedium": "https://img.youtube.com/vi/k3-SdXglLAQ/hqdefault.jpg",
+      "author": "Pranav Badgi",
+      "category": "other",
+      "tags": [],
+      "featured": true,
+      "isActive": true,
+      "_id": "1760410457992",
+      "createdAt": "2025-10-14T02:54:17.992Z",
+      "updatedAt": "2025-10-14T02:54:17.992Z"
+    }
+  ]
 }
