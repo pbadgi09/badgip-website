@@ -1,38 +1,6 @@
 {
   "projects": [
     {
-      "links": {
-        "live": "",
-        "github": "",
-        "demo": ""
-      },
-      "metrics": {
-        "views": 0,
-        "likes": 0,
-        "stars": 0
-      },
-      "seo": {
-        "slug": "test-project",
-        "keywords": []
-      },
-      "_id": "68ec633b513c772eec42632a",
-      "title": "Test Project",
-      "description": "Testing Pranav's First project",
-      "longDescription": "",
-      "technologies": [
-        "Swift"
-      ],
-      "category": "mobile",
-      "status": "completed",
-      "featured": true,
-      "visibility": "public",
-      "images": [],
-      "createdAt": "2025-10-13T02:26:03.727Z",
-      "updatedAt": "2025-10-13T02:26:03.727Z",
-      "primaryImage": null,
-      "id": "68ec633b513c772eec42632a"
-    },
-    {
       "metrics": {
         "views": 0,
         "likes": 0,
