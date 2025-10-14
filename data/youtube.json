@@ -1,30 +1,21 @@
 {
   "videos": [
     {
-      "metrics": {
-        "views": 0,
-        "likes": 0,
-        "clicks": 0
-      },
-      "_id": "68ec69188f11e12a299e4200",
-      "videoId": "ZFzv7uGAAWM",
-      "title": "HOT ONES challenge | Part 🌶️🌶️",
+      "videoId": "k3-SdXglLAQ",
+      "title": "Our best game of foot tennis yet?",
       "description": "",
-      "url": "https://www.youtube.com/watch?v=ZFzv7uGAAWM&t=197s",
-      "embedUrl": "https://www.youtube.com/embed/ZFzv7uGAAWM",
-      "thumbnail": "https://img.youtube.com/vi/ZFzv7uGAAWM/maxresdefault.jpg",
-      "thumbnailMedium": "https://img.youtube.com/vi/ZFzv7uGAAWM/hqdefault.jpg",
+      "url": "https://www.youtube.com/watch?v=k3-SdXglLAQ",
+      "embedUrl": "https://www.youtube.com/embed/k3-SdXglLAQ",
+      "thumbnail": "https://img.youtube.com/vi/k3-SdXglLAQ/maxresdefault.jpg",
+      "thumbnailMedium": "https://img.youtube.com/vi/k3-SdXglLAQ/hqdefault.jpg",
       "author": "Pranav Badgi",
       "category": "other",
       "tags": [],
       "featured": true,
       "isActive": true,
-      "publishedAt": "2025-10-13T02:51:04.926Z",
-      "createdAt": "2025-10-13T02:51:04.928Z",
-      "updatedAt": "2025-10-13T02:51:04.928Z",
-      "formattedViews": "0",
-      "embedHtml": "<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/ZFzv7uGAAWM\" frameborder=\"0\" allowfullscreen></iframe>",
-      "id": "68ec69188f11e12a299e4200"
+      "_id": "1760410457992",
+      "createdAt": "2025-10-14T02:54:17.992Z",
+      "updatedAt": "2025-10-14T02:54:17.992Z"
     }
   ]
 }

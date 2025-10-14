@@ -1,36 +1,3 @@
 {
-  "projects": [
-    {
-      "metrics": {
-        "views": 0,
-        "likes": 0,
-        "stars": 0
-      },
-      "seo": {
-        "slug": "test-project-123",
-        "keywords": []
-      },
-      "_id": "68ec61afd5b9f8bed178798a",
-      "title": "Test Project 2",
-      "description": "New description for my test project",
-      "technologies": [
-        "Swift"
-      ],
-      "category": "Mobile",
-      "status": "completed",
-      "featured": true,
-      "visibility": "public",
-      "images": [],
-      "createdAt": "2025-10-13T02:19:27.690Z",
-      "updatedAt": "2025-10-14T02:42:35.583Z",
-      "primaryImage": null,
-      "id": "68ec61afd5b9f8bed178798a",
-      "longDescription": "Welcome Welcome",
-      "links": {
-        "live": "",
-        "github": "",
-        "demo": ""
-      }
-    }
-  ]
+  "projects": []
 }
