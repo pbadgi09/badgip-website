@@ -1390,16 +1390,17 @@ class Portfolio {
   
   async initializeComponents() {
     try {
-      // Load settings first
-      this.components.settingsManager = new SettingsManager();
-      await this.components.settingsManager.loadSettings();
-      
-      // Initialize core components
+      // Initialize core components first
       this.components.navigation = new Navigation();
       this.components.scrollAnimations = new ScrollAnimations();
       this.components.contactForm = new ContactForm();
       this.components.contentManager = new ContentManager();
       this.components.performanceMonitor = new PerformanceMonitor();
+      
+      // Load and apply settings LAST to override any hardcoded content
+      console.log('🔄 All components loaded, now applying settings...');
+      this.components.settingsManager = new SettingsManager();
+      await this.components.settingsManager.loadSettings();
       
       // Setup global event listeners
       this.setupGlobalEvents();
