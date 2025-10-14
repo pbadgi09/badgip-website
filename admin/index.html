@@ -76,6 +76,11 @@
                     </a>
                 </li>
                 <li>
+                    <a href="#website-settings" class="nav-link" data-tab="website-settings">
+                        <i class="fas fa-palette"></i> Website Settings
+                    </a>
+                </li>
+                <li>
                     <a href="#settings" class="nav-link" data-tab="settings">
                         <i class="fas fa-cog"></i> Settings
                     </a>
@@ -303,6 +308,63 @@
                 </div>
             </section>
 
+            <!-- Website Settings Tab -->
+            <section id="website-settings-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>Website Settings</h2>
+                    <p>Customize your website content, colors, and configurations</p>
+                </div>
+                
+                <div class="content-body">
+                    <!-- Settings Navigation Tabs -->
+                    <div class="settings-nav">
+                        <button class="settings-nav-btn active" data-settings-tab="site">
+                            <i class="fas fa-globe"></i> Site Info
+                        </button>
+                        <button class="settings-nav-btn" data-settings-tab="hero">
+                            <i class="fas fa-star"></i> Hero Section
+                        </button>
+                        <button class="settings-nav-btn" data-settings-tab="navigation">
+                            <i class="fas fa-bars"></i> Navigation
+                        </button>
+                        <button class="settings-nav-btn" data-settings-tab="social">
+                            <i class="fas fa-share-alt"></i> Social Media
+                        </button>
+                        <button class="settings-nav-btn" data-settings-tab="contact">
+                            <i class="fas fa-envelope"></i> Contact Info
+                        </button>
+                        <button class="settings-nav-btn" data-settings-tab="footer">
+                            <i class="fas fa-copyright"></i> Footer
+                        </button>
+                        <button class="settings-nav-btn" data-settings-tab="colors">
+                            <i class="fas fa-palette"></i> Colors
+                        </button>
+                    </div>
+
+                    <!-- Settings Content -->
+                    <div class="settings-content">
+                        <div id="websiteSettingsList" class="content-list">
+                            <div class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin"></i> Loading website settings...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Settings Actions -->
+                    <div class="settings-actions">
+                        <button id="saveAllSettings" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save All Settings
+                        </button>
+                        <button id="previewSettings" class="btn btn-outline">
+                            <i class="fas fa-eye"></i> Preview Changes
+                        </button>
+                        <button id="resetSettings" class="btn btn-danger">
+                            <i class="fas fa-undo"></i> Reset to Defaults
+                        </button>
+                    </div>
+                </div>
+            </section>
+
             <!-- Settings Tab -->
             <section id="settings-tab" class="tab-content">
                 <div class="content-header">
@@ -360,5 +422,6 @@
     <script src="js/simple-blog.js"></script>
     <script src="js/simple-youtube.js"></script>
     <script src="js/simple-images.js"></script>
+    <script src="js/simple-settings.js"></script>
 </body>
 </html>

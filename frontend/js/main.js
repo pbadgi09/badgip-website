@@ -1033,6 +1033,288 @@ class PerformanceMonitor {
 }
 
 // ==============================================
+// Settings Management
+// ==============================================
+class SettingsManager {
+  constructor() {
+    this.settings = null;
+    this.isLoaded = false;
+  }
+
+  async loadSettings() {
+    try {
+      console.log('Loading website settings...');
+      const response = await fetch(`${CONFIG.DATA_BASE_URL}/settings.json`);
+      if (!response.ok) {
+        throw new Error(`Failed to load settings: ${response.status}`);
+      }
+      
+      this.settings = await response.json();
+      this.isLoaded = true;
+      console.log('Settings loaded successfully', this.settings);
+      
+      // Apply settings immediately
+      this.applySettings();
+      
+      return this.settings;
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      // Use default settings if loading fails
+      this.settings = this.getDefaultSettings();
+      this.applySettings();
+      throw error;
+    }
+  }
+
+  applySettings() {
+    if (!this.settings) return;
+    
+    // Apply colors to CSS variables
+    this.applyColors();
+    
+    // Apply meta information
+    this.applyMeta();
+    
+    // Apply dynamic content
+    this.applyContent();
+  }
+
+  applyColors() {
+    const colors = this.settings.colors;
+    const root = document.documentElement;
+    
+    // Apply color variables
+    Object.keys(colors).forEach(colorKey => {
+      const cssVarName = this.colorKeyToCSSVar(colorKey);
+      root.style.setProperty(cssVarName, colors[colorKey]);
+    });
+  }
+
+  colorKeyToCSSVar(key) {
+    // Convert camelCase to kebab-case with -- prefix
+    return '--' + key.replace(/([A-Z])/g, '-$1').toLowerCase();
+  }
+
+  applyMeta() {
+    const site = this.settings.site;
+    
+    // Update page title
+    document.title = site.title;
+    
+    // Update meta tags
+    this.updateMetaTag('description', site.description);
+    this.updateMetaTag('keywords', site.keywords);
+    this.updateMetaTag('author', site.author);
+  }
+
+  updateMetaTag(name, content) {
+    let meta = document.querySelector(`meta[name="${name}"]`);
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', name);
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', content);
+  }
+
+  applyContent() {
+    // Apply hero section content
+    this.applyHeroContent();
+    
+    // Apply navigation content
+    this.applyNavigationContent();
+    
+    // Apply contact content
+    this.applyContactContent();
+    
+    // Apply footer content
+    this.applyFooterContent();
+    
+    // Apply social links
+    this.applySocialLinks();
+  }
+
+  applyHeroContent() {
+    const hero = this.settings.hero;
+    
+    // Update hero text elements
+    this.updateTextContent('.greeting', hero.greeting);
+    this.updateTextContent('.name', hero.name);
+    this.updateTextContent('.hero-subtitle', hero.subtitle);
+    this.updateTextContent('.hero-description', hero.description);
+    
+    // Update hero buttons
+    this.updateButtonContent('.btn.btn-primary', hero.primaryButton.text, hero.primaryButton.link);
+    this.updateButtonContent('.btn.btn-secondary', hero.secondaryButton.text, hero.secondaryButton.link);
+  }
+
+  applyNavigationContent() {
+    const nav = this.settings.navigation;
+    
+    // Update logo
+    this.updateTextContent('.logo-text', nav.logo);
+    
+    // Update navigation items
+    const navMenu = document.querySelector('.nav-menu');
+    if (navMenu && nav.items) {
+      // Clear existing items
+      navMenu.innerHTML = '';
+      
+      // Add new items from settings
+      nav.items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'nav-item';
+        li.innerHTML = `<a href="${item.link}" class="nav-link" data-section="${item.section}">${item.text}</a>`;
+        navMenu.appendChild(li);
+      });
+    }
+  }
+
+  applyContactContent() {
+    const contact = this.settings.contact;
+    
+    // Update contact section
+    this.updateTextContent('#contact .section-title', contact.title);
+    this.updateTextContent('#contact .section-subtitle', contact.subtitle);
+    
+    // Update contact details
+    this.updateContactItem('Email', contact.email.label, contact.email.value);
+    this.updateContactItem('Location', contact.location.label, contact.location.value);  
+    this.updateContactItem('Phone', contact.phone.label, contact.phone.value);
+  }
+
+  updateContactItem(type, label, value) {
+    const items = document.querySelectorAll('.contact-details');
+    items.forEach(item => {
+      const heading = item.querySelector('h3');
+      if (heading && heading.textContent === type) {
+        heading.textContent = label;
+        const p = item.querySelector('p');
+        if (p) p.textContent = value;
+      }
+    });
+  }
+
+  applyFooterContent() {
+    const footer = this.settings.footer;
+    
+    // Update footer description
+    this.updateTextContent('.footer-description', footer.description);
+    
+    // Update copyright
+    this.updateTextContent('.footer-bottom p', footer.copyright);
+    
+    // Update quick links
+    const quickLinksContainer = document.querySelector('.footer-links ul');
+    if (quickLinksContainer && footer.quickLinks) {
+      quickLinksContainer.innerHTML = '';
+      footer.quickLinks.forEach(link => {
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="${link.link}">${link.text}</a>`;
+        quickLinksContainer.appendChild(li);
+      });
+    }
+  }
+
+  applySocialLinks() {
+    const social = this.settings.social;
+    
+    // Update hero social links
+    this.updateSocialLinksSection('.social-links', social);
+    
+    // Update footer social links  
+    this.updateFooterSocialLinks('.footer-social', social);
+  }
+
+  updateSocialLinksSection(selector, socialData) {
+    const container = document.querySelector(selector);
+    if (!container) return;
+    
+    // Update existing social links
+    Object.keys(socialData).forEach(platform => {
+      const data = socialData[platform];
+      if (data.enabled) {
+        const link = container.querySelector(`[aria-label="${data.label}"]`);
+        if (link) {
+          link.href = data.url;
+        }
+      }
+    });
+  }
+
+  updateFooterSocialLinks(selector, socialData) {
+    const container = document.querySelector(selector);
+    if (!container) return;
+    
+    // Clear and rebuild footer social links
+    container.innerHTML = '';
+    
+    Object.keys(socialData).forEach(platform => {
+      const data = socialData[platform];
+      if (data.enabled) {
+        const link = document.createElement('a');
+        link.href = data.url;
+        link.className = 'footer-social-link';
+        link.setAttribute('aria-label', data.label);
+        link.textContent = data.label;
+        container.appendChild(link);
+      }
+    });
+  }
+
+  updateTextContent(selector, text) {
+    const element = document.querySelector(selector);
+    if (element && text) {
+      element.textContent = text;
+    }
+  }
+
+  updateButtonContent(selector, text, href) {
+    const button = document.querySelector(selector);
+    if (button) {
+      if (text) button.textContent = text;
+      if (href) button.setAttribute('href', href);
+    }
+  }
+
+  getDefaultSettings() {
+    // Fallback settings in case loading fails
+    return {
+      site: {
+        title: "Portfolio Website",
+        description: "A modern portfolio website",
+        author: "Website Owner"
+      },
+      colors: {
+        primary: "#6366f1",
+        primaryLight: "#818cf8",
+        primaryDark: "#4f46e5",
+        secondary: "#f59e0b",
+        accent: "#06b6d4",
+        background: "#111827",
+        surface: "#1f2937",
+        textPrimary: "#ffffff",
+        textSecondary: "rgba(255, 255, 255, 0.8)"
+      },
+      hero: {
+        greeting: "Hello, I'm",
+        name: "Your Name",
+        subtitle: "Web Developer",
+        description: "Building modern web applications."
+      }
+    };
+  }
+
+  getSettings() {
+    return this.settings;
+  }
+
+  isSettingsLoaded() {
+    return this.isLoaded;
+  }
+}
+
+// ==============================================
 // Application Initialization
 // ==============================================
 class Portfolio {
@@ -1052,8 +1334,12 @@ class Portfolio {
     }
   }
   
-  initializeComponents() {
+  async initializeComponents() {
     try {
+      // Load settings first
+      this.components.settingsManager = new SettingsManager();
+      await this.components.settingsManager.loadSettings();
+      
       // Initialize core components
       this.components.navigation = new Navigation();
       this.components.scrollAnimations = new ScrollAnimations();

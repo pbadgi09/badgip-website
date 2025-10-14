@@ -840,6 +840,77 @@ class API {
             };
         }
     }
+
+    // Settings API methods
+    async getSettings() {
+        try {
+            const { content } = await this.getFileContent('data/settings.json');
+            return {
+                success: true,
+                data: content
+            };
+        } catch (error) {
+            console.error('Error fetching settings:', error);
+            throw error;
+        }
+    }
+
+    async updateSettings(settingsData) {
+        try {
+            const { content, sha } = await this.getFileContent('data/settings.json');
+            
+            // Merge new settings with existing ones
+            const updatedSettings = {
+                ...content,
+                ...settingsData,
+                meta: {
+                    ...content.meta,
+                    lastUpdated: new Date().toISOString(),
+                    updatedBy: 'admin'
+                }
+            };
+            
+            await this.updateFileContent('data/settings.json', updatedSettings, 'Update website settings', sha);
+            
+            return {
+                success: true,
+                data: updatedSettings
+            };
+        } catch (error) {
+            console.error('Error updating settings:', error);
+            throw error;
+        }
+    }
+
+    async updateSettingsSection(section, sectionData) {
+        try {
+            const { content, sha } = await this.getFileContent('data/settings.json');
+            
+            // Update specific section
+            const updatedSettings = {
+                ...content,
+                [section]: {
+                    ...content[section],
+                    ...sectionData
+                },
+                meta: {
+                    ...content.meta,
+                    lastUpdated: new Date().toISOString(),
+                    updatedBy: 'admin'
+                }
+            };
+            
+            await this.updateFileContent('data/settings.json', updatedSettings, `Update ${section} settings`, sha);
+            
+            return {
+                success: true,
+                data: updatedSettings
+            };
+        } catch (error) {
+            console.error('Error updating settings section:', error);
+            throw error;
+        }
+    }
 }
 
 // Initialize API

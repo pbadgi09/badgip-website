@@ -220,6 +220,15 @@ class AdminDashboard {
                         window.auth.showToast('Images manager not available', 'error');
                     }
                     break;
+                case 'website-settings':
+                    if (window.websiteSettingsManager) {
+                        console.log('Loading website settings...');
+                        await window.websiteSettingsManager.loadSettings();
+                    } else {
+                        console.error('websiteSettingsManager not found');
+                        window.auth.showToast('Website settings manager not available', 'error');
+                    }
+                    break;
                 case 'dashboard':
                     console.log('Refreshing dashboard stats...');
                     await this.refreshStats();
