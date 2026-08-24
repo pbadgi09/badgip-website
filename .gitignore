@@ -226,3 +226,11 @@ local.json
 *.wmv
 *.flv
 *.webm
+
+# Xcode / macOS app (macos-app/)
+macos-app/**/xcuserdata/
+macos-app/**/*.xcuserstate
+macos-app/**/DerivedData/
+macos-app/**/*.xcworkspace/xcuserdata/
+macos-app/build/
+macos-app/*.dmg

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>404 — Pranav Badgi</title>
+  <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .not-found {
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: var(--space-6);
+      padding: var(--page-margin-x);
+    }
+    .not-found__code {
+      font-family: var(--font-mono);
+      font-size: clamp(4rem, 18vw, 9rem);
+      color: var(--color-accent);
+      line-height: 1;
+      animation: glitch 3s infinite;
+    }
+    @keyframes glitch {
+      0%, 92%, 100% { transform: translate(0, 0); text-shadow: none; }
+      93% { transform: translate(-2px, 1px); text-shadow: 2px 0 var(--color-accent); }
+      95% { transform: translate(2px, -1px); text-shadow: -2px 0 #fff; }
+      97% { transform: translate(0, 0); text-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="not-found">
+    <span class="not-found__code">404</span>
+    <p class="mono" style="color: var(--color-text-dim)">This page wandered off somewhere.</p>
+    <a href="/" class="btn btn--primary">Back to Home</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "rules": {
+    "projects": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+    },
+    "settings": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+    },
+    "about": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+    },
+    "messages": {
+      ".read": "auth != null && auth.uid === 'ADMIN_UID'",
+      ".write": "auth != null && auth.uid === 'ADMIN_UID'",
+      "$messageId": {
+        ".write": "(auth != null && auth.uid === 'ADMIN_UID') || (auth == null && !data.exists() && newData.hasChildren(['name', 'email', 'message', 'createdAt']))",
+        ".validate": "newData.hasChildren(['name', 'email', 'message', 'createdAt'])"
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

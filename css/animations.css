@@ -1,0 +1,29 @@
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+}
+
+.js-ready .reveal {
+  /* GSAP takes over once JS boots; this is a no-JS/no-motion fallback */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.no-js .reveal {
+  opacity: 1;
+  transform: none;
+}
+
+.fade-in {
+  animation: fadeIn var(--duration-slow) var(--ease-out) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
