@@ -2,21 +2,21 @@
   "rules": {
     "projects": {
       ".read": true,
-      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+      ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'"
     },
     "settings": {
       ".read": true,
-      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+      ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'"
     },
     "about": {
       ".read": true,
-      ".write": "auth != null && auth.uid === 'ADMIN_UID'"
+      ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'"
     },
     "messages": {
-      ".read": "auth != null && auth.uid === 'ADMIN_UID'",
-      ".write": "auth != null && auth.uid === 'ADMIN_UID'",
+      ".read": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'",
+      ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'",
       "$messageId": {
-        ".write": "(auth != null && auth.uid === 'ADMIN_UID') || (auth == null && !data.exists() && newData.hasChildren(['name', 'email', 'message', 'createdAt']))",
+        ".write": "(auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1') || (auth == null && !data.exists() && newData.hasChildren(['name', 'email', 'message', 'createdAt']))",
         ".validate": "newData.hasChildren(['name', 'email', 'message', 'createdAt'])"
       }
     },
