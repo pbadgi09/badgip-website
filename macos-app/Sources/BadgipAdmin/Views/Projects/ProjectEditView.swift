@@ -1,0 +1,84 @@
+import SwiftUI
+
+struct ProjectEditView: View {
+    @EnvironmentObject private var rtdb: RTDBService
+    @Environment(\.dismiss) private var dismiss
+
+    @State var project: Project
+    var onSave: (Project) -> Void
+
+    @State private var tagsText: String = ""
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(project.id.isEmpty ? "New Project" : "Edit Project").font(.title3.bold())
+                Spacer()
+                Button("Cancel") { dismiss() }
+                Button("Save") { Task { await save() } }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isSaving || project.title.isEmpty)
+            }
+            .padding()
+
+            Form {
+                Section("Basics") {
+                    TextField("Title", text: $project.title)
+                    TextField("Slug", text: $project.slug)
+                    TextField("Summary", text: $project.summary)
+                    TextField("Tags (comma separated)", text: $tagsText)
+                        .onChange(of: tagsText) { newValue in
+                            project.tags = newValue.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                        }
+                }
+
+                Section("Description") {
+                    TextEditor(text: $project.description).frame(minHeight: 120)
+                }
+
+                Section("Media") {
+                    ImageUploadView(project: $project)
+                    TextField("YouTube URL (optional)", text: $project.youtubeUrl)
+                }
+
+                Section("Links") {
+                    TextField("Live URL", text: $project.liveUrl)
+                    TextField("Repo URL", text: $project.repoUrl)
+                }
+
+                Section("Publishing") {
+                    Picker("Status", selection: $project.status) {
+                        Text("Draft").tag("draft")
+                        Text("Published").tag("published")
+                    }
+                    Picker("Category", selection: $project.category) {
+                        Text("Professional").tag("professional")
+                        Text("Personal").tag("personal")
+                    }
+                    Toggle("Featured", isOn: $project.featured)
+                    Stepper("Order: \(project.order)", value: $project.order, in: 0...999)
+                }
+
+                if let errorMessage {
+                    Text(errorMessage).foregroundStyle(.red).font(.caption)
+                }
+            }
+        }
+        .frame(minWidth: 560, minHeight: 640)
+        .onAppear { tagsText = project.tags.joined(separator: ", ") }
+    }
+
+    private func save() async {
+        isSaving = true
+        errorMessage = nil
+        do {
+            try rtdb.saveProject(project)
+            onSave(project)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isSaving = false
+    }
+}

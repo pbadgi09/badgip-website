@@ -234,3 +234,5 @@ macos-app/**/DerivedData/
 macos-app/**/*.xcworkspace/xcuserdata/
 macos-app/build/
 macos-app/*.dmg
+macos-app/.build/
+macos-app/.swiftpm/
