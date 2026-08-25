@@ -45,12 +45,15 @@
       <canvas class="hero__canvas" id="heroCanvas" aria-hidden="true"></canvas>
       <span class="eyebrow hero__greeting reveal" id="heroGreeting">Hello, I'm</span>
       <h1 class="hero__name reveal" id="heroName">Pranav Badgi</h1>
-      <p class="hero__role mono reveal" id="heroRole">Full Stack Developer</p>
+      <span class="hero__role mono reveal" id="heroRole">Full Stack Developer</span>
       <p class="hero__description reveal" id="heroDescription">
         Building modern, thoughtful software — from idea to shipped product.
       </p>
       <div class="hero__cta reveal">
-        <a href="#projects" class="btn btn--primary" id="heroCtaPrimary">View My Work</a>
+        <a href="#projects" class="btn btn--primary" id="heroCtaPrimary">
+          <span id="heroCtaPrimaryText">View My Work</span>
+          <span class="btn__arrow" aria-hidden="true">→</span>
+        </a>
         <a href="#contact" class="btn btn--ghost" id="heroCtaSecondary">Get In Touch</a>
       </div>
       <div class="hero__scroll-hint">

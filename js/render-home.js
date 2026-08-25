@@ -6,7 +6,7 @@ export function renderHero(settings) {
   document.getElementById('heroDescription').textContent = hero.description;
 
   const ctaPrimary = document.getElementById('heroCtaPrimary');
-  ctaPrimary.textContent = hero.ctaPrimaryText;
+  document.getElementById('heroCtaPrimaryText').textContent = hero.ctaPrimaryText;
   ctaPrimary.href = hero.ctaPrimaryHref;
 
   const ctaSecondary = document.getElementById('heroCtaSecondary');

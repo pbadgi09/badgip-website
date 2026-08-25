@@ -8,14 +8,22 @@
 .section-header {
   display: flex;
   align-items: baseline;
-  gap: var(--space-4);
+  gap: var(--space-6);
   margin-bottom: var(--space-16);
+}
+
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--color-border-strong), transparent);
+  transform: translateY(-0.3em);
 }
 
 .section-number {
   font-family: var(--font-mono);
   font-size: var(--fs-sm);
-  color: var(--color-text-faint);
+  color: var(--color-accent);
 }
 
 .section-title {
@@ -176,13 +184,32 @@
 .hero__name {
   font-size: var(--fs-3xl);
   max-width: 20ch;
+  text-wrap: balance;
+  letter-spacing: -0.03em;
 }
 
 .hero__role {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-family: var(--font-mono);
-  color: var(--color-text-dim);
-  font-size: var(--fs-md);
+  color: var(--color-accent);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   margin-top: var(--space-6);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+}
+
+.hero__role::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 8px 1px var(--color-accent-glow);
 }
 
 .hero__description {

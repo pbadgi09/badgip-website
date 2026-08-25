@@ -39,6 +39,15 @@
   color: var(--color-accent);
 }
 
+.btn__arrow {
+  display: inline-block;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.btn:hover .btn__arrow {
+  transform: translateX(4px);
+}
+
 .skeleton {
   position: relative;
   overflow: hidden;
