@@ -3,6 +3,9 @@ import SwiftUI
 enum DashboardSection: String, CaseIterable, Identifiable {
     case projects = "Projects"
     case about = "About"
+    case sections = "Sections"
+    case youtube = "YouTube"
+    case blog = "Blog"
     case settings = "Settings"
     case messages = "Messages"
     case deploy = "Deploy"
@@ -13,6 +16,9 @@ enum DashboardSection: String, CaseIterable, Identifiable {
         switch self {
         case .projects: return "folder"
         case .about: return "person.text.rectangle"
+        case .sections: return "square.grid.2x2"
+        case .youtube: return "play.rectangle"
+        case .blog: return "doc.richtext"
         case .settings: return "gearshape"
         case .messages: return "envelope"
         case .deploy: return "arrow.triangle.2.circlepath"
@@ -74,6 +80,9 @@ struct DashboardView: View {
         switch section {
         case .projects: ProjectListView()
         case .about: AboutEditorView()
+        case .sections: SectionsView()
+        case .youtube: YoutubeListView()
+        case .blog: BlogListView()
         case .settings: SiteSettingsView()
         case .messages: MessagesInboxView()
         case .deploy: DeployControlsView()

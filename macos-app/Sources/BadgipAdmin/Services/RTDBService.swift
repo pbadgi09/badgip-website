@@ -59,6 +59,80 @@ final class RTDBService: ObservableObject {
         db.child("about").setValue(about.asDictionary)
     }
 
+    // MARK: - Personal YouTube
+
+    func fetchYoutubeVideos() async throws -> [YoutubeVideo] {
+        let snapshot = try await db.child("personalYoutube").getData()
+        guard let value = snapshot.value as? [String: [String: Any]] else { return [] }
+        return value.map { YoutubeVideo.from(id: $0.key, dict: $0.value) }
+            .sorted { $0.order < $1.order }
+    }
+
+    @discardableResult
+    func saveYoutubeVideo(_ video: YoutubeVideo) throws -> YoutubeVideo {
+        var saved = video
+        saved.id = video.id.isEmpty ? (db.child("personalYoutube").childByAutoId().key ?? UUID().uuidString) : video.id
+        db.child("personalYoutube").child(saved.id).setValue(saved.asDictionary)
+        return saved
+    }
+
+    func deleteYoutubeVideo(id: String) {
+        db.child("personalYoutube").child(id).removeValue()
+    }
+
+    // MARK: - Personal Blog
+
+    func fetchBlogPosts() async throws -> [BlogPost] {
+        let snapshot = try await db.child("personalBlog").getData()
+        guard let value = snapshot.value as? [String: [String: Any]] else { return [] }
+        return value.map { BlogPost.from(id: $0.key, dict: $0.value) }
+            .sorted { $0.order < $1.order }
+    }
+
+    @discardableResult
+    func saveBlogPost(_ post: BlogPost) throws -> BlogPost {
+        var saved = post
+        saved.id = post.id.isEmpty ? (db.child("personalBlog").childByAutoId().key ?? UUID().uuidString) : post.id
+        db.child("personalBlog").child(saved.id).setValue(saved.asDictionary)
+        return saved
+    }
+
+    func deleteBlogPost(id: String) {
+        db.child("personalBlog").child(id).removeValue()
+    }
+
+    // MARK: - Page Sections
+
+    func fetchPageSections() async throws -> [PageSection] {
+        let snapshot = try await db.child("pageSections").getData()
+        guard let value = snapshot.value as? [String: [String: Any]] else { return [] }
+        return value.map { PageSection.from(id: $0.key, dict: $0.value) }
+            .sorted { $0.order < $1.order }
+    }
+
+    @discardableResult
+    func savePageSection(_ section: PageSection) throws -> PageSection {
+        var saved = section
+        saved.id = section.id.isEmpty ? (db.child("pageSections").childByAutoId().key ?? UUID().uuidString) : section.id
+        db.child("pageSections").child(saved.id).setValue(saved.asDictionary)
+        return saved
+    }
+
+    func deletePageSection(id: String) {
+        db.child("pageSections").child(id).removeValue()
+    }
+
+    /// Batch-writes just the `order` field for every section passed in —
+    /// used after a drag-and-drop reorder so the whole list updates in one
+    /// round trip instead of one write per row.
+    func reorderPageSections(_ sections: [PageSection]) {
+        var updates: [String: Any] = [:]
+        for section in sections {
+            updates["pageSections/\(section.id)/order"] = section.order
+        }
+        db.updateChildValues(updates)
+    }
+
     // MARK: - Messages (live)
 
     private var messagesHandle: DatabaseHandle?
