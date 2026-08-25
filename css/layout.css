@@ -642,6 +642,15 @@
 .form-field textarea:focus {
   outline: none;
   border-color: var(--color-accent);
+  box-shadow: 0 1px 0 0 var(--color-accent-glow);
+}
+
+.form-field label {
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.form-field:focus-within label {
+  color: var(--color-accent);
 }
 
 .form-field--honeypot {

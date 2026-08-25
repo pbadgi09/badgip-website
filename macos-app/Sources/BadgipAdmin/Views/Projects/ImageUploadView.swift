@@ -23,9 +23,13 @@ struct ImageUploadView: View {
                     Text("Cover image").font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Button("Set Cover Image") { pickerTarget = .cover }
+                            .buttonStyle(.badgipSecondary)
+                            .controlSize(.small)
                             .disabled(isUploading)
                         if !project.coverImage.isEmpty {
                             Button("Clear") { project.coverImage = "" }
+                                .buttonStyle(.badgipSecondary)
+                                .controlSize(.small)
                                 .disabled(isUploading)
                         }
                     }
@@ -50,6 +54,8 @@ struct ImageUploadView: View {
                                 }
                         }
                         Button("Add Gallery Image") { pickerTarget = .gallery }
+                            .buttonStyle(.badgipSecondary)
+                            .controlSize(.small)
                             .disabled(isUploading)
                     }
                 }
