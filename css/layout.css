@@ -722,4 +722,41 @@
   .project-overlay__close {
     top: var(--space-4);
   }
+
+  .hero {
+    padding-top: var(--space-16);
+    min-height: 100svh;
+  }
+
+  .hero__cta {
+    width: 100%;
+  }
+
+  .hero__cta .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .section-header {
+    margin-bottom: var(--space-8);
+  }
+
+  .about__bio {
+    padding-left: var(--space-4);
+    margin-bottom: var(--space-16);
+  }
+
+  .timeline {
+    padding-left: var(--space-6);
+  }
+
+  .timeline__dot {
+    left: calc(-1 * var(--space-6) - 4px);
+  }
+}
+
+@media (max-height: 700px) and (max-width: 860px) {
+  .hero__scroll-hint {
+    display: none;
+  }
 }
