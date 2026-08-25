@@ -14,20 +14,21 @@ final class RTDBService: ObservableObject {
             .sorted { $0.order < $1.order }
     }
 
-    /// Returns the project's id (a freshly generated one for a new project,
-    /// the existing one otherwise) — callers must persist it back onto their
-    /// local model, or a subsequent save will create a duplicate instead of
-    /// updating this record.
+    /// Returns the project as actually written (id/createdAt/updatedAt
+    /// filled in) — callers must persist this back onto their local model.
+    /// Returning just the id isn't enough: if createdAt stays 0 locally,
+    /// the next save on the same project mistakes it for brand new and
+    /// stomps the real creation timestamp.
     @discardableResult
-    func saveProject(_ project: Project) throws -> String {
-        var dict = project.asDictionary
-        dict["updatedAt"] = Date().timeIntervalSince1970 * 1000
-        if project.createdAt == 0 {
-            dict["createdAt"] = dict["updatedAt"]
+    func saveProject(_ project: Project) throws -> Project {
+        var saved = project
+        saved.updatedAt = Date().timeIntervalSince1970 * 1000
+        if saved.createdAt == 0 {
+            saved.createdAt = saved.updatedAt
         }
-        let id = project.id.isEmpty ? db.child("projects").childByAutoId().key ?? UUID().uuidString : project.id
-        db.child("projects").child(id).setValue(dict)
-        return id
+        saved.id = project.id.isEmpty ? (db.child("projects").childByAutoId().key ?? UUID().uuidString) : project.id
+        db.child("projects").child(saved.id).setValue(saved.asDictionary)
+        return saved
     }
 
     func deleteProject(id: String) {
