@@ -1094,8 +1094,6 @@
   --contact-fg: #fff;
   --contact-fg-dim: rgba(255, 255, 255, 0.7);
   --contact-icon-bg: rgba(255, 255, 255, 0.12);
-  --contact-social-bg: #fff;
-  --contact-social-fg: #14141a;
 }
 
 .contact-info-panel--photo .contact-info-panel__bg {
@@ -1115,8 +1113,7 @@
 
 /* The photo variant bottom-anchors text over a tall image on purpose — that
    layout looks empty and broken without a photo to fill the space, so the
-   plain variant instead stretches its content the full card height and
-   spreads title/info/socials out with space-between. */
+   plain variant instead stretches its content the full card height. */
 .contact-info-panel--plain {
   align-items: stretch;
   background: var(--color-bg-elevated);
@@ -1125,8 +1122,6 @@
   --contact-fg: var(--color-text);
   --contact-fg-dim: var(--color-text-dim);
   --contact-icon-bg: var(--color-accent-glow);
-  --contact-social-bg: var(--color-text);
-  --contact-social-fg: var(--color-bg);
 }
 
 .contact-info-panel--plain::before {
@@ -1147,11 +1142,6 @@
   flex-direction: column;
   height: 100%;
   padding: var(--space-10) var(--space-8);
-}
-
-.contact-info-panel--plain .contact-socials {
-  margin-top: auto;
-  padding-top: var(--space-8);
 }
 
 .contact-info-panel__content {
@@ -1211,35 +1201,6 @@
 .contact-info-item__label {
   font-size: var(--fs-base);
   color: var(--contact-fg);
-}
-
-.contact-socials {
-  display: flex;
-  gap: var(--space-4);
-  margin-top: var(--space-10);
-}
-
-.contact-socials__link {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--contact-social-bg);
-  color: var(--contact-social-fg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-.contact-socials__link:hover {
-  transform: translateY(-3px);
-}
-
-.contact-socials__link img {
-  width: 60%;
-  height: 60%;
-  object-fit: contain;
 }
 
 .contact-form-panel {

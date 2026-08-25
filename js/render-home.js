@@ -106,15 +106,4 @@ export function renderContactAndFooter(settings) {
     `
     )
     .join('');
-
-  const socialsEl = document.getElementById('contactSocials');
-  socialsEl.innerHTML = (contact.socialLinks || [])
-    .map(
-      (link) => `
-      <a class="contact-socials__link" href="${escapeHtml(link.url || '#')}" target="_blank" rel="noopener" aria-label="Social link">
-        ${iconMarkup(link.icon)}
-      </a>
-    `
-    )
-    .join('');
 }
