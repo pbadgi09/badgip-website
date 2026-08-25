@@ -58,6 +58,23 @@ export function renderProjects(projects) {
         open();
       }
     });
+    const img = card.querySelector('.project-card__media img');
+    if (img) {
+      img.addEventListener(
+        'error',
+        () => {
+          const media = card.querySelector('.project-card__media');
+          media.classList.add('project-card__media--empty');
+          img.remove();
+          const initial = document.createElement('span');
+          initial.className = 'project-card__initial mono';
+          initial.textContent = (project.title || '?').charAt(0).toUpperCase();
+          media.prepend(initial);
+        },
+        { once: true }
+      );
+    }
+
     grid.appendChild(card);
   });
 }
@@ -90,6 +107,7 @@ function openProjectOverlay(project) {
     img.src = imageUrl(path);
     img.loading = 'lazy';
     img.alt = project.title;
+    img.addEventListener('error', () => img.remove(), { once: true });
     galleryEl.appendChild(img);
   });
 
