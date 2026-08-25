@@ -17,22 +17,42 @@ struct ImageUploadView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Cover: \(project.coverImage.isEmpty ? "none" : project.coverImage)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Set Cover Image") { pickerTarget = .cover }
-                    .disabled(isUploading)
+            HStack(alignment: .top) {
+                thumbnail(for: project.coverImage, size: 64)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Cover image").font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Button("Set Cover Image") { pickerTarget = .cover }
+                            .disabled(isUploading)
+                        if !project.coverImage.isEmpty {
+                            Button("Clear") { project.coverImage = "" }
+                                .disabled(isUploading)
+                        }
+                    }
+                }
             }
 
-            HStack {
-                Text("Gallery: \(project.gallery.count) image(s)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Add Gallery Image") { pickerTarget = .gallery }
-                    .disabled(isUploading)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Gallery (\(project.gallery.count))").font(.caption).foregroundStyle(.secondary)
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        ForEach(project.gallery, id: \.self) { path in
+                            thumbnail(for: path, size: 56)
+                                .overlay(alignment: .topTrailing) {
+                                    Button {
+                                        project.gallery.removeAll { $0 == path }
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundStyle(.white, .black.opacity(0.6))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .offset(x: 4, y: -4)
+                                }
+                        }
+                        Button("Add Gallery Image") { pickerTarget = .gallery }
+                            .disabled(isUploading)
+                    }
+                }
             }
 
             if isUploading {
@@ -50,6 +70,32 @@ struct ImageUploadView: View {
             pickerTarget = nil
             handlePicked(result: result, target: target)
         }
+    }
+
+    @ViewBuilder
+    private func thumbnail(for path: String, size: CGFloat) -> some View {
+        Group {
+            if path.isEmpty {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.gray.opacity(0.15))
+                    .overlay(Image(systemName: "photo").foregroundStyle(.secondary))
+            } else if let url = JsDelivrService.composeURL(for: path) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    case .failure:
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.gray.opacity(0.15))
+                            .overlay(Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary))
+                    default:
+                        ProgressView().controlSize(.small)
+                    }
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     private func handlePicked(result: Result<URL, Error>, target: PickerTarget) {

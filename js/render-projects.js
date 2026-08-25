@@ -34,8 +34,12 @@ export function renderProjects(projects) {
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
     card.innerHTML = `
-      <div class="project-card__media">
-        ${project.coverImage ? `<img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" loading="lazy" />` : ''}
+      <div class="project-card__media${project.coverImage ? '' : ' project-card__media--empty'}">
+        ${
+          project.coverImage
+            ? `<img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" loading="lazy" />`
+            : `<span class="project-card__initial mono">${escapeHtml((project.title || '?').charAt(0).toUpperCase())}</span>`
+        }
       </div>
       <div class="project-card__body">
         <h3 class="project-card__title">${escapeHtml(project.title)}</h3>
@@ -89,12 +93,17 @@ function openProjectOverlay(project) {
   });
 
   const linksEl = document.getElementById('overlayLinks');
-  if (project.liveUrl) {
-    linksEl.innerHTML += `<a href="${project.liveUrl}" class="btn btn--primary" target="_blank" rel="noopener">Live Site</a>`;
-  }
-  if (project.repoUrl) {
-    linksEl.innerHTML += `<a href="${project.repoUrl}" class="btn btn--ghost" target="_blank" rel="noopener">Source</a>`;
-  }
+  const addLink = (href, label, className) => {
+    const a = document.createElement('a');
+    a.href = href;
+    a.textContent = label;
+    a.className = className;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    linksEl.appendChild(a);
+  };
+  if (project.liveUrl) addLink(project.liveUrl, 'Live Site', 'btn btn--primary');
+  if (project.repoUrl) addLink(project.repoUrl, 'Source', 'btn btn--ghost');
 
   const close = () => {
     overlay.classList.remove('is-open');

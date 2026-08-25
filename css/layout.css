@@ -363,6 +363,18 @@
   transform: scale(1.06);
 }
 
+.project-card__media--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-bg-elevated-2), var(--color-bg-elevated));
+}
+
+.project-card__initial {
+  font-size: 2.5rem;
+  color: var(--color-text-faint);
+}
+
 .project-card__body {
   padding: var(--space-6);
 }
@@ -620,5 +632,18 @@
 
   .mode-switch {
     bottom: var(--space-6);
+  }
+
+  .project-overlay {
+    padding: var(--space-8) var(--page-margin-x) var(--space-16);
+    align-items: stretch;
+  }
+
+  .project-overlay__panel {
+    padding: var(--space-6);
+  }
+
+  .project-overlay__close {
+    top: var(--space-4);
   }
 }
