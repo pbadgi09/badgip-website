@@ -6,7 +6,6 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: var(--fs-base);
-  overflow-x: hidden;
 }
 
 ::selection {
