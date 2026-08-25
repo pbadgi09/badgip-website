@@ -278,7 +278,8 @@
   max-width: 46ch;
   color: var(--color-text-dim);
   margin-top: var(--space-6);
-  font-size: var(--fs-md);
+  font-size: var(--fs-lg);
+  line-height: 1.5;
 }
 
 .hero__cta {
