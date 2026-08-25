@@ -99,8 +99,8 @@ struct ProjectListView: View {
             .font(.caption.weight(.medium))
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(isPublished ? Color.green.opacity(0.15) : Color.gray.opacity(0.15))
-            .foregroundStyle(isPublished ? .green : .secondary)
+            .background(isPublished ? Color.badgipAccent.opacity(0.15) : Color.gray.opacity(0.15))
+            .foregroundStyle(isPublished ? .badgipAccent : .secondary)
             .clipShape(Capsule())
     }
 

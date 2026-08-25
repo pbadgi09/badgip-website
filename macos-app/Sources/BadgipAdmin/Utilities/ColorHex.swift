@@ -22,4 +22,14 @@ extension Color {
         let b = Int((rgb.blueComponent * 255).rounded())
         return String(format: "#%02x%02x%02x", r, g, b)
     }
+
+    /// The website's brand accent green (--color-accent in css/variables.css)
+    /// — ties the admin app's visual identity to the site it manages.
+    static let badgipAccent = Color(hex: "#3effa3") ?? .green
+}
+
+// Enables the `.badgipAccent` dot-shorthand in `some ShapeStyle` contexts
+// (.foregroundStyle(), .fill()), not just where a literal Color is expected.
+extension ShapeStyle where Self == Color {
+    static var badgipAccent: Color { Color.badgipAccent }
 }

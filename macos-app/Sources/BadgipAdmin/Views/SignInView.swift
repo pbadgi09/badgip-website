@@ -7,7 +7,7 @@ struct SignInView: View {
         VStack(spacing: 20) {
             Image(systemName: "square.and.pencil")
                 .font(.system(size: 44))
-                .foregroundStyle(.green)
+                .foregroundStyle(.badgipAccent)
 
             Text("Badgip Admin")
                 .font(.title2.bold())

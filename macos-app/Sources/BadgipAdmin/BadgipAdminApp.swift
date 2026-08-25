@@ -22,6 +22,7 @@ struct BadgipAdminApp: App {
             .environmentObject(authService)
             .environmentObject(rtdbService)
             .frame(minWidth: 900, minHeight: 600)
+            .tint(.badgipAccent)
         }
         .windowStyle(.titleBar)
     }

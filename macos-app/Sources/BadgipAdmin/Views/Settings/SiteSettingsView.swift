@@ -15,7 +15,7 @@ struct SiteSettingsView: View {
                 if let statusMessage {
                     HStack(spacing: 4) {
                         if statusMessage == "Saved" {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.badgipAccent)
                         }
                         Text(statusMessage).font(.caption).foregroundStyle(.secondary)
                     }

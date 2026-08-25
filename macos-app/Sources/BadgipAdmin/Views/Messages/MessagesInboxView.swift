@@ -12,7 +12,7 @@ struct MessagesInboxView: View {
                 Spacer()
                 let unread = messages.filter { !$0.read }.count
                 if unread > 0 {
-                    Text("\(unread) unread").font(.caption).foregroundStyle(.green)
+                    Text("\(unread) unread").font(.caption).foregroundStyle(.badgipAccent)
                 }
             }
             .padding()
@@ -33,7 +33,7 @@ struct MessagesInboxView: View {
                             HStack {
                                 Text(message.name).font(.headline)
                                 if !message.read {
-                                    Circle().fill(.green).frame(width: 6, height: 6)
+                                    Circle().fill(.badgipAccent).frame(width: 6, height: 6)
                                 }
                                 Spacer()
                                 Text(message.date, style: .date).font(.caption).foregroundStyle(.secondary)
