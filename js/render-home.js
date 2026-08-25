@@ -58,7 +58,4 @@ export function renderContactAndFooter(settings) {
   const footerLinkedin = document.getElementById('footerLinkedin');
   footerLinkedin.href = social.linkedin || social.github;
   footerLinkedin.hidden = !social.linkedin;
-
-  const footerEmail = document.getElementById('footerEmail');
-  footerEmail.href = `mailto:${social.email}`;
 }

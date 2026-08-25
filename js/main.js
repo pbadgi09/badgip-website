@@ -4,7 +4,7 @@ import { renderAbout } from './render-about.js';
 import { renderProjects } from './render-projects.js';
 import { initContactForm } from './contact-form.js';
 import { initModeSwitch } from './mode-switch.js';
-import { initNav, initCursor } from './nav.js';
+import { initNav } from './nav.js';
 import { initSmoothScroll } from './smooth-scroll.js';
 import { initPreloader, initHeroEntrance, initScrollReveals, initTimelineScroll } from './animations.js';
 import { initWebglHero } from './webgl-hero.js';
@@ -14,7 +14,6 @@ async function boot() {
 
   initModeSwitch();
   initNav();
-  initCursor();
   initContactForm();
 
   const preloaderDone = initPreloader();

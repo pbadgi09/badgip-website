@@ -4,10 +4,16 @@ export function initSmoothScroll() {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReducedMotion) return null;
 
+  // Short duration + a fast-decelerating cubic ease-out reads as "snappy"
+  // rather than the heavier, slower-settling feel a longer duration or an
+  // expo curve gives — the scroll should feel like it's keeping up with
+  // the wheel, not gliding on its own after you've stopped.
   const lenis = new window.Lenis({
-    duration: 1.1,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    duration: 0.7,
+    easing: (t) => 1 - Math.pow(1 - t, 3),
     smoothWheel: true,
+    wheelMultiplier: 1.1,
+    touchMultiplier: 2,
   });
 
   lenis.on('scroll', window.ScrollTrigger.update);
