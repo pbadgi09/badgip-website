@@ -271,10 +271,14 @@
 
 /* ---------- About / Timeline ---------- */
 .about__bio {
+  position: relative;
   max-width: 60ch;
   font-size: var(--fs-md);
+  line-height: 1.7;
   color: var(--color-text-dim);
   margin-bottom: var(--space-24);
+  padding-left: var(--space-8);
+  border-left: 2px solid var(--color-border-strong);
 }
 
 .timeline {
@@ -305,6 +309,15 @@
 .timeline__item {
   position: relative;
   padding-bottom: var(--space-16);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.timeline__item:hover {
+  transform: translateX(6px);
+}
+
+.timeline__item:hover .timeline__title {
+  color: var(--color-accent);
 }
 
 .timeline__item:last-child {
@@ -342,6 +355,7 @@
 .timeline__title {
   font-size: var(--fs-lg);
   margin-bottom: var(--space-2);
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 .timeline__description {
