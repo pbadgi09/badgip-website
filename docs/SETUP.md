@@ -11,7 +11,7 @@ Manual steps required outside this codebase to bring the rewritten site (and lat
 
 ## 1b. Google Sign-In OAuth client (for the macOS app)
 - [x] No separate Google Cloud Console setup needed — Firebase auto-provisioned an OAuth client when the Apple app was registered with Google Sign-In enabled. Its `CLIENT_ID`/`REVERSED_CLIENT_ID` (from the plist) are already set in `macos-app/Sources/BadgipAdmin/Services/Config.swift`.
-- [ ] In Xcode, add a URL Type (`com.googleusercontent.apps.466226587643-o1gmqikbvocdt2faps83via4hsldhmt6`) to the `BadgipAdmin` target's Info settings — required for the OAuth callback to reach the app. Full detail in `macos-app/README.md`.
+- [x] URL scheme registered with Launch Services via `macos-app/scripts/build-app.sh` (no Xcode GUI step needed) — run this instead of `swift build` whenever the app changes, then `open build/BadgipAdmin.app`.
 
 ## 2. EmailJS (contact form notifications)
 - [ ] Create a free account at emailjs.com.

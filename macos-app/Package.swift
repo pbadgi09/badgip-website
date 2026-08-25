@@ -27,6 +27,11 @@ let package = Package(
                 .product(name: "FirebaseDatabase", package: "firebase-ios-sdk"),
             ],
             path: "Sources/BadgipAdmin",
+            exclude: [
+                // Not an SPM resource — copied into a real .app bundle's
+                // Contents/Info.plist by scripts/build-app.sh instead.
+                "Info.plist"
+            ],
             resources: [
                 .copy("Resources/GoogleService-Info.plist")
             ]
