@@ -44,9 +44,9 @@ struct SiteSettingsView: View {
                     }
 
                     Section("Theme") {
-                        TextField("Accent color (hex)", text: $settings.accentColor)
-                        TextField("Background color (hex)", text: $settings.backgroundColor)
-                        TextField("Text color (hex)", text: $settings.textColor)
+                        colorField("Accent color", hex: $settings.accentColor)
+                        colorField("Background color", hex: $settings.backgroundColor)
+                        colorField("Text color", hex: $settings.textColor)
                     }
 
                     Section("Meta") {
@@ -57,6 +57,25 @@ struct SiteSettingsView: View {
             }
         }
         .task { await load() }
+    }
+
+    @ViewBuilder
+    private func colorField(_ label: String, hex: Binding<String>) -> some View {
+        HStack {
+            TextField(label, text: hex)
+            ColorPicker(
+                "",
+                selection: Binding(
+                    get: { Color(hex: hex.wrappedValue) ?? .gray },
+                    set: { newColor in
+                        if let converted = newColor.hexString {
+                            hex.wrappedValue = converted
+                        }
+                    }
+                )
+            )
+            .labelsHidden()
+        }
     }
 
     private func load() async {

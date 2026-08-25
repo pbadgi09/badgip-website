@@ -17,13 +17,16 @@ export function initSmoothScroll() {
   });
   window.gsap.ticker.lagSmoothing(0);
 
+  const nav = document.getElementById('siteNav');
+
   document.querySelectorAll('a[href^="#"]').forEach((link) => {
     link.addEventListener('click', (e) => {
       const id = link.getAttribute('href');
       const target = document.querySelector(id);
       if (target) {
         e.preventDefault();
-        lenis.scrollTo(target, { offset: -20 });
+        const navOffset = nav ? nav.offsetHeight + 16 : 20;
+        lenis.scrollTo(target, { offset: -navOffset });
       }
     });
   });
