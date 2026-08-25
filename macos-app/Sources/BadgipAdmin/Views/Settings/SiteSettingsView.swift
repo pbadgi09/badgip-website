@@ -42,33 +42,33 @@ struct SiteSettingsView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        card(title: "Hero") {
-                            field("Greeting", $settings.greeting)
-                            field("Name", $settings.name)
-                            field("Role", $settings.role)
-                            field("Description", $settings.description)
-                            field("Primary CTA text", $settings.ctaPrimaryText)
-                            field("Primary CTA link", $settings.ctaPrimaryHref)
-                            field("Secondary CTA text", $settings.ctaSecondaryText)
-                            field("Secondary CTA link", $settings.ctaSecondaryHref)
+                        EditorCard(title: "Hero") {
+                            LabeledField(label: "Greeting", text: $settings.greeting)
+                            LabeledField(label: "Name", text: $settings.name)
+                            LabeledField(label: "Role", text: $settings.role)
+                            LabeledField(label: "Description", text: $settings.description)
+                            LabeledField(label: "Primary CTA text", text: $settings.ctaPrimaryText)
+                            LabeledField(label: "Primary CTA link", text: $settings.ctaPrimaryHref)
+                            LabeledField(label: "Secondary CTA text", text: $settings.ctaSecondaryText)
+                            LabeledField(label: "Secondary CTA link", text: $settings.ctaSecondaryHref)
                         }
 
-                        card(title: "Social") {
-                            field("GitHub URL", $settings.github)
-                            field("LinkedIn URL", $settings.linkedin)
-                            field("Twitter/X URL", $settings.twitter)
-                            field("Email", $settings.email)
+                        EditorCard(title: "Social") {
+                            LabeledField(label: "GitHub URL", text: $settings.github)
+                            LabeledField(label: "LinkedIn URL", text: $settings.linkedin)
+                            LabeledField(label: "Twitter/X URL", text: $settings.twitter)
+                            LabeledField(label: "Email", text: $settings.email)
                         }
 
-                        card(title: "Theme") {
-                            colorField("Accent color", hex: $settings.accentColor)
-                            colorField("Background color", hex: $settings.backgroundColor)
-                            colorField("Text color", hex: $settings.textColor)
+                        EditorCard(title: "Theme") {
+                            OptionalColorField(label: "Accent color", hex: $settings.accentColor, fallback: "#3effa3")
+                            OptionalColorField(label: "Background color", hex: $settings.backgroundColor, fallback: "#ffffff")
+                            OptionalColorField(label: "Text color", hex: $settings.textColor, fallback: "#0a0a0a")
                         }
 
-                        card(title: "Meta") {
-                            field("Page title", $settings.metaTitle)
-                            field("Meta description", $settings.metaDescription)
+                        EditorCard(title: "Meta") {
+                            LabeledField(label: "Page title", text: $settings.metaTitle)
+                            LabeledField(label: "Meta description", text: $settings.metaDescription)
                         }
                     }
                     .padding(24)
@@ -76,48 +76,6 @@ struct SiteSettingsView: View {
             }
         }
         .task { await load() }
-    }
-
-    @ViewBuilder
-    private func card(title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.headline.weight(.semibold))
-            content()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.03)))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-    }
-
-    @ViewBuilder
-    private func field(_ label: String, _ text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.caption).foregroundStyle(.secondary)
-            TextField(label, text: text).textFieldStyle(.roundedBorder)
-        }
-    }
-
-    @ViewBuilder
-    private func colorField(_ label: String, hex: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.caption).foregroundStyle(.secondary)
-            HStack {
-                TextField(label, text: hex).textFieldStyle(.roundedBorder)
-                ColorPicker(
-                    "",
-                    selection: Binding(
-                        get: { Color(hex: hex.wrappedValue) ?? .gray },
-                        set: { newColor in
-                            if let converted = newColor.hexString {
-                                hex.wrappedValue = converted
-                            }
-                        }
-                    )
-                )
-                .labelsHidden()
-            }
-        }
     }
 
     private func load() async {

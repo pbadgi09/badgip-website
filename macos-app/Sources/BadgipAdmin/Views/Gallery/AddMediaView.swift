@@ -47,39 +47,41 @@ struct AddMediaView: View {
             .padding(20)
             Divider()
 
-            Form {
-                Section("Attach to") {
-                    Picker("Type", selection: $destination) {
-                        ForEach(MediaDestination.allCases) { Text($0.rawValue).tag($0) }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    EditorCard(title: "Attach to") {
+                        Picker("Type", selection: $destination) {
+                            ForEach(MediaDestination.allCases) { Text($0.rawValue).tag($0) }
+                        }
+                        destinationPicker
                     }
-                    destinationPicker
-                }
 
-                if destination == .sectionIcon {
-                    Section("Item") {
-                        TextField("Label (optional)", text: $newItemLabel)
+                    if destination == .sectionIcon {
+                        EditorCard(title: "Item") {
+                            LabeledField(label: "Label (optional)", text: $newItemLabel)
+                        }
                     }
-                }
 
-                if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.red).font(.caption)
-                }
-
-                Button {
-                    isPicking = true
-                } label: {
-                    if isUploading {
-                        HStack { ProgressView().controlSize(.small); Text("Uploading…") }
-                    } else {
-                        Label("Choose Image & Upload", systemImage: "square.and.arrow.up")
+                    if let errorMessage {
+                        Text(errorMessage).foregroundStyle(.red).font(.caption)
                     }
+
+                    Button {
+                        isPicking = true
+                    } label: {
+                        if isUploading {
+                            HStack { ProgressView().controlSize(.small); Text("Uploading…") }
+                        } else {
+                            Label("Choose Image & Upload", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                    .buttonStyle(.badgipPrimary)
+                    .disabled(isUploading || !hasValidTarget)
                 }
-                .buttonStyle(.badgipPrimary)
-                .disabled(isUploading || !hasValidTarget)
+                .padding(20)
             }
-            .padding(.top, 4)
         }
-        .frame(minWidth: 480, minHeight: 360)
+        .frame(width: 560, height: 480)
         .fileImporter(isPresented: $isPicking, allowedContentTypes: [.image]) { result in
             handlePicked(result)
         }

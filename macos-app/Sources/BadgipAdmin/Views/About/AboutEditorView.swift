@@ -42,18 +42,18 @@ struct AboutEditorView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        card(title: "Professional Bio") {
+                        EditorCard(title: "Professional Bio") {
                             TextEditor(text: $about.professionalBio)
                                 .frame(minHeight: 90)
                         }
-                        card(title: "Personal Bio") {
+                        EditorCard(title: "Personal Bio") {
                             TextEditor(text: $about.personalBio)
                                 .frame(minHeight: 90)
                         }
-                        card(title: "Professional Timeline") {
+                        EditorCard(title: "Professional Timeline") {
                             timelineEditor(entries: $about.professionalTimeline)
                         }
-                        card(title: "Personal Timeline") {
+                        EditorCard(title: "Personal Timeline") {
                             timelineEditor(entries: $about.personalTimeline)
                         }
                     }
@@ -62,18 +62,6 @@ struct AboutEditorView: View {
             }
         }
         .task { await load() }
-    }
-
-    @ViewBuilder
-    private func card(title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.headline.weight(.semibold))
-            content()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.03)))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
     }
 
     @ViewBuilder

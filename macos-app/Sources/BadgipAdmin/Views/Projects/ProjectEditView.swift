@@ -21,81 +21,62 @@ struct ProjectEditView: View {
     private var hasChanges: Bool { project != original }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(project.id.isEmpty ? "New Project" : "Edit Project")
-                    .font(.title2.weight(.bold))
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .buttonStyle(.badgipSecondary)
-                Button {
-                    Task { await save() }
-                } label: {
-                    if isSaving {
-                        ProgressView().controlSize(.small).tint(.black)
-                    } else {
-                        Text("Save")
+        EditorSheet(
+            title: project.id.isEmpty ? "New Project" : "Edit Project",
+            isSaving: isSaving,
+            canSave: !project.title.isEmpty && hasChanges,
+            onCancel: { dismiss() },
+            onSave: { Task { await save() } }
+        ) {
+            EditorCard(title: "Basics") {
+                LabeledField(label: "Title", text: $project.title)
+                LabeledField(label: "Slug", text: $project.slug)
+                LabeledField(label: "Summary", text: $project.summary)
+                LabeledField(label: "Tags (comma separated)", text: $tagsText)
+                    .onChange(of: tagsText) { newValue in
+                        project.tags = newValue.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
                     }
-                }
-                .buttonStyle(.badgipPrimary)
-                .disabled(isSaving || project.title.isEmpty || !hasChanges)
             }
-            .padding(20)
 
-            Divider()
+            EditorCard(title: "Description") {
+                LabeledField(label: "Description", text: $project.description, multiline: true)
+            }
 
-            Form {
-                Section("Basics") {
-                    TextField("Title", text: $project.title)
-                    TextField("Slug", text: $project.slug)
-                    TextField("Summary", text: $project.summary)
-                    TextField("Tags (comma separated)", text: $tagsText)
-                        .onChange(of: tagsText) { newValue in
-                            project.tags = newValue.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-                        }
+            EditorCard(title: "Media") {
+                Text("Cover: 16:10 works best. Full-screen hero: 21:9 (a wide, short crop) works best.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ImageUploadView(project: $project)
+                LabeledField(label: "YouTube URL (optional)", text: $project.youtubeUrl)
+            }
+
+            EditorCard(title: "Look (optional — overrides the site default for this project's detail view)") {
+                OptionalColorField(label: "Accent color", hex: $project.accentColor, fallback: "#3effa3")
+                OptionalColorField(label: "Text color", hex: $project.textColor, fallback: "#0a0a0a")
+            }
+
+            EditorCard(title: "Links") {
+                LabeledField(label: "Live URL", text: $project.liveUrl)
+                LabeledField(label: "Repo URL", text: $project.repoUrl)
+            }
+
+            EditorCard(title: "Publishing") {
+                Picker("Status", selection: $project.status) {
+                    Text("Draft").tag("draft")
+                    Text("Published").tag("published")
                 }
-
-                Section("Description") {
-                    TextEditor(text: $project.description).frame(minHeight: 120)
+                Picker("Category", selection: $project.category) {
+                    Text("Professional").tag("professional")
+                    Text("Personal").tag("personal")
                 }
+                Toggle("Featured", isOn: $project.featured)
+                Stepper("Order: \(project.order)", value: $project.order, in: 0...999)
+            }
 
-                Section("Media") {
-                    Text("Cover: 16:10 works best. Full-screen hero: 21:9 (a wide, short crop) works best.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    ImageUploadView(project: $project)
-                    TextField("YouTube URL (optional)", text: $project.youtubeUrl)
-                }
-
-                Section("Look (optional — overrides the site default for this project's detail view)") {
-                    OptionalColorField(label: "Accent color", hex: $project.accentColor, fallback: "#3effa3")
-                    OptionalColorField(label: "Text color", hex: $project.textColor, fallback: "#0a0a0a")
-                }
-
-                Section("Links") {
-                    TextField("Live URL", text: $project.liveUrl)
-                    TextField("Repo URL", text: $project.repoUrl)
-                }
-
-                Section("Publishing") {
-                    Picker("Status", selection: $project.status) {
-                        Text("Draft").tag("draft")
-                        Text("Published").tag("published")
-                    }
-                    Picker("Category", selection: $project.category) {
-                        Text("Professional").tag("professional")
-                        Text("Personal").tag("personal")
-                    }
-                    Toggle("Featured", isOn: $project.featured)
-                    Stepper("Order: \(project.order)", value: $project.order, in: 0...999)
-                }
-
-                if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.red).font(.caption)
-                }
+            if let errorMessage {
+                Text(errorMessage).foregroundStyle(.red).font(.caption)
             }
         }
-        .frame(minWidth: 560, minHeight: 640)
         .onAppear { tagsText = project.tags.joined(separator: ", ") }
     }
 

@@ -104,6 +104,23 @@ private struct BlogRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
+            Group {
+                if let url = JsDelivrService.composeURL(forStoredPath: post.coverImage), !post.coverImage.isEmpty {
+                    AsyncImage(url: url) { phase in
+                        if let image = phase.image {
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        } else {
+                            Rectangle().fill(Color.primary.opacity(0.06))
+                        }
+                    }
+                } else {
+                    Rectangle().fill(Color.primary.opacity(0.06))
+                        .overlay(Image(systemName: "doc.richtext").foregroundStyle(.tertiary))
+                }
+            }
+            .frame(width: 64, height: 40)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+
             VStack(alignment: .leading, spacing: 6) {
                 Text(titleText).font(.headline.weight(.semibold))
                 HStack(spacing: 8) {
@@ -168,54 +185,34 @@ private struct BlogEditView: View {
     private var hasChanges: Bool { post != original }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(post.id.isEmpty ? "New Post" : "Edit Post")
-                    .font(.title2.weight(.bold))
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .buttonStyle(.badgipSecondary)
-                Button {
-                    Task { await save() }
-                } label: {
-                    if isSaving {
-                        ProgressView().controlSize(.small).tint(.black)
-                    } else {
-                        Text("Save")
-                    }
+        EditorSheet(
+            title: post.id.isEmpty ? "New Post" : "Edit Post",
+            isSaving: isSaving,
+            canSave: hasChanges,
+            onCancel: { dismiss() },
+            onSave: { Task { await save() } }
+        ) {
+            EditorCard(title: "Basics") {
+                LabeledField(label: "Slug", text: $post.slug)
+                LabeledField(label: "Cover Image (URL or repo path)", text: $post.coverImage)
+                Text("16:9 (a wide, short crop) works best — it becomes the hero image behind the title.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("Status", selection: $post.status) {
+                    Text("Draft").tag("draft")
+                    Text("Published").tag("published")
                 }
-                .buttonStyle(.badgipPrimary)
-                .disabled(isSaving || !hasChanges)
+                Stepper("Order: \(post.order)", value: $post.order, in: 0...999)
             }
-            .padding(20)
 
-            Divider()
-
-            Form {
-                Section("Basics") {
-                    TextField("Slug", text: $post.slug)
-                    TextField("Cover Image (URL or repo path)", text: $post.coverImage)
-                    Text("16:9 (a wide, short crop) works best — it becomes the hero image behind the title.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Picker("Status", selection: $post.status) {
-                        Text("Draft").tag("draft")
-                        Text("Published").tag("published")
-                    }
-                    Stepper("Order: \(post.order)", value: $post.order, in: 0...999)
-                }
-
-                Section("Sections (rendered in this order)") {
-                    sectionsEditor
-                }
-
-                if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.red).font(.caption)
-                }
+            EditorCard(title: "Sections (rendered in this order)") {
+                sectionsEditor
             }
-            .padding(.top, 4)
+
+            if let errorMessage {
+                Text(errorMessage).foregroundStyle(.red).font(.caption)
+            }
         }
-        .frame(minWidth: 620, minHeight: 680)
         .onAppear {
             if post.publishedAt == 0 { post.publishedAt = Date().timeIntervalSince1970 * 1000 }
             original = post
@@ -226,8 +223,11 @@ private struct BlogEditView: View {
     private var sectionsEditor: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach($post.sections) { $section in
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack {
+                        Image(systemName: sectionIcon(section.type))
+                            .foregroundStyle(Color.badgipAccent)
+                            .frame(width: 18)
                         Picker("Type", selection: $section.type) {
                             Text("Title").tag("title")
                             Text("Subtitle").tag("subtitle")
@@ -236,7 +236,7 @@ private struct BlogEditView: View {
                             Text("Code").tag("code")
                             Text("Map").tag("map")
                         }
-                        .frame(width: 180)
+                        .frame(width: 160)
                         Spacer()
                         Button {
                             post.sections.removeAll { $0.id == section.id }
@@ -251,34 +251,42 @@ private struct BlogEditView: View {
                     // sense for the other content types.
                     if !["title", "subtitle"].contains(section.type) {
                         HStack {
-                            TextField("Caption title (optional)", text: $section.title).textFieldStyle(.roundedBorder)
-                            TextField("Caption subtitle (optional)", text: $section.subtitle).textFieldStyle(.roundedBorder)
+                            LabeledField(label: "Caption title (optional)", text: $section.title)
+                            LabeledField(label: "Caption subtitle (optional)", text: $section.subtitle)
                         }
                     }
 
                     if section.type == "text" {
-                        TextEditor(text: $section.value).frame(minHeight: 70).textFieldStyle(.roundedBorder)
+                        LabeledField(label: "Text", text: $section.value, multiline: true)
                     } else if section.type == "image" {
-                        TextField("Image URL or repo path", text: $section.value).textFieldStyle(.roundedBorder)
+                        LabeledField(label: "Image URL or repo path", text: $section.value)
                         Text("16:9 (a wide, short crop) works best here.")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     } else if section.type == "code" {
-                        TextEditor(text: $section.value)
-                            .font(.system(.body, design: .monospaced))
-                            .frame(minHeight: 90)
-                            .textFieldStyle(.roundedBorder)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Code").font(.caption).foregroundStyle(.secondary)
+                            TextEditor(text: $section.value)
+                                .font(.system(.body, design: .monospaced))
+                                .frame(minHeight: 90)
+                                .padding(6)
+                                .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
+                                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.primary.opacity(0.1)))
+                        }
                     } else if section.type == "map" {
-                        TextField("Location (e.g. \"Cupertino, CA\")", text: $section.value).textFieldStyle(.roundedBorder)
+                        LabeledField(label: "Location (e.g. \"Cupertino, CA\")", text: $section.value)
                     } else {
-                        TextField(section.type == "title" ? "Title" : "Subtitle", text: $section.value).textFieldStyle(.roundedBorder)
+                        LabeledField(label: section.type == "title" ? "Title" : "Subtitle", text: $section.value)
                     }
 
-                    OptionalColorField(label: "Accent", hex: $section.accentColor, fallback: "#000000")
-                    OptionalColorField(label: "Text color", hex: $section.textColor, fallback: "#0a0a0a")
+                    HStack {
+                        OptionalColorField(label: "Accent", hex: $section.accentColor, fallback: "#000000")
+                        OptionalColorField(label: "Text color", hex: $section.textColor, fallback: "#0a0a0a")
+                    }
                 }
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.03)))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.primary.opacity(0.06)))
             }
             Button {
                 post.sections.append(BlogSection(type: "text", value: ""))
@@ -286,6 +294,17 @@ private struct BlogEditView: View {
                 Label("Add Section", systemImage: "plus")
             }
             .buttonStyle(.badgipSecondary)
+        }
+    }
+
+    private func sectionIcon(_ type: String) -> String {
+        switch type {
+        case "title": return "textformat.size.larger"
+        case "subtitle": return "textformat.size.smaller"
+        case "image": return "photo"
+        case "code": return "chevron.left.forwardslash.chevron.right"
+        case "map": return "map"
+        default: return "text.alignleft"
         }
     }
 

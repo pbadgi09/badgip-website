@@ -167,43 +167,23 @@ private struct YoutubeEditView: View {
     private var hasChanges: Bool { video != original }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(video.id.isEmpty ? "New Video" : "Edit Video")
-                    .font(.title2.weight(.bold))
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .buttonStyle(.badgipSecondary)
-                Button {
-                    Task { await save() }
-                } label: {
-                    if isSaving {
-                        ProgressView().controlSize(.small).tint(.black)
-                    } else {
-                        Text("Save")
-                    }
-                }
-                .buttonStyle(.badgipPrimary)
-                .disabled(isSaving || video.url.isEmpty || !hasChanges)
+        EditorSheet(
+            title: video.id.isEmpty ? "New Video" : "Edit Video",
+            isSaving: isSaving,
+            canSave: !video.url.isEmpty && hasChanges,
+            onCancel: { dismiss() },
+            onSave: { Task { await save() } }
+        ) {
+            EditorCard(title: "Video") {
+                LabeledField(label: "YouTube URL", text: $video.url)
+                LabeledField(label: "Title", text: $video.title)
+                Stepper("Order: \(video.order)", value: $video.order, in: 0...999)
             }
-            .padding(20)
 
-            Divider()
-
-            Form {
-                Section("Video") {
-                    TextField("YouTube URL", text: $video.url)
-                    TextField("Title", text: $video.title)
-                    Stepper("Order: \(video.order)", value: $video.order, in: 0...999)
-                }
-
-                if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.red).font(.caption)
-                }
+            if let errorMessage {
+                Text(errorMessage).foregroundStyle(.red).font(.caption)
             }
-            .padding(.top, 4)
         }
-        .frame(minWidth: 480, minHeight: 280)
     }
 
     private func save() async {

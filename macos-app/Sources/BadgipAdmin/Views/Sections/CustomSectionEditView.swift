@@ -21,53 +21,32 @@ struct CustomSectionEditView: View {
     private var hasChanges: Bool { section != original }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(section.id.isEmpty ? "New Custom Section" : "Edit Section")
-                    .font(.title2.weight(.bold))
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .buttonStyle(.badgipSecondary)
-                Button {
-                    Task { await save() }
-                } label: {
-                    if isSaving {
-                        ProgressView().controlSize(.small).tint(.black)
-                    } else {
-                        Text("Save")
-                    }
+        EditorSheet(
+            title: section.id.isEmpty ? "New Custom Section" : "Edit Section",
+            isSaving: isSaving,
+            canSave: !section.title.isEmpty && hasChanges,
+            onCancel: { dismiss() },
+            onSave: { Task { await save() } }
+        ) {
+            EditorCard(title: "Section") {
+                LabeledField(label: "Title (e.g. \"Software & Language Proficiency\")", text: $section.title)
+                Picker("Show in", selection: $section.mode) {
+                    Text("Professional").tag("professional")
+                    Text("Personal").tag("personal")
                 }
-                .buttonStyle(.badgipPrimary)
-                .disabled(isSaving || section.title.isEmpty || !hasChanges)
             }
-            .padding(20)
 
-            Divider()
-
-            Form {
-                Section("Section") {
-                    TextField("Title (e.g. \"Software & Language Proficiency\")", text: $section.title)
-                    Picker("Show in", selection: $section.mode) {
-                        Text("Professional").tag("professional")
-                        Text("Personal").tag("personal")
-                    }
-                }
-
-                Section("Items — each shown as an icon with a label underneath") {
-                    itemsEditor
-                }
-
+            EditorCard(title: "Items — each shown as an icon with a label underneath") {
+                itemsEditor
                 Text("Icon: drop in a PNG/SVG, paste an image URL, or type an emoji. Square (1:1) works best — it scales to fit its tile automatically.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
-                if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.red).font(.caption)
-                }
             }
-            .padding(.top, 4)
+
+            if let errorMessage {
+                Text(errorMessage).foregroundStyle(.red).font(.caption)
+            }
         }
-        .frame(minWidth: 620, minHeight: 580)
     }
 
     @ViewBuilder
@@ -154,6 +133,8 @@ private struct SectionItemRow: View {
                 Text(uploadError).font(.caption2).foregroundStyle(.red)
             }
         }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))
         .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.image]) { result in
             handlePicked(result)
         }
