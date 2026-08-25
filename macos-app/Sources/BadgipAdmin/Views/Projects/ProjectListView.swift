@@ -28,18 +28,28 @@ struct ProjectListView: View {
             if isLoading {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if projects.isEmpty {
-                Text("No projects yet.")
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 8) {
+                    Image(systemName: "folder.badge.plus")
+                        .font(.largeTitle)
+                        .foregroundStyle(.tertiary)
+                    Text("No projects yet — add your first one.")
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
                     ForEach(projects) { project in
-                        HStack {
-                            VStack(alignment: .leading) {
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 Text(project.title).font(.headline)
-                                Text(project.status == "published" ? "Published" : "Draft")
-                                    .font(.caption)
-                                    .foregroundStyle(project.status == "published" ? .green : .secondary)
+                                HStack(spacing: 6) {
+                                    statusBadge(for: project.status)
+                                    if !project.tags.isEmpty {
+                                        Text(project.tags.prefix(3).joined(separator: " · "))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
                             }
                             Spacer()
                             Button("Edit") { editingProject = project }
@@ -49,6 +59,7 @@ struct ProjectListView: View {
                                 Image(systemName: "trash")
                             }
                         }
+                        .padding(.vertical, 4)
                     }
                 }
             }
@@ -79,6 +90,18 @@ struct ProjectListView: View {
             Text("This removes it from the live site immediately and can't be undone.")
         }
         .task { await loadProjects() }
+    }
+
+    @ViewBuilder
+    private func statusBadge(for status: String) -> some View {
+        let isPublished = status == "published"
+        Text(isPublished ? "Published" : "Draft")
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(isPublished ? Color.green.opacity(0.15) : Color.gray.opacity(0.15))
+            .foregroundStyle(isPublished ? .green : .secondary)
+            .clipShape(Capsule())
     }
 
     private func loadProjects() async {

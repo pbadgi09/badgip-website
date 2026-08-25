@@ -18,9 +18,14 @@ struct MessagesInboxView: View {
             .padding()
 
             if messages.isEmpty {
-                Text("No messages yet.")
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 8) {
+                    Image(systemName: "tray")
+                        .font(.largeTitle)
+                        .foregroundStyle(.tertiary)
+                    Text("No messages yet.")
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
                     ForEach(messages) { message in

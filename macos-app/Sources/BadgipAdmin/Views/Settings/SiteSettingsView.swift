@@ -13,7 +13,12 @@ struct SiteSettingsView: View {
                 Text("Site Settings").font(.title2.bold())
                 Spacer()
                 if let statusMessage {
-                    Text(statusMessage).font(.caption).foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        if statusMessage == "Saved" {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        }
+                        Text(statusMessage).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 Button("Save") { Task { await save() } }
                     .buttonStyle(.borderedProminent)
