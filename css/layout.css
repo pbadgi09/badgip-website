@@ -140,6 +140,16 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+}
+
+/* Steps out of the way once Contact scrolls into view so it never sits on
+   top of the submit button (it's a fixed, viewport-relative control, so it
+   would otherwise overlap whatever content happens to rest under it). */
+.mode-switch.is-near-footer {
+  opacity: 0;
+  transform: translateX(-50%) translateY(16px);
+  pointer-events: none;
 }
 
 .mode-switch__btn {
@@ -572,50 +582,66 @@
   color: var(--color-text);
 }
 
-/* ---------- Project detail (inline expand) ---------- */
+/* ---------- Project detail (full-screen matched-geometry expand) ---------- */
 .project-card.is-expanded {
-  border-color: var(--color-accent-dim);
-  box-shadow: 0 0 0 1px var(--color-accent-dim);
+  /* The full-screen panel starts at this card's exact rect and only ever
+     grows from there, so it fully occludes the card for the whole
+     transition — no need to hide it too (and doing so via opacity fought
+     with GSAP's own inline opacity from the scroll-reveal animation). */
+  pointer-events: none;
 }
 
-.project-detail-inline {
-  grid-column: 1 / -1;
-  overflow: hidden;
-  height: 0;
-  opacity: 0;
+.project-fullscreen {
+  background: var(--color-bg);
+  z-index: var(--z-overlay);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.35);
+  will-change: top, left, width, height;
 }
 
-.project-detail-inline__panel {
+.project-fullscreen__hero {
   position: relative;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-bg-elevated);
-  padding: var(--space-16) var(--space-12);
-  margin-top: var(--space-4);
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  overflow: hidden;
+  background: var(--color-bg-elevated-2);
 }
 
-.project-detail-inline__close {
-  position: absolute;
+.project-fullscreen__hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.project-fullscreen__close {
+  position: fixed;
   top: var(--space-6);
-  right: var(--space-6);
-  display: flex;
+  left: var(--space-6);
+  z-index: 2;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--color-border-strong);
-  font-family: var(--font-mono);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-5) var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   font-size: var(--fs-sm);
-  color: var(--color-text-dim);
-  transition: border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out);
+  font-weight: 600;
+  color: var(--color-text);
+  transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
 }
 
-.project-detail-inline__close:hover {
-  color: var(--color-accent-dim);
+.project-fullscreen__close:hover {
+  transform: translateX(-2px);
   border-color: var(--color-accent-dim);
-  transform: rotate(90deg);
+}
+
+.project-fullscreen__content {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-16) var(--page-margin-x) var(--space-32);
 }
 
 .project-detail-inline__gallery {
@@ -650,7 +676,7 @@
 
 .project-detail-inline__body {
   max-width: 640px;
-  margin: var(--space-10) auto 0;
+  margin: var(--space-8) auto 0;
   text-align: center;
 }
 
@@ -923,7 +949,37 @@
   margin-bottom: var(--space-6);
 }
 
+.blog-section__item-title {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.blog-section__item-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-dim);
+  margin-bottom: var(--space-3);
+}
+
+.blog-section__code {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+  overflow-x: auto;
+}
+
+.blog-section__code code {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--color-text);
+  white-space: pre;
+}
+
 .blog-section__map {
+  position: relative;
   aspect-ratio: 16 / 9;
   width: 100%;
   border-radius: var(--radius-md);
@@ -937,11 +993,30 @@
   border: none;
 }
 
+.blog-section__map-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: none;
+  background: rgba(10, 10, 10, 0.04);
+  backdrop-filter: blur(1px);
+  color: var(--color-text-dim);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.blog-section__map-overlay:hover {
+  background: rgba(10, 10, 10, 0.08);
+}
+
 /* ---------- Custom sections ---------- */
 .custom-section__grid {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-10);
+  gap: var(--space-12) var(--space-8);
 }
 
 .custom-section__item {
@@ -952,21 +1027,25 @@
 }
 
 .custom-section__icon {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
+  padding: 12px;
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
+  box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  transition: transform var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out);
+  transition: transform var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out);
 }
 
 .custom-section__item:hover .custom-section__icon {
   transform: translateY(-4px);
   border-color: var(--color-accent-dim);
+  box-shadow: 0 16px 28px -14px rgba(0, 0, 0, 0.22);
 }
 
 .custom-section__icon img {

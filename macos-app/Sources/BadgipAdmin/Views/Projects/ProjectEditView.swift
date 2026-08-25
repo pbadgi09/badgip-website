@@ -7,9 +7,18 @@ struct ProjectEditView: View {
     @State var project: Project
     var onSave: (Project) -> Void
 
+    @State private var original: Project
     @State private var tagsText: String = ""
     @State private var isSaving = false
     @State private var errorMessage: String?
+
+    init(project: Project, onSave: @escaping (Project) -> Void) {
+        _project = State(initialValue: project)
+        _original = State(initialValue: project)
+        self.onSave = onSave
+    }
+
+    private var hasChanges: Bool { project != original }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -29,7 +38,7 @@ struct ProjectEditView: View {
                     }
                 }
                 .buttonStyle(.badgipPrimary)
-                .disabled(isSaving || project.title.isEmpty)
+                .disabled(isSaving || project.title.isEmpty || !hasChanges)
             }
             .padding(20)
 
@@ -87,6 +96,7 @@ struct ProjectEditView: View {
         errorMessage = nil
         do {
             project = try rtdb.saveProject(project)
+            original = project
             onSave(project)
         } catch {
             errorMessage = error.localizedDescription

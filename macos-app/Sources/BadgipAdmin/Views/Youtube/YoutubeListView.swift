@@ -154,8 +154,17 @@ private struct YoutubeEditView: View {
     @State var video: YoutubeVideo
     var onSave: (YoutubeVideo) -> Void
 
+    @State private var original: YoutubeVideo
     @State private var isSaving = false
     @State private var errorMessage: String?
+
+    init(video: YoutubeVideo, onSave: @escaping (YoutubeVideo) -> Void) {
+        _video = State(initialValue: video)
+        _original = State(initialValue: video)
+        self.onSave = onSave
+    }
+
+    private var hasChanges: Bool { video != original }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -175,7 +184,7 @@ private struct YoutubeEditView: View {
                     }
                 }
                 .buttonStyle(.badgipPrimary)
-                .disabled(isSaving || video.url.isEmpty)
+                .disabled(isSaving || video.url.isEmpty || !hasChanges)
             }
             .padding(20)
 
@@ -202,6 +211,7 @@ private struct YoutubeEditView: View {
         errorMessage = nil
         do {
             video = try rtdb.saveYoutubeVideo(video)
+            original = video
             onSave(video)
         } catch {
             errorMessage = error.localizedDescription

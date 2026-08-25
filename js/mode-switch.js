@@ -15,6 +15,28 @@ export function initModeSwitch() {
       localStorage.setItem(STORAGE_KEY, mode);
     });
   });
+
+  initAutoHideNearContact();
+}
+
+// The mode switch is a fixed, viewport-relative pill — without this it would
+// permanently sit on top of whatever content is at that screen position once
+// the page is scrolled near the end, including the contact form's submit
+// button. Stepping it out of the way once Contact is in view avoids that.
+function initAutoHideNearContact() {
+  const contact = document.getElementById('contact');
+  const modeSwitch = document.getElementById('modeSwitch');
+  if (!contact || !modeSwitch || !window.IntersectionObserver) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        modeSwitch.classList.toggle('is-near-footer', entry.isIntersecting);
+      });
+    },
+    { rootMargin: '0px 0px -20% 0px', threshold: 0 }
+  );
+  observer.observe(contact);
 }
 
 function applyMode(mode, { animate }) {

@@ -3,9 +3,12 @@ import SwiftUI
 struct AboutEditorView: View {
     @EnvironmentObject private var rtdb: RTDBService
     @State private var about = AboutContent()
+    @State private var original = AboutContent()
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var statusMessage: String?
+
+    private var hasChanges: Bool { about != original }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -30,7 +33,7 @@ struct AboutEditorView: View {
                     }
                 }
                 .buttonStyle(.badgipPrimary)
-                .disabled(isSaving)
+                .disabled(isSaving || !hasChanges)
             }
             .padding(24)
 
@@ -107,6 +110,7 @@ struct AboutEditorView: View {
         isLoading = true
         do {
             about = try await rtdb.fetchAbout()
+            original = about
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -116,6 +120,7 @@ struct AboutEditorView: View {
     private func save() async {
         isSaving = true
         rtdb.saveAbout(about)
+        original = about
         statusMessage = "Saved"
         isSaving = false
     }

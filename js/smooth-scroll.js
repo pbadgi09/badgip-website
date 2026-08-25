@@ -16,6 +16,12 @@ export function initSmoothScroll() {
     touchMultiplier: 2,
   });
 
+  // Exposed so modal/overlay code (scroll-lock.js) can stop/start Lenis
+  // around opening a full-screen panel — toggling body's overflow while
+  // Lenis keeps recalculating its scroll dimensions on its own RAF loop is
+  // what was causing scroll-reveal animations to spuriously reverse.
+  window.__lenis = lenis;
+
   lenis.on('scroll', window.ScrollTrigger.update);
 
   window.gsap.ticker.add((time) => {

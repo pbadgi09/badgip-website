@@ -155,8 +155,17 @@ private struct BlogEditView: View {
     @State var post: BlogPost
     var onSave: (BlogPost) -> Void
 
+    @State private var original: BlogPost
     @State private var isSaving = false
     @State private var errorMessage: String?
+
+    init(post: BlogPost, onSave: @escaping (BlogPost) -> Void) {
+        _post = State(initialValue: post)
+        _original = State(initialValue: post)
+        self.onSave = onSave
+    }
+
+    private var hasChanges: Bool { post != original }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -176,7 +185,7 @@ private struct BlogEditView: View {
                     }
                 }
                 .buttonStyle(.badgipPrimary)
-                .disabled(isSaving)
+                .disabled(isSaving || !hasChanges)
             }
             .padding(20)
 
@@ -206,6 +215,7 @@ private struct BlogEditView: View {
         .frame(minWidth: 620, minHeight: 680)
         .onAppear {
             if post.publishedAt == 0 { post.publishedAt = Date().timeIntervalSince1970 * 1000 }
+            original = post
         }
     }
 
@@ -220,6 +230,7 @@ private struct BlogEditView: View {
                             Text("Subtitle").tag("subtitle")
                             Text("Text").tag("text")
                             Text("Image").tag("image")
+                            Text("Code").tag("code")
                             Text("Map").tag("map")
                         }
                         .frame(width: 180)
@@ -231,10 +242,26 @@ private struct BlogEditView: View {
                         }
                         .buttonStyle(.badgipIcon(tint: .red))
                     }
+
+                    // Standalone title/subtitle sections ARE the caption, so
+                    // the optional per-section caption fields only make
+                    // sense for the other content types.
+                    if !["title", "subtitle"].contains(section.type) {
+                        HStack {
+                            TextField("Caption title (optional)", text: $section.title).textFieldStyle(.roundedBorder)
+                            TextField("Caption subtitle (optional)", text: $section.subtitle).textFieldStyle(.roundedBorder)
+                        }
+                    }
+
                     if section.type == "text" {
                         TextEditor(text: $section.value).frame(minHeight: 70).textFieldStyle(.roundedBorder)
                     } else if section.type == "image" {
                         TextField("Image URL or repo path", text: $section.value).textFieldStyle(.roundedBorder)
+                    } else if section.type == "code" {
+                        TextEditor(text: $section.value)
+                            .font(.system(.body, design: .monospaced))
+                            .frame(minHeight: 90)
+                            .textFieldStyle(.roundedBorder)
                     } else if section.type == "map" {
                         TextField("Location (e.g. \"Cupertino, CA\")", text: $section.value).textFieldStyle(.roundedBorder)
                     } else {
@@ -258,6 +285,7 @@ private struct BlogEditView: View {
         errorMessage = nil
         do {
             post = try rtdb.saveBlogPost(post)
+            original = post
             onSave(post)
         } catch {
             errorMessage = error.localizedDescription

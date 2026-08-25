@@ -1,4 +1,5 @@
 import { jsDelivrBase } from './config.js';
+import { lockBodyScroll, unlockBodyScroll } from './scroll-lock.js';
 
 function imageUrl(path) {
   if (!path) return '';
@@ -50,7 +51,7 @@ export function renderProjects(projects) {
         </div>
       </div>
     `;
-    const open = () => toggleProjectDetail(project, card);
+    const open = () => openProjectDetail(project, card);
     card.addEventListener('click', open);
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -79,12 +80,16 @@ export function renderProjects(projects) {
   });
 }
 
-// Only one project can be expanded inline at a time.
-let openDetail = null; // { id, card, panel }
+// Only one project can be open full-screen at a time.
+let openDetail = null; // { id, card, panel, escHandler }
 
-function buildDetailMarkup(project) {
+function buildFullscreenMarkup(project) {
   const embedId = youtubeEmbedId(project.youtubeUrl);
   const galleryPaths = project.gallery || [];
+
+  const heroHtml = project.coverImage
+    ? `<div class="project-fullscreen__hero"><img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" /></div>`
+    : '';
 
   const galleryHtml = galleryPaths.length
     ? `<div class="project-detail-inline__gallery">
@@ -106,81 +111,125 @@ function buildDetailMarkup(project) {
   if (project.repoUrl) links.push(`<a href="${project.repoUrl}" target="_blank" rel="noopener" class="btn btn--ghost">Source</a>`);
 
   return `
-    <div class="project-detail-inline__panel">
-      <button class="project-detail-inline__close mono" aria-label="Close">✕</button>
-      ${galleryHtml}
-      ${videoHtml}
+    ${heroHtml}
+    <button class="project-fullscreen__close mono" aria-label="Close and return to projects">
+      <span aria-hidden="true">←</span> Back to Projects
+    </button>
+    <div class="project-fullscreen__content">
       <div class="project-detail-inline__body">
         <span class="eyebrow">${escapeHtml((project.tags || [])[0] || 'Project')}</span>
-        <h3 class="section-title">${escapeHtml(project.title)}</h3>
+        <h2 class="section-title">${escapeHtml(project.title)}</h2>
         <p>${escapeHtml(project.description || project.summary)}</p>
         ${links.length ? `<div class="project-detail-inline__links">${links.join('')}</div>` : ''}
       </div>
+      ${galleryHtml}
+      ${videoHtml}
     </div>
   `;
 }
 
-function closeDetail(immediate) {
+function openProjectDetail(project, card) {
+  if (openDetail) return;
+
+  const cardRect = card.getBoundingClientRect();
+  const cardRadius = parseFloat(getComputedStyle(card).borderRadius) || 28;
+
+  lockBodyScroll();
+
+  const panel = document.createElement('div');
+  panel.className = 'project-fullscreen';
+  panel.innerHTML = buildFullscreenMarkup(project);
+  document.body.appendChild(panel);
+
+  const content = panel.querySelector('.project-fullscreen__content');
+  const closeBtn = panel.querySelector('.project-fullscreen__close');
+
+  const escHandler = (e) => {
+    if (e.key === 'Escape') closeProjectDetail();
+  };
+  document.addEventListener('keydown', escHandler);
+  closeBtn.addEventListener('click', () => closeProjectDetail());
+
+  card.classList.add('is-expanded');
+  openDetail = { id: project.id, card, panel, escHandler };
+
+  if (!window.gsap) {
+    panel.style.position = 'fixed';
+    panel.style.inset = '0';
+    panel.style.overflowY = 'auto';
+    content.style.opacity = '1';
+    closeBtn.style.opacity = '1';
+    return;
+  }
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  window.gsap.set(panel, {
+    position: 'fixed',
+    top: cardRect.top,
+    left: cardRect.left,
+    width: cardRect.width,
+    height: cardRect.height,
+    borderRadius: cardRadius,
+    overflow: 'hidden',
+  });
+  window.gsap.set([content, closeBtn], { opacity: 0, y: 16 });
+
+  const tl = window.gsap.timeline({
+    onComplete: () => {
+      panel.style.overflowY = 'auto';
+    },
+  });
+  tl.to(panel, {
+    top: 0,
+    left: 0,
+    width: vw,
+    height: vh,
+    borderRadius: 0,
+    duration: 0.6,
+    ease: 'power3.inOut',
+  }).to([content, closeBtn], { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, '-=0.25');
+}
+
+function closeProjectDetail() {
   if (!openDetail) return;
-  const { card, panel } = openDetail;
+  const { card, panel, escHandler } = openDetail;
+  document.removeEventListener('keydown', escHandler);
   card.classList.remove('is-expanded');
   openDetail = null;
 
-  if (immediate || !window.gsap) {
+  if (!window.gsap) {
     panel.remove();
-    window.ScrollTrigger?.refresh();
+    unlockBodyScroll();
     return;
   }
 
-  window.gsap.to(panel, {
-    height: 0,
-    opacity: 0,
-    duration: 0.35,
-    ease: 'power2.in',
+  const cardRect = card.getBoundingClientRect();
+  const cardRadius = parseFloat(getComputedStyle(card).borderRadius) || 28;
+  const content = panel.querySelector('.project-fullscreen__content');
+  const closeBtn = panel.querySelector('.project-fullscreen__close');
+
+  panel.style.overflowY = 'hidden';
+  panel.scrollTop = 0;
+
+  const tl = window.gsap.timeline({
     onComplete: () => {
       panel.remove();
-      window.ScrollTrigger?.refresh();
+      unlockBodyScroll();
     },
   });
-}
-
-function toggleProjectDetail(project, card) {
-  if (openDetail && openDetail.id === project.id) {
-    closeDetail();
-    return;
-  }
-
-  const wasOpenForAnotherCard = Boolean(openDetail);
-  if (wasOpenForAnotherCard) closeDetail(true);
-
-  const panel = document.createElement('div');
-  panel.className = 'project-detail-inline';
-  panel.innerHTML = buildDetailMarkup(project);
-  card.insertAdjacentElement('afterend', panel);
-  card.classList.add('is-expanded');
-
-  panel.querySelector('.project-detail-inline__close').addEventListener('click', () => closeDetail());
-
-  openDetail = { id: project.id, card, panel };
-
-  if (!window.gsap) {
-    panel.style.height = 'auto';
-    panel.style.opacity = '1';
-    return;
-  }
-
-  window.gsap.set(panel, { height: 0, opacity: 0 });
-  requestAnimationFrame(() => {
-    const targetHeight = panel.scrollHeight;
-    window.gsap.to(panel, {
-      height: targetHeight,
-      opacity: 1,
+  tl.to([content, closeBtn], { opacity: 0, y: 16, duration: 0.2, ease: 'power2.in' }).to(
+    panel,
+    {
+      top: cardRect.top,
+      left: cardRect.left,
+      width: cardRect.width,
+      height: cardRect.height,
+      borderRadius: cardRadius,
       duration: 0.5,
-      ease: 'power3.out',
-      onComplete: () => {
-        panel.style.height = 'auto';
-        window.ScrollTrigger?.refresh();
-      },
-    });
-  });
+      ease: 'power3.inOut',
+    },
+    '-=0.05'
+  );
 }

@@ -1,4 +1,5 @@
 import { jsDelivrBase } from './config.js';
+import { lockBodyScroll, unlockBodyScroll } from './scroll-lock.js';
 
 function imageUrl(path) {
   if (!path) return '';
@@ -124,19 +125,41 @@ export function renderBlogGrid(posts) {
   });
 }
 
+function renderSectionCaption(section) {
+  // Any section can optionally carry its own title/subtitle — e.g. a small
+  // caption sitting above a code block or image, distinct from the
+  // standalone "title"/"subtitle" section types used for the post's own
+  // headings.
+  const parts = [];
+  if (section.title) parts.push(`<h3 class="blog-section__item-title">${escapeHtml(section.title)}</h3>`);
+  if (section.subtitle) parts.push(`<p class="blog-section__item-subtitle">${escapeHtml(section.subtitle)}</p>`);
+  return parts.join('');
+}
+
 function renderBlogSection(section) {
   const value = section.value;
+  const caption = renderSectionCaption(section);
+
   switch (section.type) {
     case 'title':
       return `<h2 class="blog-section__title">${escapeHtml(value)}</h2>`;
     case 'subtitle':
       return `<p class="blog-section__subtitle">${escapeHtml(value)}</p>`;
     case 'text':
-      return `<p class="blog-section__text">${escapeHtml(value)}</p>`;
+      return `${caption}<p class="blog-section__text">${escapeHtml(value)}</p>`;
     case 'image':
-      return `<img class="blog-section__image" src="${imageUrl(value)}" alt="" loading="lazy" />`;
+      return `${caption}<img class="blog-section__image" src="${imageUrl(value)}" alt="" loading="lazy" />`;
+    case 'code':
+      return `${caption}<pre class="blog-section__code"><code>${escapeHtml(value)}</code></pre>`;
     case 'map':
-      return `<div class="blog-section__map"><iframe src="https://www.google.com/maps?q=${encodeURIComponent(value)}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map: ${escapeHtml(value)}"></iframe></div>`;
+      // Google Maps embeds capture the wheel for zoom, which makes the page
+      // scroll appear to "stick" the moment the cursor crosses the map. A
+      // click-to-activate cover keeps the wheel scrolling the page until the
+      // reader deliberately opts into interacting with the map.
+      return `${caption}<div class="blog-section__map">
+        <iframe src="https://www.google.com/maps?q=${encodeURIComponent(value)}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map: ${escapeHtml(value)}"></iframe>
+        <button type="button" class="blog-section__map-overlay mono">Click to interact with map</button>
+      </div>`;
     default:
       return '';
   }
@@ -152,10 +175,13 @@ function openBlogOverlay(post) {
   const overlay = document.getElementById('blogOverlay');
   const sectionsEl = document.getElementById('blogOverlaySections');
   sectionsEl.innerHTML = (post.sections || []).map(renderBlogSection).join('');
+  sectionsEl.querySelectorAll('.blog-section__map-overlay').forEach((btn) => {
+    btn.addEventListener('click', () => btn.remove());
+  });
 
   const close = () => {
     overlay.classList.remove('is-open');
-    document.body.style.overflow = '';
+    unlockBodyScroll();
     setTimeout(() => overlay.remove(), 400);
   };
 
@@ -170,6 +196,6 @@ function openBlogOverlay(post) {
     }
   });
 
-  document.body.style.overflow = 'hidden';
+  lockBodyScroll();
   requestAnimationFrame(() => overlay.classList.add('is-open'));
 }

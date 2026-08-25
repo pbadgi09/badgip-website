@@ -18,4 +18,29 @@ enum ImagePathBuilder {
         let safeSlug = slug.isEmpty ? "untitled" : slug
         return "projects/\(safeSlug)/\(filename)"
     }
+
+    /// Same idea as the project variants above, but for custom-section item
+    /// icons: "assets/sections/<sectionId>/<filename>" on the repo side,
+    /// "sections/<sectionId>/<filename>" as the RTDB-stored/site-facing path.
+    static func sectionIconRepoPath(sectionId: String, filename: String) -> String {
+        let safeId = sectionId.isEmpty ? "untitled" : sectionId
+        return "assets/sections/\(safeId)/\(filename)"
+    }
+
+    static func sectionIconStoredPath(sectionId: String, filename: String) -> String {
+        let safeId = sectionId.isEmpty ? "untitled" : sectionId
+        return "sections/\(safeId)/\(filename)"
+    }
+
+    /// Same idea, for blog post images: "assets/blog/<slug>/<filename>" repo
+    /// side, "blog/<slug>/<filename>" as the RTDB-stored/site-facing path.
+    static func blogImageRepoPath(slug: String, filename: String) -> String {
+        let safeSlug = slug.isEmpty ? "untitled" : slug
+        return "assets/blog/\(safeSlug)/\(filename)"
+    }
+
+    static func blogImageStoredPath(slug: String, filename: String) -> String {
+        let safeSlug = slug.isEmpty ? "untitled" : slug
+        return "blog/\(safeSlug)/\(filename)"
+    }
 }

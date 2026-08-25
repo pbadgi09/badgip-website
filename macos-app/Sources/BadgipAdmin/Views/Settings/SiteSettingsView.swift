@@ -3,9 +3,12 @@ import SwiftUI
 struct SiteSettingsView: View {
     @EnvironmentObject private var rtdb: RTDBService
     @State private var settings = SiteSettings()
+    @State private var original = SiteSettings()
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var statusMessage: String?
+
+    private var hasChanges: Bool { settings != original }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -30,7 +33,7 @@ struct SiteSettingsView: View {
                     }
                 }
                 .buttonStyle(.badgipPrimary)
-                .disabled(isSaving)
+                .disabled(isSaving || !hasChanges)
             }
             .padding(24)
 
@@ -129,6 +132,7 @@ struct SiteSettingsView: View {
                     NavItem(label: "Contact", href: "#contact", number: "03"),
                 ]
             }
+            original = settings
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -138,6 +142,7 @@ struct SiteSettingsView: View {
     private func save() async {
         isSaving = true
         rtdb.saveSettings(settings)
+        original = settings
         statusMessage = "Saved"
         isSaving = false
     }

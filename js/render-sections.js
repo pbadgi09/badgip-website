@@ -1,3 +1,5 @@
+import { jsDelivrBase } from './config.js';
+
 const TEMPLATE_IDS = {
   about: 'sectionTemplate-about',
   projects: 'sectionTemplate-projects',
@@ -28,10 +30,15 @@ function slugify(str) {
     .replace(/(^-|-$)/g, '') || 'section';
 }
 
+function isImagePath(icon) {
+  return /^https?:\/\//.test(icon) || /\.(png|jpe?g|svg|webp|gif)$/i.test(icon);
+}
+
 function iconMarkup(icon) {
   if (!icon) return '';
-  if (/^https?:\/\//.test(icon) || icon.startsWith('assets/')) {
-    return `<img src="${icon}" alt="" loading="lazy" />`;
+  if (isImagePath(icon)) {
+    const src = /^https?:\/\//.test(icon) ? icon : `${jsDelivrBase}/${icon.replace(/^\/+/, '')}`;
+    return `<img src="${src}" alt="" loading="lazy" />`;
   }
   return `<span class="custom-section__emoji">${escapeHtml(icon)}</span>`;
 }

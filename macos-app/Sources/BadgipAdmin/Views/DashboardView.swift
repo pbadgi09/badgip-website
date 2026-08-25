@@ -6,6 +6,7 @@ enum DashboardSection: String, CaseIterable, Identifiable {
     case sections = "Sections"
     case youtube = "YouTube"
     case blog = "Blog"
+    case gallery = "Gallery"
     case settings = "Settings"
     case messages = "Messages"
     case deploy = "Deploy"
@@ -19,6 +20,7 @@ enum DashboardSection: String, CaseIterable, Identifiable {
         case .sections: return "square.grid.2x2"
         case .youtube: return "play.rectangle"
         case .blog: return "doc.richtext"
+        case .gallery: return "photo.on.rectangle.angled"
         case .settings: return "gearshape"
         case .messages: return "envelope"
         case .deploy: return "arrow.triangle.2.circlepath"
@@ -83,6 +85,7 @@ struct DashboardView: View {
         case .sections: SectionsView()
         case .youtube: YoutubeListView()
         case .blog: BlogListView()
+        case .gallery: GalleryView()
         case .settings: SiteSettingsView()
         case .messages: MessagesInboxView()
         case .deploy: DeployControlsView()
