@@ -3,18 +3,15 @@
 Manual steps required outside this codebase to bring the rewritten site (and later, the macOS app) fully online. Code-side work is done; these are console/account actions only you can take.
 
 ## 1. Firebase (`itspranavbadgi` project)
-- [ ] **Authentication → Sign-in method**: enable the **Google** provider.
-- [ ] Sign in once (via the site's future macOS app, or manually create a user under Authentication → Users) to get your admin **UID**.
-- [ ] Open `database.rules.json` in this repo, replace every `'ADMIN_UID'` placeholder with your real UID.
-- [ ] Deploy the rules: paste the file's contents into Firebase console → Realtime Database → Rules → publish. (Or install the Firebase CLI and run `firebase deploy --only database` — optional, not required.)
-- [ ] Verify rules with the Rules Playground: public read of `projects`/`settings`/`about` succeeds; anonymous read of `messages` fails; anonymous *create* of a new `messages/$id` succeeds; anonymous *overwrite* of an existing message fails; your admin UID can read/write everywhere.
-- [ ] Seed initial content directly in the console (or wait for the macOS app): `settings`, `about`, and a couple of `projects` entries, so the site isn't empty.
-- [ ] When you start the macOS app: register a macOS app under Project settings → Your apps, download `GoogleService-Info.plist`, replace the placeholder at `macos-app/Sources/BadgipAdmin/Resources/GoogleService-Info.plist`.
+- [x] **Authentication → Sign-in method**: enabled the **Google** provider.
+- [x] Got the admin **UID** (`WnssuGlei3M2aSbav6iWftHCmug1`) via a one-off local sign-in page.
+- [x] `database.rules.json` updated with the real UID and published to Realtime Database → Rules (verified live via REST: public reads work, anonymous read/write on `messages` denied except create).
+- [ ] Seed initial content: `settings`, `about`, and a couple of `projects` entries — now done through the macOS app instead of the console.
+- [x] Registered a macOS app under Project settings → Your apps, downloaded `GoogleService-Info.plist`, placed at `macos-app/Sources/BadgipAdmin/Resources/GoogleService-Info.plist`.
 
 ## 1b. Google Sign-In OAuth client (for the macOS app)
-- [ ] In Google Cloud Console (same project as Firebase), create an OAuth 2.0 Client ID of type **iOS**, bundle ID `com.badgip.admin` — native macOS apps can't use the GoogleSignIn SDK, so the app does a manual OAuth+PKCE flow instead (see `macos-app/README.md`).
-- [ ] Paste the client ID into `macos-app/Sources/BadgipAdmin/Services/Config.swift`.
-- [ ] In Xcode, add a URL Type (`com.badgip.admin`) to the `BadgipAdmin` target's Info settings — required for the OAuth callback to reach the app. Full detail in `macos-app/README.md`.
+- [x] No separate Google Cloud Console setup needed — Firebase auto-provisioned an OAuth client when the Apple app was registered with Google Sign-In enabled. Its `CLIENT_ID`/`REVERSED_CLIENT_ID` (from the plist) are already set in `macos-app/Sources/BadgipAdmin/Services/Config.swift`.
+- [ ] In Xcode, add a URL Type (`com.googleusercontent.apps.466226587643-o1gmqikbvocdt2faps83via4hsldhmt6`) to the `BadgipAdmin` target's Info settings — required for the OAuth callback to reach the app. Full detail in `macos-app/README.md`.
 
 ## 2. EmailJS (contact form notifications)
 - [ ] Create a free account at emailjs.com.

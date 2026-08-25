@@ -4,10 +4,10 @@ Native SwiftUI companion app for managing the itspranavbadgi.com content in Fire
 
 ## One-time setup before building
 
-1. **Firebase**: register a macOS app for the `itspranavbadgi` project (Firebase console → Project settings → Your apps), download `GoogleService-Info.plist`, and replace the placeholder at `Sources/BadgipAdmin/Resources/GoogleService-Info.plist`.
-2. **Google Sign-In OAuth client**: native macOS apps (non-Catalyst) can't use the GoogleSignIn-iOS SDK, so this app authenticates via `AuthenticationServices` + a manual OAuth 2.0 + PKCE flow (see `Services/FirebaseAuthService.swift`). Create an OAuth 2.0 Client ID of type **iOS** in Google Cloud Console (same GCP project as Firebase), with bundle ID `com.badgip.admin`. Copy the client ID into `Services/Config.swift` (`GoogleOAuthConfig.clientID`).
+1. **Firebase**: done — `Sources/BadgipAdmin/Resources/GoogleService-Info.plist` has the real config for the registered `com.badgip.admin` macOS app.
+2. **Google Sign-In OAuth client**: done — native macOS apps (non-Catalyst) can't use the GoogleSignIn-iOS SDK, so this app authenticates via `AuthenticationServices` + a manual OAuth 2.0 + PKCE flow (see `Services/FirebaseAuthService.swift`). Firebase auto-provisioned a matching OAuth client when the app was registered with Google Sign-In enabled; its `CLIENT_ID`/`REVERSED_CLIENT_ID` (from the plist) are already set in `Services/Config.swift`.
 3. **GitHub PAT**: create a fine-grained personal access token scoped to just the `badgip-website` repo, with `Contents: Read and write` and `Actions: Read and write`. Enter it once in the app's Deploy tab — it's stored in macOS Keychain, never in this repo.
-4. **URL scheme registration (required for sign-in to work)**: the OAuth callback (`com.badgip.admin:/oauth2redirect`) only reaches the app if macOS knows to route that URL scheme to it. A plain `Package.swift` target can't declare this — after opening the project in Xcode, select the `BadgipAdmin` target → **Info** tab → **URL Types** → add one with scheme `com.badgip.admin`. Without this step, `signInWithGoogle()` will open the browser but the callback will never return to the app.
+4. **URL scheme registration (required for sign-in to work, not yet done)**: the OAuth callback only reaches the app if macOS knows to route its custom URL scheme to it. A plain `Package.swift` target can't declare this — after opening the project in Xcode, select the `BadgipAdmin` target → **Info** tab → **URL Types** → add one with scheme `com.googleusercontent.apps.466226587643-o1gmqikbvocdt2faps83via4hsldhmt6` (the `REVERSED_CLIENT_ID` from the plist). Without this step, `signInWithGoogle()` will open the browser but the callback will never return to the app.
 
 ## Building
 
