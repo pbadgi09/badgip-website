@@ -38,19 +38,22 @@ struct BlogListView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        ForEach(posts) { post in
-                            BlogRow(
-                                post: post,
-                                onEdit: { editingPost = post },
-                                onDelete: { pendingDelete = post }
-                            )
-                        }
-                    }
+                Text("Capped to the first 5 on the site — drag rows to reorder.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 8)
+                List {
+                    ForEach(posts) { post in
+                        BlogRow(
+                            post: post,
+                            onEdit: { editingPost = post },
+                            onDelete: { pendingDelete = post }
+                        )
+                    }
+                    .onMove(perform: move)
                 }
+                .listStyle(.plain)
             }
         }
         .sheet(item: $editingPost) { post in
@@ -79,6 +82,12 @@ struct BlogListView: View {
             Text("This removes it from the live site immediately and can't be undone.")
         }
         .task { await loadPosts() }
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        posts.move(fromOffsets: source, toOffset: destination)
+        for index in posts.indices { posts[index].order = index }
+        rtdb.reorderBlogPosts(posts)
     }
 
     private func loadPosts() async {
@@ -139,6 +148,8 @@ private struct BlogRow: View {
                 Image(systemName: "trash")
             }
             .buttonStyle(.badgipIcon(tint: .red))
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.tertiary)
         }
         .padding(16)
         .background(

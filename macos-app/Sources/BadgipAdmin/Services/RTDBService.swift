@@ -80,6 +80,16 @@ final class RTDBService: ObservableObject {
         db.child("personalYoutube").child(id).removeValue()
     }
 
+    /// Batch-writes just the `order` field for every video passed in — used
+    /// after a drag-and-drop reorder.
+    func reorderYoutubeVideos(_ videos: [YoutubeVideo]) {
+        var updates: [String: Any] = [:]
+        for video in videos {
+            updates["personalYoutube/\(video.id)/order"] = video.order
+        }
+        db.updateChildValues(updates)
+    }
+
     // MARK: - Personal Blog
 
     func fetchBlogPosts() async throws -> [BlogPost] {
@@ -99,6 +109,16 @@ final class RTDBService: ObservableObject {
 
     func deleteBlogPost(id: String) {
         db.child("personalBlog").child(id).removeValue()
+    }
+
+    /// Batch-writes just the `order` field for every post passed in — used
+    /// after a drag-and-drop reorder.
+    func reorderBlogPosts(_ posts: [BlogPost]) {
+        var updates: [String: Any] = [:]
+        for post in posts {
+            updates["personalBlog/\(post.id)/order"] = post.order
+        }
+        db.updateChildValues(updates)
     }
 
     // MARK: - Page Sections

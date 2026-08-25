@@ -23,6 +23,57 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+const INITIAL_PROJECT_COUNT = 6;
+
+function buildProjectCard(project) {
+  const card = document.createElement('article');
+  card.className = 'project-card reveal';
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
+  card.innerHTML = `
+    <div class="project-card__media${project.coverImage ? '' : ' project-card__media--empty'}">
+      ${
+        project.coverImage
+          ? `<img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" loading="lazy" />`
+          : `<span class="project-card__initial mono">${escapeHtml((project.title || '?').charAt(0).toUpperCase())}</span>`
+      }
+      ${project.featured ? '<span class="project-card__featured mono">Featured</span>' : ''}
+    </div>
+    <div class="project-card__body">
+      <h3 class="project-card__title">${escapeHtml(project.title)}</h3>
+      <p class="project-card__summary">${escapeHtml(project.summary)}</p>
+      <div class="project-card__tags">
+        ${(project.tags || []).map((t) => `<span class="tag mono">${escapeHtml(t)}</span>`).join('')}
+      </div>
+    </div>
+  `;
+  const open = () => openProjectDetail(project, card);
+  card.addEventListener('click', open);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      open();
+    }
+  });
+  const img = card.querySelector('.project-card__media img');
+  if (img) {
+    img.addEventListener(
+      'error',
+      () => {
+        const media = card.querySelector('.project-card__media');
+        media.classList.add('project-card__media--empty');
+        img.remove();
+        const initial = document.createElement('span');
+        initial.className = 'project-card__initial mono';
+        initial.textContent = (project.title || '?').charAt(0).toUpperCase();
+        media.prepend(initial);
+      },
+      { once: true }
+    );
+  }
+  return card;
+}
+
 export function renderProjects(projects) {
   const grid = document.getElementById('projectsGrid');
   grid.innerHTML = '';
@@ -32,54 +83,51 @@ export function renderProjects(projects) {
     return;
   }
 
-  projects.forEach((project) => {
-    const card = document.createElement('article');
-    card.className = 'project-card reveal';
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    card.innerHTML = `
-      <div class="project-card__media${project.coverImage ? '' : ' project-card__media--empty'}">
-        ${
-          project.coverImage
-            ? `<img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" loading="lazy" />`
-            : `<span class="project-card__initial mono">${escapeHtml((project.title || '?').charAt(0).toUpperCase())}</span>`
-        }
-        ${project.featured ? '<span class="project-card__featured mono">Featured</span>' : ''}
-      </div>
-      <div class="project-card__body">
-        <h3 class="project-card__title">${escapeHtml(project.title)}</h3>
-        <p class="project-card__summary">${escapeHtml(project.summary)}</p>
-        <div class="project-card__tags">
-          ${(project.tags || []).map((t) => `<span class="tag mono">${escapeHtml(t)}</span>`).join('')}
-        </div>
-      </div>
-    `;
-    const open = () => openProjectDetail(project, card);
-    card.addEventListener('click', open);
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        open();
-      }
-    });
-    const img = card.querySelector('.project-card__media img');
-    if (img) {
-      img.addEventListener(
-        'error',
-        () => {
-          const media = card.querySelector('.project-card__media');
-          media.classList.add('project-card__media--empty');
-          img.remove();
-          const initial = document.createElement('span');
-          initial.className = 'project-card__initial mono';
-          initial.textContent = (project.title || '?').charAt(0).toUpperCase();
-          media.prepend(initial);
-        },
-        { once: true }
-      );
-    }
+  // Featured projects (picked in the macOS app) fill the initial visible
+  // rows first; the rest stay in their normal order behind "Show More".
+  const featured = projects.filter((p) => p.featured);
+  const rest = projects.filter((p) => !p.featured);
+  const initial = [...featured, ...rest].slice(0, INITIAL_PROJECT_COUNT);
+  const initialIds = new Set(initial.map((p) => p.id));
+  const remaining = projects.filter((p) => !initialIds.has(p.id));
 
-    grid.appendChild(card);
+  initial.forEach((project) => grid.appendChild(buildProjectCard(project)));
+
+  if (remaining.length === 0) return;
+
+  const wrap = document.getElementById('projectsGrid').closest('.section');
+  const showMoreWrap = document.createElement('div');
+  showMoreWrap.className = 'projects__show-more';
+  showMoreWrap.innerHTML = `<button type="button" class="btn btn--ghost" id="projectsShowMore">Show More</button>`;
+  wrap.appendChild(showMoreWrap);
+
+  document.getElementById('projectsShowMore').addEventListener('click', () => {
+    const newCards = remaining.map((project) => buildProjectCard(project));
+    newCards.forEach((card) => grid.appendChild(card));
+    showMoreWrap.remove();
+    // The boot-time initScrollReveals() only ever saw the initial batch —
+    // newly-appended cards need their own reveal tween bound directly
+    // instead of just showing up at full opacity mid-scroll.
+    if (window.gsap && window.ScrollTrigger) {
+      newCards.forEach((el) => {
+        window.gsap.fromTo(
+          el,
+          { opacity: 0, y: 32 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none reverse' },
+          }
+        );
+      });
+    } else {
+      newCards.forEach((el) => {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+      });
+    }
   });
 }
 

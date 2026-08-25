@@ -21,6 +21,7 @@ struct MediaReference: Identifiable {
 
 struct GalleryView: View {
     @EnvironmentObject private var rtdb: RTDBService
+    private let github = GitHubService()
 
     @State private var projects: [Project] = []
     @State private var posts: [BlogPost] = []
@@ -87,11 +88,13 @@ struct GalleryView: View {
         ) {
             Button("Cancel", role: .cancel) { pendingDelete = nil }
             Button("Remove", role: .destructive) {
-                if let ref = pendingDelete { delete(ref) }
+                if let ref = pendingDelete {
+                    Task { await delete(ref) }
+                }
                 pendingDelete = nil
             }
         } message: {
-            Text("This clears just this one reference so the site never shows a broken image — the other places this file might be used are untouched.")
+            Text("This clears the reference and deletes the file from GitHub — the other places this file might be used are untouched.")
         }
         .task { await load() }
     }
@@ -150,7 +153,7 @@ struct GalleryView: View {
         return refs
     }
 
-    private func delete(_ ref: MediaReference) {
+    private func delete(_ ref: MediaReference) async {
         switch ref.owner {
         case .projectCover(let projectId):
             if let i = projects.firstIndex(where: { $0.id == projectId }) {
@@ -181,6 +184,24 @@ struct GalleryView: View {
             }
         }
         references.removeAll { $0.id == ref.id }
+        await deleteFromGitHub(ref)
+    }
+
+    /// Also removes the committed file from GitHub (not just the RTDB
+    /// reference), so a deleted image doesn't keep sitting in the repo
+    /// forever. Skipped for references that aren't our own repo files (an
+    /// externally-hosted http(s) URL pasted into a field) since there's
+    /// nothing on GitHub to delete.
+    private func deleteFromGitHub(_ ref: MediaReference) async {
+        let lowered = ref.path.lowercased()
+        guard !lowered.hasPrefix("http://"), !lowered.hasPrefix("https://") else { return }
+        let repoPath = "assets/\(ref.path)"
+        do {
+            try await github.deleteFile(path: repoPath, commitMessage: "Remove \(ref.label)")
+            await JsDelivrService.purge(repoPath: repoPath)
+        } catch {
+            errorMessage = "Removed from the site, but couldn't delete the file from GitHub: \(error.localizedDescription)"
+        }
     }
 
     /// Merges an AddMediaView result back into local state (it already wrote

@@ -25,7 +25,7 @@ const DEFAULT_SETTINGS = {
     infoTitle: 'Contact information',
     infoSubtitle: "Fill up this form and I'll get back to you within 24 hours.",
     backgroundImage: '',
-    infoItems: [{ icon: '✉️', label: 'badgip@yahoo.com' }],
+    infoItems: [],
     socialLinks: [{ icon: '💻', url: 'https://github.com/pbadgi09' }],
   },
   theme: {
@@ -118,7 +118,7 @@ export async function getPersonalBlog() {
     return Object.entries(val)
       .map(([id, post]) => ({ id, ...post }))
       .filter((p) => p.status === 'published')
-      .sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   } catch (err) {
     console.error('Failed to fetch blog posts:', err);
     return [];

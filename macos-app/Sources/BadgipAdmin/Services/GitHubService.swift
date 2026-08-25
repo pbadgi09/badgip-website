@@ -33,19 +33,23 @@ final class GitHubService {
         return request
     }
 
-    /// Commits a file to the repo at `path` (e.g. "assets/projects/my-app/cover.jpg").
-    /// Fetches the existing file's sha first so this works for both create and update.
-    func uploadFile(path: String, data: Data, commitMessage: String) async throws {
-        // `path` is built from a user-picked filename (ImagePathBuilder), which
-        // routinely contains spaces or other characters that aren't valid in a
-        // raw URL — encode each segment or URL(string:) can return nil and the
-        // force-unwrap below would crash the app on an otherwise ordinary
-        // upload (e.g. "My Photo.png").
+    /// `path` is built from a user-picked filename (ImagePathBuilder), which
+    /// routinely contains spaces or other characters that aren't valid in a
+    /// raw URL — encode each segment or URL(string:) can return nil and a
+    /// force-unwrap would crash the app on an otherwise ordinary upload
+    /// (e.g. "My Photo.png").
+    private func contentsURL(for path: String) -> URL? {
         let encodedPath = path
             .split(separator: "/")
             .map { $0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? String($0) }
             .joined(separator: "/")
-        guard let contentsURL = URL(string: "https://api.github.com/repos/\(Self.owner)/\(Self.repo)/contents/\(encodedPath)") else {
+        return URL(string: "https://api.github.com/repos/\(Self.owner)/\(Self.repo)/contents/\(encodedPath)")
+    }
+
+    /// Commits a file to the repo at `path` (e.g. "assets/projects/my-app/cover.jpg").
+    /// Fetches the existing file's sha first so this works for both create and update.
+    func uploadFile(path: String, data: Data, commitMessage: String) async throws {
+        guard let contentsURL = contentsURL(for: path) else {
             throw GitHubServiceError.requestFailed("Couldn't build a valid GitHub URL for path: \(path)")
         }
 
@@ -79,6 +83,45 @@ final class GitHubService {
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let message = String(data: responseData, encoding: .utf8) ?? "Unknown error"
             throw GitHubServiceError.requestFailed("GitHub upload failed: \(message)")
+        }
+    }
+
+    /// Deletes a file from the repo at `path`. The Contents API's DELETE verb
+    /// requires the file's current sha, so this fetches it first. If the
+    /// file is already gone (404), this is treated as success — the end
+    /// state the caller wants (no file at that path) already holds.
+    func deleteFile(path: String, commitMessage: String) async throws {
+        guard let contentsURL = contentsURL(for: path) else {
+            throw GitHubServiceError.requestFailed("Couldn't build a valid GitHub URL for path: \(path)")
+        }
+
+        let (getData, getResponse) = try await URLSession.shared.data(for: authorizedRequest(url: contentsURL, method: "GET"))
+        guard let getHTTP = getResponse as? HTTPURLResponse else {
+            throw GitHubServiceError.requestFailed("No response fetching sha for path: \(path)")
+        }
+        if getHTTP.statusCode == 404 {
+            return
+        }
+        guard getHTTP.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: getData) as? [String: Any],
+              let sha = json["sha"] as? String else {
+            let message = String(data: getData, encoding: .utf8) ?? "Unknown error"
+            throw GitHubServiceError.requestFailed("Couldn't fetch sha for path \(path): \(message)")
+        }
+
+        var deleteRequest = try authorizedRequest(url: contentsURL, method: "DELETE")
+        deleteRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = [
+            "message": commitMessage,
+            "sha": sha,
+            "branch": Self.branch,
+        ]
+        deleteRequest.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (responseData, response) = try await URLSession.shared.data(for: deleteRequest)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            let message = String(data: responseData, encoding: .utf8) ?? "Unknown error"
+            throw GitHubServiceError.requestFailed("GitHub delete failed: \(message)")
         }
     }
 

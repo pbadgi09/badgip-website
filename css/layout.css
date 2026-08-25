@@ -433,6 +433,12 @@
   }
 }
 
+.projects__show-more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-12);
+}
+
 .project-card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
@@ -1080,10 +1086,10 @@
   overflow: hidden;
   min-height: 420px;
   display: flex;
-  align-items: flex-end;
 }
 
 .contact-info-panel--photo {
+  align-items: flex-end;
   background: radial-gradient(ellipse 120% 80% at 30% 0%, rgba(62, 255, 163, 0.16), transparent 60%), linear-gradient(160deg, #1c1c24, #0e0e12);
   --contact-fg: #fff;
   --contact-fg-dim: rgba(255, 255, 255, 0.7);
@@ -1107,9 +1113,15 @@
   background: linear-gradient(180deg, rgba(10, 10, 14, 0.75), rgba(10, 10, 14, 0.4) 45%, rgba(10, 10, 14, 0.92));
 }
 
+/* The photo variant bottom-anchors text over a tall image on purpose — that
+   layout looks empty and broken without a photo to fill the space, so the
+   plain variant instead stretches its content the full card height and
+   spreads title/info/socials out with space-between. */
 .contact-info-panel--plain {
+  align-items: stretch;
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
+  box-shadow: 0 20px 50px -30px rgba(0, 0, 0, 0.25);
   --contact-fg: var(--color-text);
   --contact-fg-dim: var(--color-text-dim);
   --contact-icon-bg: var(--color-accent-glow);
@@ -1128,6 +1140,18 @@
   background: var(--color-accent-glow);
   filter: blur(60px);
   pointer-events: none;
+}
+
+.contact-info-panel--plain .contact-info-panel__content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-10) var(--space-8);
+}
+
+.contact-info-panel--plain .contact-socials {
+  margin-top: auto;
+  padding-top: var(--space-8);
 }
 
 .contact-info-panel__content {

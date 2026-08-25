@@ -32,9 +32,13 @@ export function setBlogAuthor({ name, avatar }) {
   authorInfo = { name: name || '', avatar: avatar || '' };
 }
 
+const MAX_YOUTUBE_VIDEOS = 10;
+const MAX_BLOG_POSTS = 5;
+
 // ---------- YouTube carousel ----------
 
-export function renderYoutubeCarousel(videos) {
+export function renderYoutubeCarousel(allVideos) {
+  const videos = allVideos.slice(0, MAX_YOUTUBE_VIDEOS);
   const carousel = document.getElementById('youtubeCarousel');
   carousel.innerHTML = '';
 
@@ -78,7 +82,8 @@ function firstValueOfType(sections, type) {
 
 // Blog is deliberately a list, not a card grid — it should read as
 // distinct from the Projects section rather than a second grid of tiles.
-export function renderBlogGrid(posts) {
+export function renderBlogGrid(allPosts) {
+  const posts = allPosts.slice(0, MAX_BLOG_POSTS);
   const list = document.getElementById('blogGrid');
   list.innerHTML = '';
 

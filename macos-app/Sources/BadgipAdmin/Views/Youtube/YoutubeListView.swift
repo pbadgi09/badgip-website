@@ -38,19 +38,22 @@ struct YoutubeListView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        ForEach(videos) { video in
-                            YoutubeRow(
-                                video: video,
-                                onEdit: { editingVideo = video },
-                                onDelete: { pendingDelete = video }
-                            )
-                        }
-                    }
+                Text("Capped to the first 10 on the site — drag rows to reorder.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 8)
+                List {
+                    ForEach(videos) { video in
+                        YoutubeRow(
+                            video: video,
+                            onEdit: { editingVideo = video },
+                            onDelete: { pendingDelete = video }
+                        )
+                    }
+                    .onMove(perform: move)
                 }
+                .listStyle(.plain)
             }
         }
         .sheet(item: $editingVideo) { video in
@@ -79,6 +82,12 @@ struct YoutubeListView: View {
             Text("This removes it from the live site immediately and can't be undone.")
         }
         .task { await loadVideos() }
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        videos.move(fromOffsets: source, toOffset: destination)
+        for index in videos.indices { videos[index].order = index }
+        rtdb.reorderYoutubeVideos(videos)
     }
 
     private func loadVideos() async {
@@ -132,6 +141,8 @@ private struct YoutubeRow: View {
                 Image(systemName: "trash")
             }
             .buttonStyle(.badgipIcon(tint: .red))
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.tertiary)
         }
         .padding(16)
         .background(
