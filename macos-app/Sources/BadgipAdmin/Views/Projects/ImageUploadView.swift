@@ -85,7 +85,7 @@ struct ImageUploadView: View {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(Color.gray.opacity(0.15))
                     .overlay(Image(systemName: "photo").foregroundStyle(.secondary))
-            } else if let url = JsDelivrService.composeURL(for: path) {
+            } else if let url = JsDelivrService.composeURL(forStoredPath: path) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
@@ -128,20 +128,21 @@ struct ImageUploadView: View {
             let data = try Data(contentsOf: url)
             let filename = url.lastPathComponent
             let slug = project.slug.isEmpty ? "untitled" : project.slug
-            let path = ImagePathBuilder.projectImagePath(slug: slug, filename: filename)
+            let repoPath = ImagePathBuilder.repoPath(slug: slug, filename: filename)
+            let storedPath = ImagePathBuilder.storedPath(slug: slug, filename: filename)
 
             try await githubService.uploadFile(
-                path: path,
+                path: repoPath,
                 data: data,
                 commitMessage: "Add image for project \(slug): \(filename)"
             )
-            await JsDelivrService.purge(path: path)
+            await JsDelivrService.purge(repoPath: repoPath)
 
             switch target {
             case .cover:
-                project.coverImage = path
+                project.coverImage = storedPath
             case .gallery:
-                project.gallery.append(path)
+                project.gallery.append(storedPath)
             }
         } catch {
             uploadError = error.localizedDescription

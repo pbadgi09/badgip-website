@@ -105,7 +105,7 @@ struct DeployControlsView: View {
     private func purgeManually() async {
         isWorking = true
         statusMessage = "Purging…"
-        await JsDelivrService.purge(path: purgePath)
+        await JsDelivrService.purge(repoPath: purgePath)
         statusMessage = "Purge requested for \(purgePath)."
         isWorking = false
     }
