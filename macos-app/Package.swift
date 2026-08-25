@@ -28,7 +28,7 @@ let package = Package(
             ],
             path: "Sources/BadgipAdmin",
             exclude: [
-                // Not an SPM resource — copied into a real .app bundle's
+                // Not an SPM resource — copied into the real .app bundle's
                 // Contents/Info.plist by scripts/build-app.sh instead.
                 "Info.plist"
             ],

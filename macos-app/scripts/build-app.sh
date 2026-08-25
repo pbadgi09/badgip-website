@@ -12,6 +12,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$SCRIPT_DIR/../.build/$CONFIG"
 BUNDLE="$SCRIPT_DIR/../build/BadgipAdmin.app"
 
+echo "Resolving dependencies"
+(cd "$SCRIPT_DIR/.." && swift package resolve)
+
+"$SCRIPT_DIR/patch-firebase-keychain.sh"
+
 echo "Building ($CONFIG)"
 (cd "$SCRIPT_DIR/.." && swift build -c "$CONFIG")
 
