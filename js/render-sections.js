@@ -97,6 +97,24 @@ export function mountPageSections(pageSections) {
         label = SECTION_LABELS[entry.kind];
       }
 
+      // The About template's own ids (id="about", "aboutBioProfessional",
+      // "timelineProfessional", "timelineProgress") are only unique as long
+      // as at most one About section is ever mounted. Once both a
+      // professional and a personal About page section exist, cloning the
+      // same template for each would produce duplicate DOM ids — getElementById
+      // would then always resolve to whichever was mounted first, silently
+      // dropping the other mode's content. Namespace them by mode so both
+      // can coexist.
+      if (entry.kind === 'about') {
+        sectionEl.id = `about-${mode}`;
+        const bioEl = sectionEl.querySelector('#aboutBioProfessional');
+        if (bioEl) bioEl.id = `aboutBio-${mode}`;
+        const timelineListEl = sectionEl.querySelector('#timelineProfessional');
+        if (timelineListEl) timelineListEl.id = `timeline-${mode}`;
+        const progressEl = sectionEl.querySelector('#timelineProgress');
+        if (progressEl) progressEl.id = `timelineProgress-${mode}`;
+      }
+
       sectionEl.dataset.mode = mode;
       sectionEl.hidden = true;
       container.appendChild(sectionEl);

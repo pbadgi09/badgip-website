@@ -13,11 +13,35 @@ struct SectionsView: View {
         allSections.filter { $0.mode == mode }.sorted { $0.order < $1.order }
     }
 
+    // Built-in sections (About/Projects/YouTube/Blog) aren't per-mode by
+    // default — e.g. a fresh site only seeds "About" for Professional, so
+    // switching to Personal shows nothing for it even after writing a
+    // personal bio in the About tab, since there's no section to render it
+    // into. This lets the same built-in kind be added again for whichever
+    // mode is missing it, same as it can already be reordered/deleted once
+    // present.
+    private var missingBuiltInKinds: [String] {
+        let existing = Set(filtered.map { $0.kind })
+        return ["about", "projects", "youtube", "blog"].filter { !existing.contains($0) }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Sections").font(.title.weight(.bold))
                 Spacer()
+                if !missingBuiltInKinds.isEmpty {
+                    Menu {
+                        ForEach(missingBuiltInKinds, id: \.self) { kind in
+                            Button(PageSection(id: "", kind: kind).displayName) {
+                                addBuiltIn(kind)
+                            }
+                        }
+                    } label: {
+                        Label("Add Section", systemImage: "plus.square")
+                    }
+                    .buttonStyle(.badgipSecondary)
+                }
                 Button {
                     editingSection = PageSection(id: "", kind: "custom", mode: mode, order: filtered.count)
                 } label: {
@@ -114,6 +138,13 @@ struct SectionsView: View {
             }
         }
         rtdb.reorderPageSections(renumbered)
+    }
+
+    private func addBuiltIn(_ kind: String) {
+        let section = PageSection(id: "", kind: kind, mode: mode, order: filtered.count)
+        if let saved = try? rtdb.savePageSection(section) {
+            allSections.append(saved)
+        }
     }
 
     private func toggleNav(_ section: PageSection) {

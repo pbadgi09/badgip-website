@@ -7,9 +7,14 @@ struct AboutEditorView: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var statusMessage: String?
+    @State private var savedBadgeVisible = false
+    @State private var savedBadgeTask: Task<Void, Never>?
 
     private var hasChanges: Bool { about != original }
-    private var showSavedBadge: Bool { statusMessage == "Saved" && !hasChanges }
+    // "Saved" only shows for 3s after a save, and only while nothing has
+    // changed since — so it never lingers indefinitely, and a new edit
+    // hides it immediately rather than falsely implying it's already saved.
+    private var showSavedBadge: Bool { savedBadgeVisible && !hasChanges }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -145,5 +150,13 @@ struct AboutEditorView: View {
         original = about
         statusMessage = "Saved"
         isSaving = false
+
+        savedBadgeTask?.cancel()
+        savedBadgeVisible = true
+        savedBadgeTask = Task {
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard !Task.isCancelled else { return }
+            savedBadgeVisible = false
+        }
     }
 }

@@ -32,6 +32,15 @@ svg {
   max-width: 100%;
 }
 
+/* Any element the JS toggles `hidden` on (e.g. the hero avatar when no
+   profile photo is set) must actually disappear — but as an author-origin
+   rule, `img { display: block }` above otherwise beats the browser's own
+   `[hidden] { display: none }` (user-agent origin loses cascade ties
+   regardless of specificity), leaving a styled-but-empty element visible. */
+[hidden] {
+  display: none !important;
+}
+
 input,
 button,
 textarea,

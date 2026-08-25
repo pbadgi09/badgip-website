@@ -73,28 +73,32 @@ export function initScrollReveals() {
 export function initTimelineScroll() {
   if (!window.gsap || !window.ScrollTrigger) return;
 
-  const timelineEl = document.getElementById('timelineProfessional');
-  const progressEl = document.getElementById('timelineProgress');
-  if (!timelineEl || !progressEl) return;
+  // Both the professional and personal About sections (when both are
+  // configured) render their own .timeline/.timeline__progress pair, so
+  // this wires up every one found rather than a single hardcoded instance.
+  document.querySelectorAll('.timeline').forEach((timelineEl) => {
+    const progressEl = timelineEl.querySelector('.timeline__progress');
+    if (!progressEl) return;
 
-  window.gsap.to(progressEl, {
-    height: '100%',
-    ease: 'none',
-    scrollTrigger: {
-      trigger: timelineEl,
-      start: 'top 60%',
-      end: 'bottom 60%',
-      scrub: 0.5,
-    },
-  });
+    window.gsap.to(progressEl, {
+      height: '100%',
+      ease: 'none',
+      scrollTrigger: {
+        trigger: timelineEl,
+        start: 'top 60%',
+        end: 'bottom 60%',
+        scrub: 0.5,
+      },
+    });
 
-  const items = timelineEl.querySelectorAll('.timeline__item');
-  items.forEach((item) => {
-    window.ScrollTrigger.create({
-      trigger: item,
-      start: 'top 70%',
-      onEnter: () => item.classList.add('is-visible'),
-      onLeaveBack: () => item.classList.remove('is-visible'),
+    const items = timelineEl.querySelectorAll('.timeline__item');
+    items.forEach((item) => {
+      window.ScrollTrigger.create({
+        trigger: item,
+        start: 'top 70%',
+        onEnter: () => item.classList.add('is-visible'),
+        onLeaveBack: () => item.classList.remove('is-visible'),
+      });
     });
   });
 }

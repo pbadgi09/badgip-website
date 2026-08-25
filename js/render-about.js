@@ -1,13 +1,24 @@
 import { jsDelivrBase } from './config.js';
 
 export function renderAbout(about) {
-  document.getElementById('aboutBioProfessional').textContent =
-    about.professionalBio || "I'm a developer who cares about building things well.";
+  renderTimelineFor('professional', about.professionalBio, about.professionalTimeline);
+  renderTimelineFor('personal', about.personalBio, about.personalTimeline);
+}
 
-  const timelineEl = document.getElementById('timelineProfessional');
-  const entries = about.professionalTimeline || [];
+// Renders into `#aboutBio-<mode>`/`#timeline-<mode>`, which only exist if a
+// page section for that mode was actually mounted (see render-sections.js) —
+// harmless no-op otherwise, so a mode without an About section configured
+// just silently has nothing to fill in.
+function renderTimelineFor(mode, bio, timelineEntries) {
+  const bioEl = document.getElementById(`aboutBio-${mode}`);
+  if (bioEl) {
+    bioEl.textContent = bio || (mode === 'professional' ? "I'm a developer who cares about building things well." : '');
+  }
 
-  entries.forEach((entry) => {
+  const timelineEl = document.getElementById(`timeline-${mode}`);
+  if (!timelineEl) return;
+
+  (timelineEntries || []).forEach((entry) => {
     const item = document.createElement('div');
     item.className = 'timeline__item reveal';
     item.innerHTML = `
