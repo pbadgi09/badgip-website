@@ -36,7 +36,18 @@ final class GitHubService {
     /// Commits a file to the repo at `path` (e.g. "assets/projects/my-app/cover.jpg").
     /// Fetches the existing file's sha first so this works for both create and update.
     func uploadFile(path: String, data: Data, commitMessage: String) async throws {
-        let contentsURL = URL(string: "https://api.github.com/repos/\(Self.owner)/\(Self.repo)/contents/\(path)")!
+        // `path` is built from a user-picked filename (ImagePathBuilder), which
+        // routinely contains spaces or other characters that aren't valid in a
+        // raw URL — encode each segment or URL(string:) can return nil and the
+        // force-unwrap below would crash the app on an otherwise ordinary
+        // upload (e.g. "My Photo.png").
+        let encodedPath = path
+            .split(separator: "/")
+            .map { $0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? String($0) }
+            .joined(separator: "/")
+        guard let contentsURL = URL(string: "https://api.github.com/repos/\(Self.owner)/\(Self.repo)/contents/\(encodedPath)") else {
+            throw GitHubServiceError.requestFailed("Couldn't build a valid GitHub URL for path: \(path)")
+        }
 
         // A 404 here (file doesn't exist yet, i.e. a new upload) isn't a thrown
         // Swift error — URLSession only throws for transport-level failures

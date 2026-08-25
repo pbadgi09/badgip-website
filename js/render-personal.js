@@ -4,7 +4,10 @@ import { openFullscreen, isFullscreenOpen } from './fullscreen-panel.js';
 function imageUrl(path) {
   if (!path) return '';
   if (/^https?:\/\//.test(path)) return path;
-  return `${jsDelivrBase}/${path.replace(/^\/+/, '')}`;
+  // Stored paths are built from a picked filename, which routinely has
+  // spaces or other characters that aren't valid raw in a URL.
+  const encoded = path.replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
+  return `${jsDelivrBase}/${encoded}`;
 }
 
 function youtubeVideoId(url) {
@@ -221,7 +224,7 @@ function buildBlogFullscreenMarkup(post) {
   const bylineHtml =
     authorInfo.name || dateLabel
       ? `<div class="blog-byline">
-          ${authorInfo.avatar ? `<img class="blog-byline__avatar" src="${imageUrl(authorInfo.avatar)}" alt="" />` : ''}
+          ${authorInfo.avatar ? `<img class="blog-byline__avatar" src="${imageUrl(authorInfo.avatar)}" alt="" onerror="this.remove()" />` : ''}
           <div class="blog-byline__meta">
             ${authorInfo.name ? `<span class="blog-byline__name">${escapeHtml(authorInfo.name)}</span>` : ''}
             ${dateLabel ? `<span class="blog-byline__date mono">${dateLabel}</span>` : ''}

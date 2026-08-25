@@ -4,7 +4,10 @@ import { openFullscreen, isFullscreenOpen } from './fullscreen-panel.js';
 function imageUrl(path) {
   if (!path) return '';
   if (/^https?:\/\//.test(path)) return path;
-  return `${jsDelivrBase}/${path.replace(/^\/+/, '')}`;
+  // Stored paths are built from a picked filename, which routinely has
+  // spaces or other characters that aren't valid raw in a URL.
+  const encoded = path.replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
+  return `${jsDelivrBase}/${encoded}`;
 }
 
 function youtubeEmbedId(url) {
@@ -107,8 +110,8 @@ function buildFullscreenMarkup(project) {
     : '';
 
   const links = [];
-  if (project.liveUrl) links.push(`<a href="${project.liveUrl}" target="_blank" rel="noopener" class="btn btn--primary">Live Site</a>`);
-  if (project.repoUrl) links.push(`<a href="${project.repoUrl}" target="_blank" rel="noopener" class="btn btn--ghost">Source</a>`);
+  if (project.liveUrl) links.push(`<a href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener" class="btn btn--primary">Live Site</a>`);
+  if (project.repoUrl) links.push(`<a href="${escapeHtml(project.repoUrl)}" target="_blank" rel="noopener" class="btn btn--ghost">Source</a>`);
 
   return `
     ${heroHtml}

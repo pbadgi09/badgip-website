@@ -37,8 +37,10 @@ function isImagePath(icon) {
 function iconMarkup(icon) {
   if (!icon) return '';
   if (isImagePath(icon)) {
-    const src = /^https?:\/\//.test(icon) ? icon : `${jsDelivrBase}/${icon.replace(/^\/+/, '')}`;
-    return `<img src="${src}" alt="" loading="lazy" />`;
+    const src = /^https?:\/\//.test(icon)
+      ? icon
+      : `${jsDelivrBase}/${icon.replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')}`;
+    return `<img src="${src}" alt="" loading="lazy" onerror="this.remove()" />`;
   }
   return `<span class="custom-section__emoji">${escapeHtml(icon)}</span>`;
 }

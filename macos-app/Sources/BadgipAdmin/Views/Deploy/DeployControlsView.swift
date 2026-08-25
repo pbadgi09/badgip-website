@@ -14,7 +14,7 @@ struct DeployControlsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Deploy").font(.title.weight(.bold))
 
-                card(title: "GitHub Personal Access Token") {
+                EditorCard(title: "GitHub Personal Access Token") {
                     Text(hasSavedPAT ? "A token is saved in Keychain." : "No token saved yet.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -39,7 +39,7 @@ struct DeployControlsView: View {
                     }
                 }
 
-                card(title: "Redeploy") {
+                EditorCard(title: "Redeploy") {
                     Text("Triggers the GitHub Actions Pages workflow. Only needed after a code change — content edits are already live via Firebase.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -52,7 +52,7 @@ struct DeployControlsView: View {
                     .disabled(isWorking)
                 }
 
-                card(title: "Purge jsDelivr Cache") {
+                EditorCard(title: "Purge jsDelivr Cache") {
                     Text("Image uploads purge automatically. Use this for a manual purge, e.g. after replacing a file outside the app.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -76,18 +76,6 @@ struct DeployControlsView: View {
         .onAppear {
             hasSavedPAT = (KeychainService.read(key: KeychainKey.githubPAT)?.isEmpty == false)
         }
-    }
-
-    @ViewBuilder
-    private func card(title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.headline.weight(.semibold))
-            content()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.03)))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
     }
 
     private func triggerRedeploy() async {

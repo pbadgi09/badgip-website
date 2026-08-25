@@ -5,13 +5,33 @@
 import { lockBodyScroll, unlockBodyScroll } from './scroll-lock.js';
 
 let openState = null; // { id, sourceEl, panel, escHandler }
+// Panels mid-close-animation when a new one is requested — openState goes
+// null the instant close() is called (so a rapid re-open isn't blocked),
+// but the old panel's shrink/fade tween is still running for ~0.5s. Without
+// this, opening again in that window stacks a second .fullscreen-panel on
+// top of the still-animating old one.
+const closingPanels = []; // [{ panel, onClosed }]
 
 export function isFullscreenOpen(id) {
   return openState ? (id === undefined || openState.id === id) : false;
 }
 
+function finishClosingPanelsNow() {
+  closingPanels.splice(0).forEach(({ panel, onClosed }) => {
+    window.gsap?.killTweensOf(panel);
+    panel.remove();
+    // The killed tween's onComplete never fires, so the lock it was going
+    // to release on completion has to be released here instead — otherwise
+    // lockCount never returns to 0 and scroll stays disabled forever.
+    unlockBodyScroll();
+    onClosed?.();
+  });
+}
+
 export function openFullscreen({ id, sourceEl, innerHTML, accentColor, textColor, onClosed }) {
   if (openState) return;
+
+  finishClosingPanelsNow();
 
   const sourceRect = sourceEl.getBoundingClientRect();
   const sourceRadius = parseFloat(getComputedStyle(sourceEl).borderRadius) || 24;
@@ -47,14 +67,29 @@ export function openFullscreen({ id, sourceEl, innerHTML, accentColor, textColor
   document.addEventListener('keydown', escHandler);
   closeBtn?.addEventListener('click', () => closeFullscreen());
 
+  // GSAP tweens to explicit pixel top/left/width/height (needed for the FLIP
+  // math), which then sit as inline styles that never track the viewport —
+  // without this, resizing the window (or a mobile browser's chrome
+  // showing/hiding and changing the viewport height) leaves the panel
+  // pinned at whatever size it was when opened.
+  const resizeHandler = () => {
+    if (window.gsap) {
+      window.gsap.set(panel, { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight });
+    } else {
+      panel.style.width = '100vw';
+      panel.style.height = '100vh';
+    }
+  };
+
   sourceEl.classList.add('is-expanded');
-  openState = { id, sourceEl, panel, escHandler, onClosed };
+  openState = { id, sourceEl, panel, escHandler, onClosed, resizeHandler };
 
   if (!window.gsap) {
     panel.style.position = 'fixed';
     panel.style.inset = '0';
     panel.style.overflowY = 'auto';
     fadeTargets.forEach((el) => (el.style.opacity = '1'));
+    window.addEventListener('resize', resizeHandler);
     return;
   }
 
@@ -75,6 +110,7 @@ export function openFullscreen({ id, sourceEl, innerHTML, accentColor, textColor
   const tl = window.gsap.timeline({
     onComplete: () => {
       panel.style.overflowY = 'auto';
+      window.addEventListener('resize', resizeHandler);
     },
   });
   tl.to(panel, {
@@ -90,8 +126,9 @@ export function openFullscreen({ id, sourceEl, innerHTML, accentColor, textColor
 
 export function closeFullscreen() {
   if (!openState) return;
-  const { sourceEl, panel, escHandler, onClosed } = openState;
+  const { sourceEl, panel, escHandler, onClosed, resizeHandler } = openState;
   document.removeEventListener('keydown', escHandler);
+  window.removeEventListener('resize', resizeHandler);
   sourceEl.classList.remove('is-expanded');
   openState = null;
 
@@ -111,8 +148,13 @@ export function closeFullscreen() {
   panel.style.overflowY = 'hidden';
   panel.scrollTop = 0;
 
+  const closingEntry = { panel, onClosed };
+  closingPanels.push(closingEntry);
+
   const tl = window.gsap.timeline({
     onComplete: () => {
+      const index = closingPanels.indexOf(closingEntry);
+      if (index !== -1) closingPanels.splice(index, 1);
       panel.remove();
       unlockBodyScroll();
       onClosed?.();

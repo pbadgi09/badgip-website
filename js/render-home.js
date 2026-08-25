@@ -3,7 +3,10 @@ import { jsDelivrBase } from './config.js';
 function resolveUrl(path) {
   if (!path) return '';
   if (/^https?:\/\//.test(path)) return path;
-  return `${jsDelivrBase}/${path.replace(/^\/+/, '')}`;
+  // Stored paths are built from a picked filename, which routinely has
+  // spaces or other characters that aren't valid raw in a URL.
+  const encoded = path.replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/');
+  return `${jsDelivrBase}/${encoded}`;
 }
 
 function isImagePath(icon) {
@@ -13,7 +16,7 @@ function isImagePath(icon) {
 function iconMarkup(icon) {
   if (!icon) return '';
   if (isImagePath(icon)) {
-    return `<img src="${resolveUrl(icon)}" alt="" loading="lazy" />`;
+    return `<img src="${resolveUrl(icon)}" alt="" loading="lazy" onerror="this.remove()" />`;
   }
   const div = document.createElement('div');
   div.textContent = icon;
