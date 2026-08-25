@@ -392,10 +392,23 @@
   display: block;
 }
 
+.timeline__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.timeline__logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex: none;
+}
+
 .timeline__title {
   font-size: var(--fs-xl);
   font-weight: 700;
-  margin-bottom: var(--space-2);
   transition: color var(--duration-fast) var(--ease-out);
 }
 

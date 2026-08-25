@@ -3,20 +3,27 @@ import Foundation
 struct TimelineEntry: Identifiable, Codable, Equatable {
     var id: String = UUID().uuidString
     var year: String = ""
+    var endYear: String = ""
     var title: String = ""
     var description: String = ""
-    var order: Int = 0
+    var logo: String = ""
 
     var asDictionary: [String: Any] {
-        ["year": year, "title": title, "description": description, "order": order]
+        ["id": id, "year": year, "endYear": endYear, "title": title, "description": description, "logo": logo]
     }
 
+    // `id` round-trips through RTDB (unlike most other fields here, it's
+    // read back out) so a timeline entry's logo upload path stays stable
+    // across app relaunches instead of a fresh UUID orphaning a new GitHub
+    // file on every re-upload.
     static func from(_ dict: [String: Any]) -> TimelineEntry {
         TimelineEntry(
+            id: dict["id"] as? String ?? UUID().uuidString,
             year: dict["year"] as? String ?? "",
+            endYear: dict["endYear"] as? String ?? "",
             title: dict["title"] as? String ?? "",
             description: dict["description"] as? String ?? "",
-            order: dict["order"] as? Int ?? 0
+            logo: dict["logo"] as? String ?? ""
         )
     }
 }

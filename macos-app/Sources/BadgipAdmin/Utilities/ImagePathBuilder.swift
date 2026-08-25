@@ -63,4 +63,16 @@ enum ImagePathBuilder {
     static func heroProfileStoredPath(filename: String) -> String {
         "site/profile-\(filename)"
     }
+
+    /// A professional-timeline entry's optional company logo:
+    /// "assets/timeline/<entryId>/<filename>" repo side, "timeline/<entryId>/<filename>" stored.
+    static func timelineLogoRepoPath(entryId: String, filename: String) -> String {
+        let safeId = entryId.isEmpty ? "untitled" : entryId
+        return "assets/timeline/\(safeId)/\(filename)"
+    }
+
+    static func timelineLogoStoredPath(entryId: String, filename: String) -> String {
+        let safeId = entryId.isEmpty ? "untitled" : entryId
+        return "timeline/\(safeId)/\(filename)"
+    }
 }

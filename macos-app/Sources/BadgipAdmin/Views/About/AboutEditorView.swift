@@ -68,31 +68,64 @@ struct AboutEditorView: View {
     @ViewBuilder
     private func timelineEditor(entries: Binding<[TimelineEntry]>) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(entries) { $entry in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        TextField("Year", text: $entry.year).frame(width: 90).textFieldStyle(.roundedBorder)
-                        TextField("Title", text: $entry.title).textFieldStyle(.roundedBorder)
-                        Stepper("Order: \(entry.order)", value: $entry.order, in: 0...999).frame(width: 140)
-                        Button {
-                            entries.wrappedValue.removeAll { $0.id == entry.id }
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .buttonStyle(.badgipIcon(tint: .red))
-                    }
-                    TextField("Description", text: $entry.description).textFieldStyle(.roundedBorder)
+            // A plain List (rather than the VStack/ForEach this used to be)
+            // so rows get native drag-to-reorder via .onMove — but this view
+            // already lives inside AboutEditorView's own outer ScrollView,
+            // and macOS 12 (this app's deployment target) has no
+            // .scrollDisabled to suppress the List's own scroll region, so
+            // it's sized to fit its rows exactly instead of nesting two
+            // independent scroll areas.
+            List {
+                ForEach(entries) { $entry in
+                    timelineRow(entry: $entry, onDelete: {
+                        entries.wrappedValue.removeAll { $0.id == entry.id }
+                    })
+                    .listRowInsets(EdgeInsets())
                 }
-                .padding(10)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))
+                .onMove { source, destination in
+                    entries.wrappedValue.move(fromOffsets: source, toOffset: destination)
+                }
             }
+            .listStyle(.plain)
+            .frame(height: CGFloat(entries.wrappedValue.count) * 122 + 8)
+
             Button {
-                entries.wrappedValue.append(TimelineEntry(order: entries.wrappedValue.count))
+                entries.wrappedValue.append(TimelineEntry())
             } label: {
                 Label("Add Entry", systemImage: "plus")
             }
             .buttonStyle(.badgipSecondary)
         }
+    }
+
+    @ViewBuilder
+    private func timelineRow(entry: Binding<TimelineEntry>, onDelete: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                SingleImageUploadView(
+                    path: entry.logo,
+                    buttonLabel: "Logo",
+                    thumbnailWidth: 32,
+                    thumbnailHeight: 32,
+                    thumbnailCornerRadius: 4,
+                    repoPath: { ImagePathBuilder.timelineLogoRepoPath(entryId: entry.wrappedValue.id, filename: $0) },
+                    storedPath: { ImagePathBuilder.timelineLogoStoredPath(entryId: entry.wrappedValue.id, filename: $0) },
+                    commitMessage: { "Set timeline logo: \($0)" }
+                )
+                TextField("Year", text: entry.year).frame(width: 70).textFieldStyle(.roundedBorder)
+                TextField("End (optional)", text: entry.endYear).frame(width: 100).textFieldStyle(.roundedBorder)
+                TextField("Title", text: entry.title).textFieldStyle(.roundedBorder)
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.badgipIcon(tint: .red))
+                Image(systemName: "line.3.horizontal")
+                    .foregroundStyle(.tertiary)
+            }
+            TextField("Description", text: entry.description).textFieldStyle(.roundedBorder)
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))
     }
 
     private func load() async {
