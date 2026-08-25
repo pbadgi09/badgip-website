@@ -23,6 +23,11 @@ struct BadgipAdminApp: App {
             .environmentObject(rtdbService)
             .frame(minWidth: 960, minHeight: 640)
             .tint(.badgipAccent)
+            // .tint() alone doesn't reach AppKit-bridged controls like the
+            // sidebar List's selection highlight (stays system blue without
+            // this) — .accentColor() is the older but still-necessary path
+            // for that specific case.
+            .accentColor(.badgipAccent)
             .preferredColorScheme(.dark)
         }
         .windowStyle(.titleBar)

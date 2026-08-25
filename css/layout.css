@@ -444,6 +444,20 @@
   color: var(--color-text-faint);
 }
 
+.project-card__featured {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: #000;
+  font-weight: 600;
+}
+
 .project-card__body {
   padding: var(--space-6);
 }

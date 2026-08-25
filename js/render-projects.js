@@ -40,6 +40,7 @@ export function renderProjects(projects) {
             ? `<img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" loading="lazy" />`
             : `<span class="project-card__initial mono">${escapeHtml((project.title || '?').charAt(0).toUpperCase())}</span>`
         }
+        ${project.featured ? '<span class="project-card__featured mono">Featured</span>' : ''}
       </div>
       <div class="project-card__body">
         <h3 class="project-card__title">${escapeHtml(project.title)}</h3>

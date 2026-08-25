@@ -14,14 +14,26 @@ struct ProjectEditView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text(project.id.isEmpty ? "New Project" : "Edit Project").font(.title3.bold())
+                Text(project.id.isEmpty ? "New Project" : "Edit Project")
+                    .font(.title2.weight(.bold))
                 Spacer()
                 Button("Cancel") { dismiss() }
-                Button("Save") { Task { await save() } }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isSaving || project.title.isEmpty)
+                    .buttonStyle(.badgipSecondary)
+                Button {
+                    Task { await save() }
+                } label: {
+                    if isSaving {
+                        ProgressView().controlSize(.small).tint(.black)
+                    } else {
+                        Text("Save")
+                    }
+                }
+                .buttonStyle(.badgipPrimary)
+                .disabled(isSaving || project.title.isEmpty)
             }
-            .padding()
+            .padding(20)
+
+            Divider()
 
             Form {
                 Section("Basics") {
