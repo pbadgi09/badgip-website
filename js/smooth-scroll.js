@@ -9,10 +9,10 @@ export function initSmoothScroll() {
   // expo curve gives — the scroll should feel like it's keeping up with
   // the wheel, not gliding on its own after you've stopped.
   const lenis = new window.Lenis({
-    duration: 0.7,
-    easing: (t) => 1 - Math.pow(1 - t, 3),
+    duration: 0.45,
+    easing: (t) => 1 - Math.pow(1 - t, 2.5),
     smoothWheel: true,
-    wheelMultiplier: 1.1,
+    wheelMultiplier: 1.4,
     touchMultiplier: 2,
   });
 

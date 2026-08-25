@@ -28,8 +28,8 @@ const DEFAULT_SETTINGS = {
   },
   theme: {
     accentColor: '#3effa3',
-    backgroundColor: '#0a0a0a',
-    textColor: '#e5e5e5',
+    backgroundColor: '#ffffff',
+    textColor: '#0a0a0a',
   },
   meta: {
     title: 'Pranav Badgi — Portfolio',

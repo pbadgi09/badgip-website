@@ -21,14 +21,14 @@
     .not-found__code {
       font-family: var(--font-mono);
       font-size: clamp(4rem, 18vw, 9rem);
-      color: var(--color-accent);
+      color: var(--color-accent-dim);
       line-height: 1;
       animation: glitch 3s infinite;
     }
     @keyframes glitch {
       0%, 92%, 100% { transform: translate(0, 0); text-shadow: none; }
-      93% { transform: translate(-2px, 1px); text-shadow: 2px 0 var(--color-accent); }
-      95% { transform: translate(2px, -1px); text-shadow: -2px 0 #fff; }
+      93% { transform: translate(-2px, 1px); text-shadow: 2px 0 var(--color-accent-dim); }
+      95% { transform: translate(2px, -1px); text-shadow: -2px 0 var(--color-text); }
       97% { transform: translate(0, 0); text-shadow: none; }
     }
   </style>

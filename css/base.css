@@ -30,7 +30,7 @@ h1, h2, h3, h4 {
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: var(--fs-md);
-  color: var(--color-accent);
+  color: var(--color-accent-dim);
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -68,7 +68,7 @@ a {
 }
 
 .link-accent:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-dim);
 }
 
 .link-accent:hover::after {

@@ -54,10 +54,10 @@ export async function initWebglHero() {
         float glow = smoothstep(0.4, 0.9, 1.0 - distance(uv, vec2(0.75, 0.6)));
 
         vec3 accent = vec3(0.243, 1.0, 0.639);
-        vec3 base = vec3(0.0);
+        vec3 base = vec3(1.0);
         vec3 color = mix(base, accent, glow * 0.35 + n * 0.03);
 
-        gl_FragColor = vec4(color, glow * 0.5 + n * 0.02);
+        gl_FragColor = vec4(color, glow * 0.35 + n * 0.015);
       }
     `,
     uniforms: {
