@@ -20,29 +20,41 @@ struct AboutEditorView: View {
                         Text(statusMessage).font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                Button("Save") { Task { await save() } }
-                    .buttonStyle(.badgipPrimary)
-                    .disabled(isSaving)
+                Button {
+                    Task { await save() }
+                } label: {
+                    if isSaving {
+                        ProgressView().controlSize(.small).tint(.black)
+                    } else {
+                        Text("Save")
+                    }
+                }
+                .buttonStyle(.badgipPrimary)
+                .disabled(isSaving)
             }
             .padding(24)
 
             if isLoading {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Form {
-                    Section("Professional Bio") {
-                        TextEditor(text: $about.professionalBio).frame(minHeight: 100)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        card(title: "Professional Bio") {
+                            TextEditor(text: $about.professionalBio)
+                                .frame(minHeight: 90)
+                        }
+                        card(title: "Personal Bio") {
+                            TextEditor(text: $about.personalBio)
+                                .frame(minHeight: 90)
+                        }
+                        card(title: "Professional Timeline") {
+                            timelineEditor(entries: $about.professionalTimeline)
+                        }
+                        card(title: "Personal Timeline") {
+                            timelineEditor(entries: $about.personalTimeline)
+                        }
                     }
-                    Section("Personal Bio") {
-                        TextEditor(text: $about.personalBio).frame(minHeight: 100)
-                    }
-
-                    Section("Professional Timeline") {
-                        timelineEditor(entries: $about.professionalTimeline)
-                    }
-                    Section("Personal Timeline") {
-                        timelineEditor(entries: $about.personalTimeline)
-                    }
+                    .padding(24)
                 }
             }
         }
@@ -50,27 +62,44 @@ struct AboutEditorView: View {
     }
 
     @ViewBuilder
-    private func timelineEditor(entries: Binding<[TimelineEntry]>) -> some View {
-        ForEach(entries) { $entry in
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    TextField("Year", text: $entry.year).frame(width: 100)
-                    TextField("Title", text: $entry.title)
-                    Stepper("Order: \(entry.order)", value: $entry.order, in: 0...999).frame(width: 130)
-                    Button(role: .destructive) {
-                        entries.wrappedValue.removeAll { $0.id == entry.id }
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                }
-                TextField("Description", text: $entry.description)
-            }
-            .padding(.vertical, 4)
+    private func card(title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(.headline.weight(.semibold))
+            content()
         }
-        Button {
-            entries.wrappedValue.append(TimelineEntry(order: entries.wrappedValue.count))
-        } label: {
-            Label("Add Entry", systemImage: "plus")
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.03)))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+    }
+
+    @ViewBuilder
+    private func timelineEditor(entries: Binding<[TimelineEntry]>) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(entries) { $entry in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        TextField("Year", text: $entry.year).frame(width: 90).textFieldStyle(.roundedBorder)
+                        TextField("Title", text: $entry.title).textFieldStyle(.roundedBorder)
+                        Stepper("Order: \(entry.order)", value: $entry.order, in: 0...999).frame(width: 140)
+                        Button {
+                            entries.wrappedValue.removeAll { $0.id == entry.id }
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.badgipIcon(tint: .red))
+                    }
+                    TextField("Description", text: $entry.description).textFieldStyle(.roundedBorder)
+                }
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))
+            }
+            Button {
+                entries.wrappedValue.append(TimelineEntry(order: entries.wrappedValue.count))
+            } label: {
+                Label("Add Entry", systemImage: "plus")
+            }
+            .buttonStyle(.badgipSecondary)
         }
     }
 

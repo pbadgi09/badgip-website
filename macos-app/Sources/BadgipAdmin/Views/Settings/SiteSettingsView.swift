@@ -20,44 +20,55 @@ struct SiteSettingsView: View {
                         Text(statusMessage).font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                Button("Save") { Task { await save() } }
-                    .buttonStyle(.badgipPrimary)
-                    .disabled(isSaving)
+                Button {
+                    Task { await save() }
+                } label: {
+                    if isSaving {
+                        ProgressView().controlSize(.small).tint(.black)
+                    } else {
+                        Text("Save")
+                    }
+                }
+                .buttonStyle(.badgipPrimary)
+                .disabled(isSaving)
             }
             .padding(24)
 
             if isLoading {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Form {
-                    Section("Hero") {
-                        TextField("Greeting", text: $settings.greeting)
-                        TextField("Name", text: $settings.name)
-                        TextField("Role", text: $settings.role)
-                        TextField("Description", text: $settings.description)
-                        TextField("Primary CTA text", text: $settings.ctaPrimaryText)
-                        TextField("Primary CTA link", text: $settings.ctaPrimaryHref)
-                        TextField("Secondary CTA text", text: $settings.ctaSecondaryText)
-                        TextField("Secondary CTA link", text: $settings.ctaSecondaryHref)
-                    }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        card(title: "Hero") {
+                            field("Greeting", $settings.greeting)
+                            field("Name", $settings.name)
+                            field("Role", $settings.role)
+                            field("Description", $settings.description)
+                            field("Primary CTA text", $settings.ctaPrimaryText)
+                            field("Primary CTA link", $settings.ctaPrimaryHref)
+                            field("Secondary CTA text", $settings.ctaSecondaryText)
+                            field("Secondary CTA link", $settings.ctaSecondaryHref)
+                        }
 
-                    Section("Social") {
-                        TextField("GitHub URL", text: $settings.github)
-                        TextField("LinkedIn URL", text: $settings.linkedin)
-                        TextField("Twitter/X URL", text: $settings.twitter)
-                        TextField("Email", text: $settings.email)
-                    }
+                        card(title: "Social") {
+                            field("GitHub URL", $settings.github)
+                            field("LinkedIn URL", $settings.linkedin)
+                            field("Twitter/X URL", $settings.twitter)
+                            field("Email", $settings.email)
+                        }
 
-                    Section("Theme") {
-                        colorField("Accent color", hex: $settings.accentColor)
-                        colorField("Background color", hex: $settings.backgroundColor)
-                        colorField("Text color", hex: $settings.textColor)
-                    }
+                        card(title: "Theme") {
+                            colorField("Accent color", hex: $settings.accentColor)
+                            colorField("Background color", hex: $settings.backgroundColor)
+                            colorField("Text color", hex: $settings.textColor)
+                        }
 
-                    Section("Meta") {
-                        TextField("Page title", text: $settings.metaTitle)
-                        TextField("Meta description", text: $settings.metaDescription)
+                        card(title: "Meta") {
+                            field("Page title", $settings.metaTitle)
+                            field("Meta description", $settings.metaDescription)
+                        }
                     }
+                    .padding(24)
                 }
             }
         }
@@ -65,21 +76,44 @@ struct SiteSettingsView: View {
     }
 
     @ViewBuilder
+    private func card(title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(.headline.weight(.semibold))
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.03)))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+    }
+
+    @ViewBuilder
+    private func field(_ label: String, _ text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            TextField(label, text: text).textFieldStyle(.roundedBorder)
+        }
+    }
+
+    @ViewBuilder
     private func colorField(_ label: String, hex: Binding<String>) -> some View {
-        HStack {
-            TextField(label, text: hex)
-            ColorPicker(
-                "",
-                selection: Binding(
-                    get: { Color(hex: hex.wrappedValue) ?? .gray },
-                    set: { newColor in
-                        if let converted = newColor.hexString {
-                            hex.wrappedValue = converted
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            HStack {
+                TextField(label, text: hex).textFieldStyle(.roundedBorder)
+                ColorPicker(
+                    "",
+                    selection: Binding(
+                        get: { Color(hex: hex.wrappedValue) ?? .gray },
+                        set: { newColor in
+                            if let converted = newColor.hexString {
+                                hex.wrappedValue = converted
+                            }
                         }
-                    }
+                    )
                 )
-            )
-            .labelsHidden()
+                .labelsHidden()
+            }
         }
     }
 
