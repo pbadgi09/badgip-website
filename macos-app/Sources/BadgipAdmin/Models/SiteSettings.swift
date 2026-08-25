@@ -18,6 +18,30 @@ struct NavItem: Codable, Equatable {
     }
 }
 
+struct ContactInfoItem: Identifiable, Codable, Equatable {
+    var id: String = UUID().uuidString
+    var icon: String = "" // emoji or an image URL / repo-relative path
+    var label: String = ""
+
+    var asDictionary: [String: Any] { ["icon": icon, "label": label] }
+
+    static func from(_ dict: [String: Any]) -> ContactInfoItem {
+        ContactInfoItem(icon: dict["icon"] as? String ?? "", label: dict["label"] as? String ?? "")
+    }
+}
+
+struct ContactSocialLink: Identifiable, Codable, Equatable {
+    var id: String = UUID().uuidString
+    var icon: String = "" // emoji or an image URL / repo-relative path
+    var url: String = ""
+
+    var asDictionary: [String: Any] { ["icon": icon, "url": url] }
+
+    static func from(_ dict: [String: Any]) -> ContactSocialLink {
+        ContactSocialLink(icon: dict["icon"] as? String ?? "", url: dict["url"] as? String ?? "")
+    }
+}
+
 struct SiteSettings: Codable, Equatable {
     // hero
     var greeting: String = "Hello, I'm"
@@ -32,7 +56,7 @@ struct SiteSettings: Codable, Equatable {
     // nav
     var navItems: [NavItem] = []
 
-    // social
+    // social (footer links)
     var github: String = ""
     var linkedin: String = ""
     var twitter: String = ""
@@ -47,6 +71,15 @@ struct SiteSettings: Codable, Equatable {
     var metaTitle: String = ""
     var metaDescription: String = ""
     var ogImage: String = ""
+
+    // contact section (the two-panel "Get in touch" UI)
+    var contactHeading: String = "Get in touch"
+    var contactSubheading: String = "Any questions or remarks? Just write a message."
+    var contactInfoTitle: String = "Contact information"
+    var contactInfoSubtitle: String = ""
+    var contactBackgroundImage: String = ""
+    var contactInfoItems: [ContactInfoItem] = []
+    var contactSocialLinks: [ContactSocialLink] = []
 
     var asDictionary: [String: Any] {
         [
@@ -64,6 +97,15 @@ struct SiteSettings: Codable, Equatable {
             "social": ["github": github, "linkedin": linkedin, "twitter": twitter, "email": email],
             "theme": ["accentColor": accentColor, "backgroundColor": backgroundColor, "textColor": textColor],
             "meta": ["title": metaTitle, "description": metaDescription, "ogImage": ogImage],
+            "contact": [
+                "heading": contactHeading,
+                "subheading": contactSubheading,
+                "infoTitle": contactInfoTitle,
+                "infoSubtitle": contactInfoSubtitle,
+                "backgroundImage": contactBackgroundImage,
+                "infoItems": contactInfoItems.map { $0.asDictionary },
+                "socialLinks": contactSocialLinks.map { $0.asDictionary },
+            ],
             "updatedAt": Date().timeIntervalSince1970 * 1000,
         ]
     }
@@ -98,6 +140,19 @@ struct SiteSettings: Codable, Equatable {
             settings.metaTitle = meta["title"] as? String ?? ""
             settings.metaDescription = meta["description"] as? String ?? ""
             settings.ogImage = meta["ogImage"] as? String ?? ""
+        }
+        if let contact = dict["contact"] as? [String: Any] {
+            settings.contactHeading = contact["heading"] as? String ?? settings.contactHeading
+            settings.contactSubheading = contact["subheading"] as? String ?? settings.contactSubheading
+            settings.contactInfoTitle = contact["infoTitle"] as? String ?? settings.contactInfoTitle
+            settings.contactInfoSubtitle = contact["infoSubtitle"] as? String ?? settings.contactInfoSubtitle
+            settings.contactBackgroundImage = contact["backgroundImage"] as? String ?? ""
+            if let items = contact["infoItems"] as? [[String: Any]] {
+                settings.contactInfoItems = items.map { ContactInfoItem.from($0) }
+            }
+            if let links = contact["socialLinks"] as? [[String: Any]] {
+                settings.contactSocialLinks = links.map { ContactSocialLink.from($0) }
+            }
         }
         return settings
     }

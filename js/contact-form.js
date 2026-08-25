@@ -48,12 +48,13 @@ export function initContactForm() {
     const name = form.name.value.trim();
     const email = form.email.value.trim();
     const message = form.message.value.trim();
+    const phone = form.phone.value.trim();
     const honeypot = form.company.value.trim();
 
     if (honeypot) return; // silently drop bot submissions
 
     if (!name || !message || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      status.textContent = 'Please fill out all fields with a valid email.';
+      status.textContent = 'Please fill out all required fields with a valid email.';
       status.dataset.state = 'error';
       return;
     }
@@ -63,7 +64,7 @@ export function initContactForm() {
     status.dataset.state = '';
 
     try {
-      await submitMessage({ name, email, message });
+      await submitMessage({ name, email, message, phone });
       sendEmailNotification({ name, email, message });
       status.textContent = 'Message sent — thank you!';
       status.dataset.state = 'success';

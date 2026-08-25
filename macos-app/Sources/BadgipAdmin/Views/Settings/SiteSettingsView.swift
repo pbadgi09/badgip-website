@@ -70,12 +70,82 @@ struct SiteSettingsView: View {
                             LabeledField(label: "Page title", text: $settings.metaTitle)
                             LabeledField(label: "Meta description", text: $settings.metaDescription)
                         }
+
+                        EditorCard(title: "Contact — page copy") {
+                            LabeledField(label: "Form heading", text: $settings.contactHeading)
+                            LabeledField(label: "Form subheading", text: $settings.contactSubheading)
+                            LabeledField(label: "Info panel title", text: $settings.contactInfoTitle)
+                            LabeledField(label: "Info panel subtitle", text: $settings.contactInfoSubtitle)
+                        }
+
+                        EditorCard(title: "Contact — background photo") {
+                            Text("A tall portrait photo works best — it sits behind the info panel.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            ContactBackgroundUploadView(path: $settings.contactBackgroundImage)
+                        }
+
+                        EditorCard(title: "Contact — info rows (address, phone, email, ...)") {
+                            contactInfoItemsEditor
+                        }
+
+                        EditorCard(title: "Contact — social icons") {
+                            contactSocialLinksEditor
+                        }
                     }
                     .padding(24)
                 }
             }
         }
         .task { await load() }
+    }
+
+    @ViewBuilder
+    private var contactInfoItemsEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach($settings.contactInfoItems) { $item in
+                HStack {
+                    TextField("Icon (emoji or URL)", text: $item.icon).frame(width: 160).textFieldStyle(.roundedBorder)
+                    TextField("Label (e.g. \"42 Berlin St\" or an email)", text: $item.label).textFieldStyle(.roundedBorder)
+                    Button {
+                        settings.contactInfoItems.removeAll { $0.id == item.id }
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.badgipIcon(tint: .red))
+                }
+            }
+            Button {
+                settings.contactInfoItems.append(ContactInfoItem())
+            } label: {
+                Label("Add Row", systemImage: "plus")
+            }
+            .buttonStyle(.badgipSecondary)
+        }
+    }
+
+    @ViewBuilder
+    private var contactSocialLinksEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach($settings.contactSocialLinks) { $link in
+                HStack {
+                    TextField("Icon (emoji or URL)", text: $link.icon).frame(width: 160).textFieldStyle(.roundedBorder)
+                    TextField("URL", text: $link.url).textFieldStyle(.roundedBorder)
+                    Button {
+                        settings.contactSocialLinks.removeAll { $0.id == link.id }
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.badgipIcon(tint: .red))
+                }
+            }
+            Button {
+                settings.contactSocialLinks.append(ContactSocialLink())
+            } label: {
+                Label("Add Social Link", systemImage: "plus")
+            }
+            .buttonStyle(.badgipSecondary)
+        }
     }
 
     private func load() async {

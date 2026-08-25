@@ -83,6 +83,9 @@ private struct MessageRow: View {
                 Text(message.date, style: .date).font(.caption).foregroundStyle(.secondary)
             }
             Text(message.email).font(.caption).foregroundStyle(.secondary)
+            if !message.phone.isEmpty {
+                Text(message.phone).font(.caption).foregroundStyle(.secondary)
+            }
             Text(message.message).font(.body).lineLimit(4).padding(.top, 2)
             HStack(spacing: 8) {
                 Button(message.read ? "Mark Unread" : "Mark Read") {

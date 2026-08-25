@@ -18,6 +18,15 @@ const DEFAULT_SETTINGS = {
     twitter: '',
     email: 'badgip@yahoo.com',
   },
+  contact: {
+    heading: 'Get in touch',
+    subheading: 'Any questions or remarks? Just write a message.',
+    infoTitle: 'Contact information',
+    infoSubtitle: "Fill up this form and I'll get back to you within 24 hours.",
+    backgroundImage: '',
+    infoItems: [{ icon: '✉️', label: 'badgip@yahoo.com' }],
+    socialLinks: [{ icon: '💻', url: 'https://github.com/pbadgi09' }],
+  },
   theme: {
     accentColor: '#3effa3',
     backgroundColor: '#ffffff',
@@ -137,11 +146,12 @@ export async function getPageSections() {
   }
 }
 
-export async function submitMessage({ name, email, message }) {
+export async function submitMessage({ name, email, message, phone }) {
   await push(ref(db, 'messages'), {
     name,
     email,
     message,
+    phone: phone || '',
     createdAt: Date.now(),
     read: false,
   });

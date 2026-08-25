@@ -43,4 +43,14 @@ enum ImagePathBuilder {
         let safeSlug = slug.isEmpty ? "untitled" : slug
         return "blog/\(safeSlug)/\(filename)"
     }
+
+    /// The contact section's single background photo:
+    /// "assets/site/contact-bg-<filename>" repo side, "site/contact-bg-<filename>" stored.
+    static func contactBackgroundRepoPath(filename: String) -> String {
+        "assets/site/contact-bg-\(filename)"
+    }
+
+    static func contactBackgroundStoredPath(filename: String) -> String {
+        "site/contact-bg-\(filename)"
+    }
 }

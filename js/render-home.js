@@ -1,3 +1,32 @@
+import { jsDelivrBase } from './config.js';
+
+function resolveUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//.test(path)) return path;
+  return `${jsDelivrBase}/${path.replace(/^\/+/, '')}`;
+}
+
+function isImagePath(icon) {
+  return /^https?:\/\//.test(icon) || /\.(png|jpe?g|svg|webp|gif)$/i.test(icon);
+}
+
+function iconMarkup(icon) {
+  if (!icon) return '';
+  if (isImagePath(icon)) {
+    return `<img src="${resolveUrl(icon)}" alt="" loading="lazy" />`;
+  }
+  const div = document.createElement('div');
+  div.textContent = icon;
+  return div.innerHTML;
+}
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
 export function renderHero(settings) {
   const { hero } = settings;
   document.getElementById('heroGreeting').textContent = hero.greeting;
@@ -19,20 +48,9 @@ export function renderHero(settings) {
 }
 
 export function renderContactAndFooter(settings) {
-  const { social } = settings;
+  const { social, contact } = settings;
   const year = new Date().getFullYear();
   document.getElementById('footerYear').textContent = String(year);
-
-  const contactEmail = document.getElementById('contactEmail');
-  contactEmail.textContent = social.email;
-  contactEmail.href = `mailto:${social.email}`;
-
-  const contactGithub = document.getElementById('contactGithub');
-  contactGithub.href = social.github;
-
-  const contactLinkedin = document.getElementById('contactLinkedin');
-  contactLinkedin.href = social.linkedin || social.github;
-  contactLinkedin.hidden = !social.linkedin;
 
   const footerGithub = document.getElementById('footerGithub');
   footerGithub.href = social.github;
@@ -40,4 +58,37 @@ export function renderContactAndFooter(settings) {
   const footerLinkedin = document.getElementById('footerLinkedin');
   footerLinkedin.href = social.linkedin || social.github;
   footerLinkedin.hidden = !social.linkedin;
+
+  document.getElementById('contactInfoTitle').textContent = contact.infoTitle;
+  document.getElementById('contactInfoSubtitle').textContent = contact.infoSubtitle;
+  document.getElementById('contactFormTitle').textContent = contact.heading;
+  document.getElementById('contactFormSubtitle').textContent = contact.subheading;
+
+  const bg = document.getElementById('contactInfoPanelBg');
+  if (contact.backgroundImage) {
+    bg.style.backgroundImage = `url("${resolveUrl(contact.backgroundImage)}")`;
+  }
+
+  const infoList = document.getElementById('contactInfoList');
+  infoList.innerHTML = (contact.infoItems || [])
+    .map(
+      (item) => `
+      <div class="contact-info-item">
+        <span class="contact-info-item__icon">${iconMarkup(item.icon)}</span>
+        <span class="contact-info-item__label">${escapeHtml(item.label)}</span>
+      </div>
+    `
+    )
+    .join('');
+
+  const socialsEl = document.getElementById('contactSocials');
+  socialsEl.innerHTML = (contact.socialLinks || [])
+    .map(
+      (link) => `
+      <a class="contact-socials__link" href="${escapeHtml(link.url || '#')}" target="_blank" rel="noopener" aria-label="Social link">
+        ${iconMarkup(link.icon)}
+      </a>
+    `
+    )
+    .join('');
 }

@@ -66,38 +66,55 @@
         <h2 class="section-title">Contact</h2>
       </div>
 
-      <div class="contact__grid">
-        <div class="reveal">
-          <p class="hero__description" style="margin-top:0">
-            Have something worth building? I'd love to hear about it.
-          </p>
-          <div class="contact__info-line">
-            <a href="#" class="link-accent mono" id="contactEmail">—</a>
-            <a href="#" class="link-accent mono" id="contactGithub" target="_blank" rel="noopener">GitHub</a>
-            <a href="#" class="link-accent mono" id="contactLinkedin" target="_blank" rel="noopener">LinkedIn</a>
+      <div class="contact-panels">
+        <div class="contact-info-panel reveal" id="contactInfoPanel">
+          <div class="contact-info-panel__bg" id="contactInfoPanelBg" aria-hidden="true"></div>
+          <div class="contact-info-panel__content">
+            <h3 class="contact-info-panel__title" id="contactInfoTitle">Contact information</h3>
+            <p class="contact-info-panel__subtitle" id="contactInfoSubtitle"></p>
+            <div class="contact-info-list" id="contactInfoList"></div>
+            <div class="contact-socials" id="contactSocials"></div>
           </div>
         </div>
 
-        <form class="contact-form reveal" id="contactForm" novalidate>
-          <div class="form-field">
-            <label for="cfName">Name</label>
-            <input type="text" id="cfName" name="name" autocomplete="name" required />
-          </div>
-          <div class="form-field">
-            <label for="cfEmail">Email</label>
-            <input type="email" id="cfEmail" name="email" autocomplete="email" required />
-          </div>
-          <div class="form-field">
-            <label for="cfMessage">Message</label>
-            <textarea id="cfMessage" name="message" rows="5" required></textarea>
-          </div>
-          <div class="form-field form-field--honeypot" aria-hidden="true">
-            <label for="cfCompany">Company</label>
-            <input type="text" id="cfCompany" name="company" tabindex="-1" autocomplete="off" />
-          </div>
-          <button type="submit" class="btn btn--primary" id="contactSubmit">Send Message</button>
-          <p class="contact-form__status mono" id="contactStatus" role="status" aria-live="polite"></p>
-        </form>
+        <div class="contact-form-panel reveal">
+          <h3 class="contact-form-panel__title" id="contactFormTitle">Get in touch</h3>
+          <p class="contact-form-panel__subtitle" id="contactFormSubtitle"></p>
+
+          <form class="contact-form-grid" id="contactForm" novalidate>
+            <div class="form-field">
+              <label for="cfName">Name <span class="required-mark">*</span></label>
+              <div class="form-field__input-icon">
+                <span class="form-field__icon" aria-hidden="true">👤</span>
+                <input type="text" id="cfName" name="name" autocomplete="name" required />
+              </div>
+            </div>
+            <div class="form-field form-field--message">
+              <label for="cfMessage">Message <span class="required-mark">*</span></label>
+              <textarea id="cfMessage" name="message" required></textarea>
+            </div>
+            <div class="form-field">
+              <label for="cfEmail">Email ID <span class="required-mark">*</span></label>
+              <div class="form-field__input-icon">
+                <span class="form-field__icon" aria-hidden="true">✉️</span>
+                <input type="email" id="cfEmail" name="email" autocomplete="email" required />
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="cfPhone">Phone</label>
+              <div class="form-field__input-icon">
+                <span class="form-field__icon" aria-hidden="true">📱</span>
+                <input type="tel" id="cfPhone" name="phone" autocomplete="tel" placeholder="Optional" />
+              </div>
+            </div>
+            <div class="form-field form-field--honeypot" aria-hidden="true">
+              <label for="cfCompany">Company</label>
+              <input type="text" id="cfCompany" name="company" tabindex="-1" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn btn--primary" id="contactSubmit">Send Message</button>
+            <p class="contact-form__status mono" id="contactStatus" role="status" aria-live="polite"></p>
+          </form>
+        </div>
       </div>
     </section>
   </main>
