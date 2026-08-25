@@ -1,10 +1,18 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Upload control for the contact section's single background photo —
-/// mirrors ImageUploadView's pattern but for one path, not a cover+gallery.
-struct ContactBackgroundUploadView: View {
+/// Upload control for a single, standalone image path (not a cover+gallery
+/// pair like ImageUploadView) — used for the contact background photo and
+/// the hero profile picture.
+struct SingleImageUploadView: View {
     @Binding var path: String
+    var buttonLabel: String = "Set Photo"
+    var thumbnailWidth: CGFloat = 64
+    var thumbnailHeight: CGFloat = 80
+    var thumbnailCornerRadius: CGFloat = 8
+    var repoPath: (String) -> String
+    var storedPath: (String) -> String
+    var commitMessage: (String) -> String
 
     @State private var isUploading = false
     @State private var uploadError: String?
@@ -23,7 +31,7 @@ struct ContactBackgroundUploadView: View {
                         if isUploading {
                             HStack { ProgressView().controlSize(.small); Text("Uploading…") }
                         } else {
-                            Text("Set Background Photo")
+                            Text(buttonLabel)
                         }
                     }
                     .buttonStyle(.badgipSecondary)
@@ -51,7 +59,7 @@ struct ContactBackgroundUploadView: View {
     private var thumbnail: some View {
         Group {
             if path.isEmpty {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: thumbnailCornerRadius)
                     .fill(Color.gray.opacity(0.15))
                     .overlay(Image(systemName: "photo").foregroundStyle(.secondary))
             } else if let url = JsDelivrService.composeURL(forStoredPath: path) {
@@ -60,7 +68,7 @@ struct ContactBackgroundUploadView: View {
                     case .success(let image):
                         image.resizable().aspectRatio(contentMode: .fill)
                     case .failure:
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: thumbnailCornerRadius)
                             .fill(Color.gray.opacity(0.15))
                             .overlay(Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary))
                     default:
@@ -69,8 +77,8 @@ struct ContactBackgroundUploadView: View {
                 }
             }
         }
-        .frame(width: 64, height: 80)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .frame(width: thumbnailWidth, height: thumbnailHeight)
+        .clipShape(RoundedRectangle(cornerRadius: thumbnailCornerRadius))
     }
 
     private func handlePicked(_ result: Result<URL, Error>) {
@@ -96,16 +104,12 @@ struct ContactBackgroundUploadView: View {
         do {
             let data = try Data(contentsOf: url)
             let filename = url.lastPathComponent
-            let repoPath = ImagePathBuilder.contactBackgroundRepoPath(filename: filename)
-            let storedPath = ImagePathBuilder.contactBackgroundStoredPath(filename: filename)
+            let repo = repoPath(filename)
+            let stored = storedPath(filename)
 
-            try await githubService.uploadFile(
-                path: repoPath,
-                data: data,
-                commitMessage: "Set contact background photo: \(filename)"
-            )
-            await JsDelivrService.purge(repoPath: repoPath)
-            path = storedPath
+            try await githubService.uploadFile(path: repo, data: data, commitMessage: commitMessage(filename))
+            await JsDelivrService.purge(repoPath: repo)
+            path = stored
         } catch {
             uploadError = error.localizedDescription
         }

@@ -52,6 +52,7 @@ struct SiteSettings: Codable, Equatable {
     var ctaPrimaryHref: String = "#projects"
     var ctaSecondaryText: String = "Get In Touch"
     var ctaSecondaryHref: String = "#contact"
+    var profileImage: String = ""
 
     // nav
     var navItems: [NavItem] = []
@@ -92,6 +93,7 @@ struct SiteSettings: Codable, Equatable {
                 "ctaPrimaryHref": ctaPrimaryHref,
                 "ctaSecondaryText": ctaSecondaryText,
                 "ctaSecondaryHref": ctaSecondaryHref,
+                "profileImage": profileImage,
             ],
             "nav": ["items": navItems.map { $0.asDictionary }],
             "social": ["github": github, "linkedin": linkedin, "twitter": twitter, "email": email],
@@ -121,6 +123,7 @@ struct SiteSettings: Codable, Equatable {
             settings.ctaPrimaryHref = hero["ctaPrimaryHref"] as? String ?? settings.ctaPrimaryHref
             settings.ctaSecondaryText = hero["ctaSecondaryText"] as? String ?? settings.ctaSecondaryText
             settings.ctaSecondaryHref = hero["ctaSecondaryHref"] as? String ?? settings.ctaSecondaryHref
+            settings.profileImage = hero["profileImage"] as? String ?? ""
         }
         if let nav = dict["nav"] as? [String: Any], let items = nav["items"] as? [[String: Any]] {
             settings.navItems = items.map { NavItem.from($0) }

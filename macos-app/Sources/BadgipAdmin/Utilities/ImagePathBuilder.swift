@@ -53,4 +53,14 @@ enum ImagePathBuilder {
     static func contactBackgroundStoredPath(filename: String) -> String {
         "site/contact-bg-\(filename)"
     }
+
+    /// The hero section's optional profile picture:
+    /// "assets/site/profile-<filename>" repo side, "site/profile-<filename>" stored.
+    static func heroProfileRepoPath(filename: String) -> String {
+        "assets/site/profile-\(filename)"
+    }
+
+    static func heroProfileStoredPath(filename: String) -> String {
+        "site/profile-\(filename)"
+    }
 }

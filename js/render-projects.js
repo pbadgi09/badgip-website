@@ -1,5 +1,5 @@
 import { jsDelivrBase } from './config.js';
-import { lockBodyScroll, unlockBodyScroll } from './scroll-lock.js';
+import { openFullscreen, isFullscreenOpen } from './fullscreen-panel.js';
 
 function imageUrl(path) {
   if (!path) return '';
@@ -80,15 +80,15 @@ export function renderProjects(projects) {
   });
 }
 
-// Only one project can be open full-screen at a time.
-let openDetail = null; // { id, card, panel, escHandler }
-
 function buildFullscreenMarkup(project) {
   const embedId = youtubeEmbedId(project.youtubeUrl);
   const galleryPaths = project.gallery || [];
 
   const heroHtml = project.coverImage
-    ? `<div class="project-fullscreen__hero"><img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" /></div>`
+    ? `<div class="fullscreen-panel__hero">
+        <img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" />
+        <div class="fullscreen-panel__hero-caption"><span class="text-chip">${escapeHtml(project.title)}</span></div>
+      </div>`
     : '';
 
   const galleryHtml = galleryPaths.length
@@ -112,13 +112,13 @@ function buildFullscreenMarkup(project) {
 
   return `
     ${heroHtml}
-    <button class="project-fullscreen__close mono" aria-label="Close and return to projects">
+    <button class="fullscreen-panel__close mono" aria-label="Close and return to projects">
       <span aria-hidden="true">←</span> Back to Projects
     </button>
-    <div class="project-fullscreen__content">
+    <div class="fullscreen-panel__content">
       <div class="project-detail-inline__body">
         <span class="eyebrow">${escapeHtml((project.tags || [])[0] || 'Project')}</span>
-        <h2 class="section-title">${escapeHtml(project.title)}</h2>
+        ${project.coverImage ? '' : `<h2 class="section-title">${escapeHtml(project.title)}</h2>`}
         <p>${escapeHtml(project.description || project.summary)}</p>
         ${links.length ? `<div class="project-detail-inline__links">${links.join('')}</div>` : ''}
       </div>
@@ -129,115 +129,12 @@ function buildFullscreenMarkup(project) {
 }
 
 function openProjectDetail(project, card) {
-  if (openDetail) return;
-
-  const cardRect = card.getBoundingClientRect();
-  const cardRadius = parseFloat(getComputedStyle(card).borderRadius) || 28;
-
-  lockBodyScroll();
-
-  const panel = document.createElement('div');
-  panel.className = 'project-fullscreen';
-  panel.innerHTML = buildFullscreenMarkup(project);
-  if (project.accentColor) {
-    panel.style.setProperty('--color-accent', project.accentColor);
-    panel.style.setProperty('--color-accent-dim', project.accentColor);
-  }
-  if (project.textColor) {
-    panel.style.color = project.textColor;
-    panel.style.setProperty('--color-text-dim', project.textColor);
-  }
-  document.body.appendChild(panel);
-
-  const content = panel.querySelector('.project-fullscreen__content');
-  const closeBtn = panel.querySelector('.project-fullscreen__close');
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') closeProjectDetail();
-  };
-  document.addEventListener('keydown', escHandler);
-  closeBtn.addEventListener('click', () => closeProjectDetail());
-
-  card.classList.add('is-expanded');
-  openDetail = { id: project.id, card, panel, escHandler };
-
-  if (!window.gsap) {
-    panel.style.position = 'fixed';
-    panel.style.inset = '0';
-    panel.style.overflowY = 'auto';
-    content.style.opacity = '1';
-    closeBtn.style.opacity = '1';
-    return;
-  }
-
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  window.gsap.set(panel, {
-    position: 'fixed',
-    top: cardRect.top,
-    left: cardRect.left,
-    width: cardRect.width,
-    height: cardRect.height,
-    borderRadius: cardRadius,
-    overflow: 'hidden',
+  if (isFullscreenOpen()) return;
+  openFullscreen({
+    id: `project:${project.id}`,
+    sourceEl: card,
+    innerHTML: buildFullscreenMarkup(project),
+    accentColor: project.accentColor,
+    textColor: project.textColor,
   });
-  window.gsap.set([content, closeBtn], { opacity: 0, y: 16 });
-
-  const tl = window.gsap.timeline({
-    onComplete: () => {
-      panel.style.overflowY = 'auto';
-    },
-  });
-  tl.to(panel, {
-    top: 0,
-    left: 0,
-    width: vw,
-    height: vh,
-    borderRadius: 0,
-    duration: 0.6,
-    ease: 'power3.inOut',
-  }).to([content, closeBtn], { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, '-=0.25');
-}
-
-function closeProjectDetail() {
-  if (!openDetail) return;
-  const { card, panel, escHandler } = openDetail;
-  document.removeEventListener('keydown', escHandler);
-  card.classList.remove('is-expanded');
-  openDetail = null;
-
-  if (!window.gsap) {
-    panel.remove();
-    unlockBodyScroll();
-    return;
-  }
-
-  const cardRect = card.getBoundingClientRect();
-  const cardRadius = parseFloat(getComputedStyle(card).borderRadius) || 28;
-  const content = panel.querySelector('.project-fullscreen__content');
-  const closeBtn = panel.querySelector('.project-fullscreen__close');
-
-  panel.style.overflowY = 'hidden';
-  panel.scrollTop = 0;
-
-  const tl = window.gsap.timeline({
-    onComplete: () => {
-      panel.remove();
-      unlockBodyScroll();
-    },
-  });
-  tl.to([content, closeBtn], { opacity: 0, y: 16, duration: 0.2, ease: 'power2.in' }).to(
-    panel,
-    {
-      top: cardRect.top,
-      left: cardRect.left,
-      width: cardRect.width,
-      height: cardRect.height,
-      borderRadius: cardRadius,
-      duration: 0.5,
-      ease: 'power3.inOut',
-    },
-    '-=0.05'
-  );
 }

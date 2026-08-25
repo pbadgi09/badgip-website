@@ -249,6 +249,16 @@
   pointer-events: none;
 }
 
+.hero__avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-border), 0 12px 30px -10px rgba(0, 0, 0, 0.25);
+  margin-bottom: var(--space-6);
+}
+
 .hero__greeting {
   margin-bottom: var(--space-6);
 }
@@ -444,8 +454,20 @@
 /* ---------- Projects ---------- */
 .projects__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: var(--space-12);
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-8);
+}
+
+@media (max-width: 1080px) {
+  .projects__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .projects__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .project-card {
@@ -542,20 +564,24 @@
 }
 
 .project-card__body {
-  padding: var(--space-8);
+  padding: var(--space-6);
 }
 
 .project-card__title {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
   font-weight: 700;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .project-card__summary {
   color: var(--color-text-dim);
-  font-size: var(--fs-base);
+  font-size: var(--fs-sm);
   line-height: 1.5;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .project-card__tags {
@@ -582,23 +608,24 @@
   color: var(--color-text);
 }
 
-/* ---------- Project detail (full-screen matched-geometry expand) ---------- */
-.project-card.is-expanded {
-  /* The full-screen panel starts at this card's exact rect and only ever
-     grows from there, so it fully occludes the card for the whole
-     transition — no need to hide it too (and doing so via opacity fought
-     with GSAP's own inline opacity from the scroll-reveal animation). */
+/* ---------- Full-screen detail (matched-geometry expand) ---------- */
+/* Shared by project cards and blog list rows — the full-screen panel starts
+   at the source element's exact rect and only ever grows from there, so it
+   fully occludes the source for the whole transition. No need to hide it
+   too (and doing so via opacity fought with GSAP's own inline opacity from
+   the scroll-reveal animation). */
+.is-expanded {
   pointer-events: none;
 }
 
-.project-fullscreen {
+.fullscreen-panel {
   background: var(--color-bg);
   z-index: var(--z-overlay);
   box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.35);
   will-change: top, left, width, height;
 }
 
-.project-fullscreen__hero {
+.fullscreen-panel__hero {
   position: relative;
   width: 100%;
   aspect-ratio: 21 / 9;
@@ -606,13 +633,24 @@
   background: var(--color-bg-elevated-2);
 }
 
-.project-fullscreen__hero img {
+.fullscreen-panel__hero img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.project-fullscreen__close {
+.fullscreen-panel__hero-caption {
+  position: absolute;
+  left: var(--space-8);
+  right: var(--space-8);
+  bottom: var(--space-8);
+}
+
+.fullscreen-panel__hero-caption .text-chip {
+  font-size: clamp(1.5rem, 4vw, 2.75rem);
+}
+
+.fullscreen-panel__close {
   position: fixed;
   top: var(--space-6);
   left: var(--space-6);
@@ -633,15 +671,19 @@
   transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
 }
 
-.project-fullscreen__close:hover {
+.fullscreen-panel__close:hover {
   transform: translateX(-2px);
   border-color: var(--color-accent-dim);
 }
 
-.project-fullscreen__content {
+.fullscreen-panel__content {
   max-width: var(--max-width);
   margin: 0 auto;
   padding: var(--space-16) var(--page-margin-x) var(--space-32);
+}
+
+.fullscreen-panel__content--article {
+  max-width: 720px;
 }
 
 .project-detail-inline__gallery {
@@ -696,100 +738,6 @@
   gap: var(--space-4);
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: var(--space-8);
-}
-
-/* ---------- Project detail overlay ---------- */
-.project-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-overlay);
-  background: rgba(10, 10, 10, 0.9);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  overflow-y: auto;
-  padding: var(--space-24) var(--page-margin-x) var(--space-24);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--duration-base) var(--ease-out);
-}
-
-.project-overlay.is-open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.project-overlay__panel {
-  position: relative;
-  max-width: 860px;
-  width: 100%;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-12);
-  box-shadow: 0 24px 80px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(62, 255, 163, 0.04);
-  transform: translateY(24px);
-  transition: transform var(--duration-base) var(--ease-out);
-}
-
-.project-overlay.is-open .project-overlay__panel {
-  transform: translateY(0);
-}
-
-.project-overlay__close {
-  position: absolute;
-  top: var(--space-8);
-  right: var(--page-margin-x);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--color-border-strong);
-  font-family: var(--font-mono);
-  font-size: var(--fs-sm);
-  color: var(--color-text-dim);
-  transition: border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out);
-}
-
-.project-overlay__close:hover {
-  color: var(--color-accent-dim);
-  border-color: var(--color-accent-dim);
-  transform: rotate(90deg);
-}
-
-.project-overlay__video {
-  aspect-ratio: 16 / 9;
-  width: 100%;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  margin: var(--space-8) 0;
-}
-
-.project-overlay__video iframe {
-  width: 100%;
-  height: 100%;
-}
-
-.project-overlay__gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-4);
-  margin: var(--space-8) 0;
-}
-
-.project-overlay__gallery img {
-  border-radius: var(--radius-sm);
-}
-
-.project-overlay__links {
-  display: flex;
-  gap: var(--space-6);
   margin-top: var(--space-8);
 }
 
@@ -863,71 +811,104 @@
   font-weight: 600;
 }
 
-/* ---------- Blog ---------- */
-.blog-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--space-12);
+/* ---------- Blog (a list — deliberately not a card grid, to read as
+   distinct from Projects) ---------- */
+.blog-list {
+  display: flex;
+  flex-direction: column;
 }
 
-.blog-card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  background: var(--color-bg-elevated);
+.blog-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) 0;
+  border-bottom: 1px solid var(--color-border);
   cursor: pointer;
-  transition: border-color var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out),
-    box-shadow var(--duration-base) var(--ease-out);
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-.blog-card:hover {
-  border-color: var(--color-accent-dim);
-  transform: translateY(-6px);
-  box-shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.18), 0 0 30px -12px var(--color-accent-glow);
+.blog-list-item:first-child {
+  border-top: 1px solid var(--color-border);
 }
 
-.blog-card__media {
-  aspect-ratio: 16 / 10;
+.blog-list-item:hover {
+  opacity: 0.7;
+}
+
+.blog-list-item__media {
+  flex: none;
+  width: 140px;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-bg-elevated-2);
 }
 
-.blog-card__media img {
+.blog-list-item__media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.blog-card__body {
-  padding: var(--space-8);
+.blog-list-item__media--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  color: var(--color-text-faint);
+  background: linear-gradient(135deg, var(--color-bg-elevated-2), var(--color-bg-elevated));
 }
 
-.blog-card__title {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  margin-bottom: var(--space-2);
+.blog-list-item__body {
+  flex: 1;
+  min-width: 0;
 }
 
-.blog-card__subtitle {
-  color: var(--color-text-dim);
-  font-size: var(--fs-base);
-  line-height: 1.5;
-  margin-bottom: var(--space-4);
-}
-
-.blog-card__date {
+.blog-list-item__date {
   color: var(--color-text-faint);
   font-size: 0.75rem;
 }
 
-.blog-overlay__panel {
-  max-width: 720px;
+.blog-list-item__title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  margin-top: var(--space-2);
+}
+
+.blog-list-item__subtitle {
+  color: var(--color-text-dim);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  margin-top: var(--space-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blog-list-item__arrow {
+  flex: none;
+  font-size: 1.25rem;
+  color: var(--color-text-faint);
+  transition: transform var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.blog-list-item:hover .blog-list-item__arrow {
+  transform: translateX(4px);
+  color: var(--color-accent-dim);
+}
+
+.blog-list-item-skeleton {
+  height: 172px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-6);
 }
 
 /* A caption block that's bold white-on-black, using box-decoration-break so
    a caption wrapping across multiple lines renders as separate stacked
-   chips per line instead of one rectangle spanning the whole block. */
-.blog-chip {
+   chips per line instead of one rectangle spanning the whole block. Used
+   for hero titles and image captions in both Project and Blog detail views. */
+.text-chip {
   display: inline;
   background: var(--chip-bg, #000);
   color: #fff;
@@ -936,33 +917,6 @@
   padding: 0.1em 0.4em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
-}
-
-.blog-hero {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--space-10);
-  background: var(--color-bg-elevated-2);
-}
-
-.blog-hero img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.blog-hero__caption {
-  position: absolute;
-  left: var(--space-6);
-  right: var(--space-6);
-  bottom: var(--space-6);
-}
-
-.blog-hero__caption .blog-chip {
-  font-size: clamp(1.25rem, 3vw, 2rem);
 }
 
 .blog-section-block {
@@ -1128,8 +1082,8 @@
   position: relative;
   border-radius: var(--radius-xl);
   overflow: hidden;
-  background: #14141a;
-  min-height: 480px;
+  background: radial-gradient(ellipse 120% 80% at 30% 0%, rgba(62, 255, 163, 0.16), transparent 60%), linear-gradient(160deg, #1c1c24, #0e0e12);
+  min-height: 420px;
   display: flex;
   align-items: flex-end;
 }
@@ -1262,6 +1216,7 @@
 }
 
 .contact-form-grid .form-field--message {
+  grid-column: 2;
   grid-row: 1 / 4;
   display: flex;
   flex-direction: column;
@@ -1448,17 +1403,19 @@
     bottom: var(--space-6);
   }
 
-  .project-overlay {
-    padding: var(--space-8) var(--page-margin-x) var(--space-16);
-    align-items: stretch;
+  .fullscreen-panel__content {
+    padding: var(--space-10) var(--page-margin-x) var(--space-24);
   }
 
-  .project-overlay__panel {
-    padding: var(--space-6);
-  }
-
-  .project-overlay__close {
+  .fullscreen-panel__close {
     top: var(--space-4);
+    left: var(--space-4);
+  }
+
+  .fullscreen-panel__hero-caption {
+    left: var(--space-4);
+    right: var(--space-4);
+    bottom: var(--space-4);
   }
 
   .hero {

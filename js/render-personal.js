@@ -1,5 +1,5 @@
 import { jsDelivrBase } from './config.js';
-import { lockBodyScroll, unlockBodyScroll } from './scroll-lock.js';
+import { openFullscreen, isFullscreenOpen } from './fullscreen-panel.js';
 
 function imageUrl(path) {
   if (!path) return '';
@@ -64,48 +64,54 @@ function firstValueOfType(sections, type) {
   return match ? match.value : '';
 }
 
+// Blog is deliberately a list, not a card grid — it should read as
+// distinct from the Projects section rather than a second grid of tiles.
 export function renderBlogGrid(posts) {
-  const grid = document.getElementById('blogGrid');
-  grid.innerHTML = '';
+  const list = document.getElementById('blogGrid');
+  list.innerHTML = '';
 
   if (posts.length === 0) {
-    grid.innerHTML = '<p class="mono" style="color: var(--color-text-dim)">No posts yet.</p>';
+    list.innerHTML = '<p class="mono" style="color: var(--color-text-dim)">No posts yet.</p>';
     return;
   }
 
   posts.forEach((post) => {
     const title = firstValueOfType(post.sections, 'title') || 'Untitled';
     const subtitle = firstValueOfType(post.sections, 'subtitle');
+    const dateLabel = post.publishedAt
+      ? new Date(post.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+      : '';
 
-    const card = document.createElement('article');
-    card.className = 'blog-card reveal';
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    card.innerHTML = `
-      <div class="blog-card__media${post.coverImage ? '' : ' project-card__media--empty'}">
+    const row = document.createElement('article');
+    row.className = 'blog-list-item reveal';
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
+    row.innerHTML = `
+      <div class="blog-list-item__media${post.coverImage ? '' : ' blog-list-item__media--empty'}">
         ${
           post.coverImage
             ? `<img src="${imageUrl(post.coverImage)}" alt="${escapeHtml(title)}" loading="lazy" />`
-            : `<span class="project-card__initial mono">${escapeHtml(title.charAt(0).toUpperCase())}</span>`
+            : `<span class="mono">${escapeHtml(title.charAt(0).toUpperCase())}</span>`
         }
       </div>
-      <div class="blog-card__body">
-        <h3 class="blog-card__title">${escapeHtml(title)}</h3>
-        ${subtitle ? `<p class="blog-card__subtitle">${escapeHtml(subtitle)}</p>` : ''}
-        ${post.publishedAt ? `<span class="blog-card__date mono">${new Date(post.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>` : ''}
+      <div class="blog-list-item__body">
+        ${dateLabel ? `<span class="blog-list-item__date mono">${dateLabel}</span>` : ''}
+        <h3 class="blog-list-item__title">${escapeHtml(title)}</h3>
+        ${subtitle ? `<p class="blog-list-item__subtitle">${escapeHtml(subtitle)}</p>` : ''}
       </div>
+      <span class="blog-list-item__arrow" aria-hidden="true">→</span>
     `;
 
-    const img = card.querySelector('.blog-card__media img');
+    const img = row.querySelector('.blog-list-item__media img');
     if (img) {
       img.addEventListener(
         'error',
         () => {
-          const media = card.querySelector('.blog-card__media');
-          media.classList.add('project-card__media--empty');
+          const media = row.querySelector('.blog-list-item__media');
+          media.classList.add('blog-list-item__media--empty');
           img.remove();
           const initial = document.createElement('span');
-          initial.className = 'project-card__initial mono';
+          initial.className = 'mono';
           initial.textContent = title.charAt(0).toUpperCase();
           media.prepend(initial);
         },
@@ -113,15 +119,16 @@ export function renderBlogGrid(posts) {
       );
     }
 
-    card.addEventListener('click', () => openBlogOverlay(post));
-    card.addEventListener('keydown', (e) => {
+    const open = () => openBlogDetail(post, row);
+    row.addEventListener('click', open);
+    row.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        openBlogOverlay(post);
+        open();
       }
     });
 
-    grid.appendChild(card);
+    list.appendChild(row);
   });
 }
 
@@ -130,7 +137,7 @@ export function renderBlogGrid(posts) {
 // blocks per line (the look from the reference site) rather than one
 // rectangle stretching across every line.
 function renderChip(text) {
-  return `<span class="blog-chip">${escapeHtml(text)}</span>`;
+  return `<span class="text-chip">${escapeHtml(text)}</span>`;
 }
 
 function sectionStyle(section) {
@@ -184,59 +191,45 @@ function renderBlogSection(section) {
   }
 }
 
-function renderBlogHero(coverImage, titleValue) {
-  if (!coverImage) return '';
-  return `<div class="blog-hero">
-    <img src="${imageUrl(coverImage)}" alt="${escapeHtml(titleValue || '')}" />
-    ${titleValue ? `<div class="blog-hero__caption">${renderChip(titleValue)}</div>` : ''}
-  </div>`;
-}
-
-function openBlogOverlay(post) {
-  document.getElementById('blogOverlay')?.remove();
-
-  const template = document.getElementById('blogOverlayTemplate');
-  const fragment = template.content.cloneNode(true);
-  document.body.appendChild(fragment);
-
-  const overlay = document.getElementById('blogOverlay');
-  const sectionsEl = document.getElementById('blogOverlaySections');
-
-  // The post's cover image + its first title become a hero block (image
-  // with the title as a black-block caption) instead of a plain heading,
-  // matching the reference site's look — the rest of the sections render
-  // normally below it.
+function buildBlogFullscreenMarkup(post) {
   const sections = post.sections || [];
   const titleIndex = sections.findIndex((s) => s.type === 'title');
+  const titleValue = titleIndex >= 0 ? sections[titleIndex].value : '';
+
   let bodySections = sections;
   let heroHtml = '';
   if (post.coverImage) {
-    heroHtml = renderBlogHero(post.coverImage, titleIndex >= 0 ? sections[titleIndex].value : '');
+    heroHtml = `<div class="fullscreen-panel__hero">
+      <img src="${imageUrl(post.coverImage)}" alt="${escapeHtml(titleValue)}" />
+      ${titleValue ? `<div class="fullscreen-panel__hero-caption">${renderChip(titleValue)}</div>` : ''}
+    </div>`;
     if (titleIndex >= 0) bodySections = sections.filter((_, i) => i !== titleIndex);
   }
 
-  sectionsEl.innerHTML = heroHtml + bodySections.map(renderBlogSection).join('');
-  sectionsEl.querySelectorAll('.blog-section__map-overlay').forEach((btn) => {
-    btn.addEventListener('click', () => btn.remove());
-  });
+  return `
+    ${heroHtml}
+    <button class="fullscreen-panel__close mono" aria-label="Close and return to blog">
+      <span aria-hidden="true">←</span> Back to Blog
+    </button>
+    <div class="fullscreen-panel__content fullscreen-panel__content--article">
+      ${bodySections.map(renderBlogSection).join('')}
+    </div>
+  `;
+}
 
-  const close = () => {
-    overlay.classList.remove('is-open');
-    unlockBodyScroll();
-    setTimeout(() => overlay.remove(), 400);
+function openBlogDetail(post, row) {
+  if (isFullscreenOpen()) return;
+  const panelReady = () => {
+    document.querySelectorAll('.blog-section__map-overlay').forEach((btn) => {
+      btn.addEventListener('click', () => btn.remove());
+    });
   };
-
-  document.getElementById('blogOverlayClose').addEventListener('click', close);
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) close();
+  openFullscreen({
+    id: `blog:${post.id}`,
+    sourceEl: row,
+    innerHTML: buildBlogFullscreenMarkup(post),
   });
-  document.addEventListener('keydown', function escHandler(e) {
-    if (e.key === 'Escape') {
-      close();
-      document.removeEventListener('keydown', escHandler);
-    }
-  });
-
-  lockBodyScroll();
-  requestAnimationFrame(() => overlay.classList.add('is-open'));
+  // The overlay buttons only exist once openFullscreen has inserted the
+  // markup — wire them up right after.
+  panelReady();
 }

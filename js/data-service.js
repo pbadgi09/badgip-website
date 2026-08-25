@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS = {
     ctaPrimaryHref: '#projects',
     ctaSecondaryText: 'Get In Touch',
     ctaSecondaryHref: '#contact',
+    profileImage: '',
   },
   social: {
     github: 'https://github.com/pbadgi09',

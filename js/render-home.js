@@ -29,6 +29,17 @@ function escapeHtml(str) {
 
 export function renderHero(settings) {
   const { hero } = settings;
+
+  const avatar = document.getElementById('heroAvatar');
+  if (hero.profileImage) {
+    avatar.src = resolveUrl(hero.profileImage);
+    avatar.alt = hero.name;
+    avatar.hidden = false;
+    avatar.addEventListener('error', () => { avatar.hidden = true; }, { once: true });
+  } else {
+    avatar.hidden = true;
+  }
+
   document.getElementById('heroGreeting').textContent = hero.greeting;
   document.getElementById('heroName').textContent = hero.name;
   document.getElementById('heroRole').textContent = hero.role;

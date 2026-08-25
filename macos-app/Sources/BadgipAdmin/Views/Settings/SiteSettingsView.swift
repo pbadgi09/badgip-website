@@ -53,6 +53,19 @@ struct SiteSettingsView: View {
                             LabeledField(label: "Secondary CTA link", text: $settings.ctaSecondaryHref)
                         }
 
+                        EditorCard(title: "Hero — profile picture (optional)") {
+                            SingleImageUploadView(
+                                path: $settings.profileImage,
+                                buttonLabel: "Set Profile Picture",
+                                thumbnailWidth: 64,
+                                thumbnailHeight: 64,
+                                thumbnailCornerRadius: 32,
+                                repoPath: { ImagePathBuilder.heroProfileRepoPath(filename: $0) },
+                                storedPath: { ImagePathBuilder.heroProfileStoredPath(filename: $0) },
+                                commitMessage: { "Set hero profile picture: \($0)" }
+                            )
+                        }
+
                         EditorCard(title: "Social") {
                             LabeledField(label: "GitHub URL", text: $settings.github)
                             LabeledField(label: "LinkedIn URL", text: $settings.linkedin)
@@ -82,7 +95,13 @@ struct SiteSettingsView: View {
                             Text("A tall portrait photo works best — it sits behind the info panel.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                            ContactBackgroundUploadView(path: $settings.contactBackgroundImage)
+                            SingleImageUploadView(
+                                path: $settings.contactBackgroundImage,
+                                buttonLabel: "Set Background Photo",
+                                repoPath: { ImagePathBuilder.contactBackgroundRepoPath(filename: $0) },
+                                storedPath: { ImagePathBuilder.contactBackgroundStoredPath(filename: $0) },
+                                commitMessage: { "Set contact background photo: \($0)" }
+                            )
                         }
 
                         EditorCard(title: "Contact — info rows (address, phone, email, ...)") {

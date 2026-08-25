@@ -36,7 +36,10 @@ export function initPreloader() {
 export function initHeroEntrance() {
   if (!window.gsap) return;
   const tl = window.gsap.timeline({ defaults: { ease: 'power3.out', duration: 0.9 } });
-  tl.to('#heroGreeting', { opacity: 1, y: 0 })
+  if (!document.getElementById('heroAvatar').hidden) {
+    tl.to('#heroAvatar', { opacity: 1, y: 0 });
+  }
+  tl.to('#heroGreeting', { opacity: 1, y: 0 }, '-=0.6')
     .to('#heroName', { opacity: 1, y: 0 }, '-=0.6')
     .to('#heroRole', { opacity: 1, y: 0 }, '-=0.6')
     .to('#heroDescription', { opacity: 1, y: 0 }, '-=0.6')
