@@ -139,6 +139,14 @@ function openProjectDetail(project, card) {
   const panel = document.createElement('div');
   panel.className = 'project-fullscreen';
   panel.innerHTML = buildFullscreenMarkup(project);
+  if (project.accentColor) {
+    panel.style.setProperty('--color-accent', project.accentColor);
+    panel.style.setProperty('--color-accent-dim', project.accentColor);
+  }
+  if (project.textColor) {
+    panel.style.color = project.textColor;
+    panel.style.setProperty('--color-text-dim', project.textColor);
+  }
   document.body.appendChild(panel);
 
   const content = panel.querySelector('.project-fullscreen__content');

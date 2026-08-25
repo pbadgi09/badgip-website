@@ -195,6 +195,9 @@ private struct BlogEditView: View {
                 Section("Basics") {
                     TextField("Slug", text: $post.slug)
                     TextField("Cover Image (URL or repo path)", text: $post.coverImage)
+                    Text("16:9 (a wide, short crop) works best — it becomes the hero image behind the title.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Picker("Status", selection: $post.status) {
                         Text("Draft").tag("draft")
                         Text("Published").tag("published")
@@ -257,6 +260,9 @@ private struct BlogEditView: View {
                         TextEditor(text: $section.value).frame(minHeight: 70).textFieldStyle(.roundedBorder)
                     } else if section.type == "image" {
                         TextField("Image URL or repo path", text: $section.value).textFieldStyle(.roundedBorder)
+                        Text("16:9 (a wide, short crop) works best here.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     } else if section.type == "code" {
                         TextEditor(text: $section.value)
                             .font(.system(.body, design: .monospaced))
@@ -267,6 +273,9 @@ private struct BlogEditView: View {
                     } else {
                         TextField(section.type == "title" ? "Title" : "Subtitle", text: $section.value).textFieldStyle(.roundedBorder)
                     }
+
+                    OptionalColorField(label: "Accent", hex: $section.accentColor, fallback: "#000000")
+                    OptionalColorField(label: "Text color", hex: $section.textColor, fallback: "#0a0a0a")
                 }
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))

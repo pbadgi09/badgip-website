@@ -924,6 +924,55 @@
   max-width: 720px;
 }
 
+/* A caption block that's bold white-on-black, using box-decoration-break so
+   a caption wrapping across multiple lines renders as separate stacked
+   chips per line instead of one rectangle spanning the whole block. */
+.blog-chip {
+  display: inline;
+  background: var(--chip-bg, #000);
+  color: #fff;
+  font-weight: 700;
+  line-height: 1.6;
+  padding: 0.1em 0.4em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.blog-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-10);
+  background: var(--color-bg-elevated-2);
+}
+
+.blog-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.blog-hero__caption {
+  position: absolute;
+  left: var(--space-6);
+  right: var(--space-6);
+  bottom: var(--space-6);
+}
+
+.blog-hero__caption .blog-chip {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+}
+
+.blog-section-block {
+  margin-bottom: var(--space-2);
+}
+
+.blog-section__chip-heading {
+  margin-bottom: var(--space-4);
+}
+
 .blog-section__title {
   font-size: var(--fs-xl, 2rem);
   font-weight: 700;
@@ -939,20 +988,24 @@
 .blog-section__text {
   font-size: var(--fs-base);
   line-height: 1.75;
-  color: var(--color-text);
   margin-bottom: var(--space-6);
+}
+
+.blog-section__image-wrap {
+  position: relative;
+  margin-bottom: var(--space-2);
 }
 
 .blog-section__image {
   width: 100%;
   border-radius: var(--radius-md);
-  margin-bottom: var(--space-6);
 }
 
-.blog-section__item-title {
-  font-size: var(--fs-base);
-  font-weight: 700;
-  margin-bottom: var(--space-2);
+.blog-section__image-caption {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
 }
 
 .blog-section__item-subtitle {
@@ -974,7 +1027,6 @@
   font-family: var(--font-mono);
   font-size: 0.85rem;
   line-height: 1.6;
-  color: var(--color-text);
   white-space: pre;
 }
 

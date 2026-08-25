@@ -57,7 +57,7 @@ struct CustomSectionEditView: View {
                     itemsEditor
                 }
 
-                Text("Icon: drop in a PNG/SVG, paste an image URL, or type an emoji. Uploaded icons scale to fit their tile automatically.")
+                Text("Icon: drop in a PNG/SVG, paste an image URL, or type an emoji. Square (1:1) works best — it scales to fit its tile automatically.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 

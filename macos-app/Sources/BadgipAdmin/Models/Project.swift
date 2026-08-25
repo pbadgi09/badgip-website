@@ -16,6 +16,10 @@ struct Project: Identifiable, Codable, Equatable {
     var order: Int = 0
     var status: String = "draft" // "draft" | "published"
     var category: String = "professional" // "professional" | "personal"
+    // Optional per-project look override for the full-screen detail view —
+    // empty string means "use the site's default accent/text colors".
+    var accentColor: String = ""
+    var textColor: String = ""
     var createdAt: Double = 0
     var updatedAt: Double = 0
 
@@ -35,6 +39,8 @@ struct Project: Identifiable, Codable, Equatable {
             "order": order,
             "status": status,
             "category": category,
+            "accentColor": accentColor,
+            "textColor": textColor,
             "createdAt": createdAt,
             "updatedAt": updatedAt,
         ]
@@ -57,6 +63,8 @@ struct Project: Identifiable, Codable, Equatable {
             order: dict["order"] as? Int ?? 0,
             status: dict["status"] as? String ?? "draft",
             category: dict["category"] as? String ?? "professional",
+            accentColor: dict["accentColor"] as? String ?? "",
+            textColor: dict["textColor"] as? String ?? "",
             createdAt: dict["createdAt"] as? Double ?? 0,
             updatedAt: dict["updatedAt"] as? Double ?? 0
         )

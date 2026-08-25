@@ -60,8 +60,16 @@ struct ProjectEditView: View {
                 }
 
                 Section("Media") {
+                    Text("Cover: 16:10 works best. Full-screen hero: 21:9 (a wide, short crop) works best.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     ImageUploadView(project: $project)
                     TextField("YouTube URL (optional)", text: $project.youtubeUrl)
+                }
+
+                Section("Look (optional — overrides the site default for this project's detail view)") {
+                    OptionalColorField(label: "Accent color", hex: $project.accentColor, fallback: "#3effa3")
+                    OptionalColorField(label: "Text color", hex: $project.textColor, fallback: "#0a0a0a")
                 }
 
                 Section("Links") {

@@ -125,44 +125,71 @@ export function renderBlogGrid(posts) {
   });
 }
 
-function renderSectionCaption(section) {
-  // Any section can optionally carry its own title/subtitle — e.g. a small
-  // caption sitting above a code block or image, distinct from the
-  // standalone "title"/"subtitle" section types used for the post's own
-  // headings.
-  const parts = [];
-  if (section.title) parts.push(`<h3 class="blog-section__item-title">${escapeHtml(section.title)}</h3>`);
-  if (section.subtitle) parts.push(`<p class="blog-section__item-subtitle">${escapeHtml(section.subtitle)}</p>`);
-  return parts.join('');
+// A "chip": bold white-on-black text, using box-decoration-break so a
+// caption that wraps onto multiple lines renders as separate stacked
+// blocks per line (the look from the reference site) rather than one
+// rectangle stretching across every line.
+function renderChip(text) {
+  return `<span class="blog-chip">${escapeHtml(text)}</span>`;
+}
+
+function sectionStyle(section) {
+  const decls = [];
+  if (section.accentColor) decls.push(`--chip-bg: ${section.accentColor}`);
+  if (section.textColor) decls.push(`color: ${section.textColor}`);
+  return decls.length ? ` style="${decls.join('; ')}"` : '';
 }
 
 function renderBlogSection(section) {
   const value = section.value;
-  const caption = renderSectionCaption(section);
+  const style = sectionStyle(section);
+  const subtitleHtml = section.subtitle ? `<p class="blog-section__item-subtitle">${escapeHtml(section.subtitle)}</p>` : '';
+
+  if (section.type === 'image') {
+    const captionHtml = section.title
+      ? `<div class="blog-section__image-caption">${renderChip(section.title)}</div>`
+      : '';
+    return `<div class="blog-section-block"${style}>
+      <div class="blog-section__image-wrap">
+        <img class="blog-section__image" src="${imageUrl(value)}" alt="" loading="lazy" />
+        ${captionHtml}
+      </div>
+      ${subtitleHtml}
+    </div>`;
+  }
+
+  const chipHeading = section.title ? `<div class="blog-section__chip-heading">${renderChip(section.title)}</div>` : '';
+  const caption = chipHeading + subtitleHtml;
 
   switch (section.type) {
     case 'title':
-      return `<h2 class="blog-section__title">${escapeHtml(value)}</h2>`;
+      return `<h2 class="blog-section__title"${style}>${escapeHtml(value)}</h2>`;
     case 'subtitle':
-      return `<p class="blog-section__subtitle">${escapeHtml(value)}</p>`;
+      return `<p class="blog-section__subtitle"${style}>${escapeHtml(value)}</p>`;
     case 'text':
-      return `${caption}<p class="blog-section__text">${escapeHtml(value)}</p>`;
-    case 'image':
-      return `${caption}<img class="blog-section__image" src="${imageUrl(value)}" alt="" loading="lazy" />`;
+      return `<div class="blog-section-block"${style}>${caption}<p class="blog-section__text">${escapeHtml(value)}</p></div>`;
     case 'code':
-      return `${caption}<pre class="blog-section__code"><code>${escapeHtml(value)}</code></pre>`;
+      return `<div class="blog-section-block"${style}>${caption}<pre class="blog-section__code"><code>${escapeHtml(value)}</code></pre></div>`;
     case 'map':
       // Google Maps embeds capture the wheel for zoom, which makes the page
       // scroll appear to "stick" the moment the cursor crosses the map. A
       // click-to-activate cover keeps the wheel scrolling the page until the
       // reader deliberately opts into interacting with the map.
-      return `${caption}<div class="blog-section__map">
+      return `<div class="blog-section-block"${style}>${caption}<div class="blog-section__map">
         <iframe src="https://www.google.com/maps?q=${encodeURIComponent(value)}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map: ${escapeHtml(value)}"></iframe>
         <button type="button" class="blog-section__map-overlay mono">Click to interact with map</button>
-      </div>`;
+      </div></div>`;
     default:
       return '';
   }
+}
+
+function renderBlogHero(coverImage, titleValue) {
+  if (!coverImage) return '';
+  return `<div class="blog-hero">
+    <img src="${imageUrl(coverImage)}" alt="${escapeHtml(titleValue || '')}" />
+    ${titleValue ? `<div class="blog-hero__caption">${renderChip(titleValue)}</div>` : ''}
+  </div>`;
 }
 
 function openBlogOverlay(post) {
@@ -174,7 +201,21 @@ function openBlogOverlay(post) {
 
   const overlay = document.getElementById('blogOverlay');
   const sectionsEl = document.getElementById('blogOverlaySections');
-  sectionsEl.innerHTML = (post.sections || []).map(renderBlogSection).join('');
+
+  // The post's cover image + its first title become a hero block (image
+  // with the title as a black-block caption) instead of a plain heading,
+  // matching the reference site's look — the rest of the sections render
+  // normally below it.
+  const sections = post.sections || [];
+  const titleIndex = sections.findIndex((s) => s.type === 'title');
+  let bodySections = sections;
+  let heroHtml = '';
+  if (post.coverImage) {
+    heroHtml = renderBlogHero(post.coverImage, titleIndex >= 0 ? sections[titleIndex].value : '');
+    if (titleIndex >= 0) bodySections = sections.filter((_, i) => i !== titleIndex);
+  }
+
+  sectionsEl.innerHTML = heroHtml + bodySections.map(renderBlogSection).join('');
   sectionsEl.querySelectorAll('.blog-section__map-overlay').forEach((btn) => {
     btn.addEventListener('click', () => btn.remove());
   });
