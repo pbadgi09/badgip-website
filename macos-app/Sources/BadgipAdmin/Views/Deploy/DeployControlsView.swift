@@ -10,21 +10,23 @@ struct DeployControlsView: View {
     private let githubService = GitHubService()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Text("Deploy").font(.title2.bold())
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Deploy").font(.title.weight(.bold))
 
-            GroupBox("GitHub Personal Access Token") {
-                VStack(alignment: .leading, spacing: 8) {
+                card(title: "GitHub Personal Access Token") {
                     Text(hasSavedPAT ? "A token is saved in Keychain." : "No token saved yet.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     HStack {
                         SecureField("Fine-grained PAT (repo-scoped, Contents + Actions: Read and write)", text: $patInput)
+                            .textFieldStyle(.roundedBorder)
                         Button("Save") {
                             KeychainService.save(key: KeychainKey.githubPAT, value: patInput)
                             patInput = ""
                             hasSavedPAT = true
                         }
+                        .buttonStyle(.badgipSecondary)
                         .disabled(patInput.isEmpty)
                     }
                     if hasSavedPAT {
@@ -32,13 +34,12 @@ struct DeployControlsView: View {
                             KeychainService.delete(key: KeychainKey.githubPAT)
                             hasSavedPAT = false
                         }
+                        .buttonStyle(.badgipSecondary)
+                        .tint(.red)
                     }
                 }
-                .padding(8)
-            }
 
-            GroupBox("Redeploy") {
-                VStack(alignment: .leading, spacing: 8) {
+                card(title: "Redeploy") {
                     Text("Triggers the GitHub Actions Pages workflow. Only needed after a code change — content edits are already live via Firebase.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -47,37 +48,46 @@ struct DeployControlsView: View {
                     } label: {
                         Label("Trigger GitHub Pages Rebuild", systemImage: "arrow.triangle.2.circlepath")
                     }
+                    .buttonStyle(.badgipPrimary)
                     .disabled(isWorking)
                 }
-                .padding(8)
-            }
 
-            GroupBox("Purge jsDelivr Cache") {
-                VStack(alignment: .leading, spacing: 8) {
+                card(title: "Purge jsDelivr Cache") {
                     Text("Image uploads purge automatically. Use this for a manual purge, e.g. after replacing a file outside the app.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     HStack {
                         TextField("assets/projects/my-app/cover.jpg", text: $purgePath)
+                            .textFieldStyle(.roundedBorder)
                         Button("Purge") {
                             Task { await purgeManually() }
                         }
+                        .buttonStyle(.badgipSecondary)
                         .disabled(purgePath.isEmpty || isWorking)
                     }
                 }
-                .padding(8)
-            }
 
-            if let statusMessage {
-                Text(statusMessage).font(.caption).foregroundStyle(.secondary)
+                if let statusMessage {
+                    Text(statusMessage).font(.caption).foregroundStyle(.secondary)
+                }
             }
-
-            Spacer()
+            .padding(24)
         }
-        .padding()
         .onAppear {
             hasSavedPAT = (KeychainService.read(key: KeychainKey.githubPAT)?.isEmpty == false)
         }
+    }
+
+    @ViewBuilder
+    private func card(title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(.headline.weight(.semibold))
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.03)))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
     }
 
     private func triggerRedeploy() async {

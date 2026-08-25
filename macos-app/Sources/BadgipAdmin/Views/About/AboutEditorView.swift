@@ -10,7 +10,7 @@ struct AboutEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("About").font(.title2.bold())
+                Text("About").font(.title.weight(.bold))
                 Spacer()
                 if let statusMessage {
                     HStack(spacing: 4) {
@@ -21,10 +21,10 @@ struct AboutEditorView: View {
                     }
                 }
                 Button("Save") { Task { await save() } }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.badgipPrimary)
                     .disabled(isSaving)
             }
-            .padding()
+            .padding(24)
 
             if isLoading {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)

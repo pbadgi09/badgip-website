@@ -8,50 +8,39 @@ struct MessagesInboxView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Messages").font(.title2.bold())
+                Text("Messages").font(.title.weight(.bold))
                 Spacer()
                 let unread = messages.filter { !$0.read }.count
                 if unread > 0 {
-                    Text("\(unread) unread").font(.caption).foregroundStyle(.badgipAccent)
+                    Text("\(unread) unread")
+                        .font(.caption.weight(.medium))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.badgipAccent.opacity(0.15))
+                        .foregroundStyle(.badgipAccent)
+                        .clipShape(Capsule())
                 }
             }
-            .padding()
+            .padding(24)
 
             if messages.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: 10) {
                     Image(systemName: "tray")
-                        .font(.largeTitle)
+                        .font(.system(size: 40))
                         .foregroundStyle(.tertiary)
                     Text("No messages yet.")
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
-                    ForEach(messages) { message in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(message.name).font(.headline)
-                                if !message.read {
-                                    Circle().fill(.badgipAccent).frame(width: 6, height: 6)
-                                }
-                                Spacer()
-                                Text(message.date, style: .date).font(.caption).foregroundStyle(.secondary)
-                            }
-                            Text(message.email).font(.caption).foregroundStyle(.secondary)
-                            Text(message.message).font(.body).lineLimit(4)
-                            HStack {
-                                Button(message.read ? "Mark Unread" : "Mark Read") {
-                                    rtdb.markMessageRead(id: message.id, read: !message.read)
-                                }
-                                Button("Delete", role: .destructive) {
-                                    pendingDelete = message
-                                }
-                            }
-                            .font(.caption)
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(messages) { message in
+                            MessageRow(message: message, onDelete: { pendingDelete = message })
                         }
-                        .padding(.vertical, 6)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
                 }
             }
         }
@@ -75,5 +64,41 @@ struct MessagesInboxView: View {
                 pendingDelete = nil
             }
         }
+    }
+}
+
+private struct MessageRow: View {
+    @EnvironmentObject private var rtdb: RTDBService
+    let message: ContactMessage
+    let onDelete: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(message.name).font(.headline.weight(.semibold))
+                if !message.read {
+                    Circle().fill(.badgipAccent).frame(width: 6, height: 6)
+                }
+                Spacer()
+                Text(message.date, style: .date).font(.caption).foregroundStyle(.secondary)
+            }
+            Text(message.email).font(.caption).foregroundStyle(.secondary)
+            Text(message.message).font(.body).lineLimit(4).padding(.top, 2)
+            HStack(spacing: 8) {
+                Button(message.read ? "Mark Unread" : "Mark Read") {
+                    rtdb.markMessageRead(id: message.id, read: !message.read)
+                }
+                .buttonStyle(.badgipSecondary)
+                .controlSize(.small)
+                Button("Delete", action: onDelete)
+                    .buttonStyle(.badgipSecondary)
+                    .controlSize(.small)
+                    .tint(.red)
+            }
+            .padding(.top, 4)
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.03)))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
     }
 }

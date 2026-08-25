@@ -11,56 +11,45 @@ struct ProjectListView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Projects").font(.title2.bold())
+                Text("Projects").font(.title.weight(.bold))
                 Spacer()
                 Button {
                     editingProject = Project(id: "")
                 } label: {
                     Label("New Project", systemImage: "plus")
                 }
+                .buttonStyle(.badgipPrimary)
             }
-            .padding()
+            .padding(24)
 
             if let errorMessage {
-                Text(errorMessage).foregroundStyle(.red).font(.caption).padding(.horizontal)
+                Text(errorMessage).foregroundStyle(.red).font(.caption).padding(.horizontal, 24)
             }
 
             if isLoading {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if projects.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: 10) {
                     Image(systemName: "folder.badge.plus")
-                        .font(.largeTitle)
+                        .font(.system(size: 40))
                         .foregroundStyle(.tertiary)
                     Text("No projects yet — add your first one.")
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
-                    ForEach(projects) { project in
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(project.title).font(.headline)
-                                HStack(spacing: 6) {
-                                    statusBadge(for: project.status)
-                                    if !project.tags.isEmpty {
-                                        Text(project.tags.prefix(3).joined(separator: " · "))
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                            Spacer()
-                            Button("Edit") { editingProject = project }
-                            Button(role: .destructive) {
-                                pendingDelete = project
-                            } label: {
-                                Image(systemName: "trash")
-                            }
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(projects) { project in
+                            ProjectRow(
+                                project: project,
+                                onEdit: { editingProject = project },
+                                onDelete: { pendingDelete = project }
+                            )
                         }
-                        .padding(.vertical, 4)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
                 }
             }
         }
@@ -92,18 +81,6 @@ struct ProjectListView: View {
         .task { await loadProjects() }
     }
 
-    @ViewBuilder
-    private func statusBadge(for status: String) -> some View {
-        let isPublished = status == "published"
-        Text(isPublished ? "Published" : "Draft")
-            .font(.caption.weight(.medium))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(isPublished ? Color.badgipAccent.opacity(0.15) : Color.gray.opacity(0.15))
-            .foregroundStyle(isPublished ? .badgipAccent : .secondary)
-            .clipShape(Capsule())
-    }
-
     private func loadProjects() async {
         isLoading = true
         do {
@@ -112,5 +89,59 @@ struct ProjectListView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+}
+
+private struct ProjectRow: View {
+    let project: Project
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(project.title).font(.headline.weight(.semibold))
+                HStack(spacing: 8) {
+                    statusBadge
+                    if !project.tags.isEmpty {
+                        Text(project.tags.prefix(3).joined(separator: " · "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            Spacer()
+            Button("Edit", action: onEdit)
+                .buttonStyle(.badgipSecondary)
+            Button {
+                onDelete()
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.badgipIcon(tint: .red))
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.primary.opacity(isHovering ? 0.06 : 0.03))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.15), value: isHovering)
+    }
+
+    private var statusBadge: some View {
+        let isPublished = project.status == "published"
+        return Text(isPublished ? "Published" : "Draft")
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(isPublished ? Color.badgipAccent.opacity(0.15) : Color.gray.opacity(0.15))
+            .foregroundStyle(isPublished ? .badgipAccent : .secondary)
+            .clipShape(Capsule())
     }
 }
