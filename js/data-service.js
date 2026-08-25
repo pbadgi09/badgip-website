@@ -94,6 +94,35 @@ export async function getProjects() {
   }
 }
 
+export async function getPersonalYoutube() {
+  try {
+    const snapshot = await get(ref(db, 'personalYoutube'));
+    const val = snapshot.val();
+    if (!val) return [];
+    return Object.entries(val)
+      .map(([id, video]) => ({ id, ...video }))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  } catch (err) {
+    console.error('Failed to fetch YouTube videos:', err);
+    return [];
+  }
+}
+
+export async function getPersonalBlog() {
+  try {
+    const snapshot = await get(ref(db, 'personalBlog'));
+    const val = snapshot.val();
+    if (!val) return [];
+    return Object.entries(val)
+      .map(([id, post]) => ({ id, ...post }))
+      .filter((p) => p.status === 'published')
+      .sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
+  } catch (err) {
+    console.error('Failed to fetch blog posts:', err);
+    return [];
+  }
+}
+
 export async function submitMessage({ name, email, message }) {
   await push(ref(db, 'messages'), {
     name,

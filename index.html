@@ -32,8 +32,10 @@
     </button>
     <ul class="site-nav__list" id="navList">
       <li><a href="#home" class="site-nav__link mono" data-nav-link="home"><span class="num">00</span>Home</a></li>
-      <li><a href="#about" class="site-nav__link mono" data-nav-link="about"><span class="num">01</span>About</a></li>
-      <li><a href="#projects" class="site-nav__link mono" data-nav-link="projects"><span class="num">02</span>Projects</a></li>
+      <li data-mode="professional"><a href="#about" class="site-nav__link mono" data-nav-link="about"><span class="num">01</span>About</a></li>
+      <li data-mode="professional"><a href="#projects" class="site-nav__link mono" data-nav-link="projects"><span class="num">02</span>Projects</a></li>
+      <li data-mode="personal" hidden><a href="#youtube" class="site-nav__link mono" data-nav-link="youtube"><span class="num">01</span>YouTube</a></li>
+      <li data-mode="personal" hidden><a href="#blog" class="site-nav__link mono" data-nav-link="blog"><span class="num">02</span>Blog</a></li>
       <li><a href="#contact" class="site-nav__link mono" data-nav-link="contact"><span class="num">03</span>Contact</a></li>
     </ul>
   </nav>
@@ -60,45 +62,53 @@
       </div>
     </section>
 
-    <section class="section" id="about" data-mode-section>
+    <section class="section" id="about" data-mode="professional">
       <div class="section-header">
         <span class="section-number mono">01</span>
         <h2 class="section-title">About</h2>
       </div>
 
-      <div data-mode="professional">
-        <p class="about__bio reveal" id="aboutBioProfessional"></p>
-        <div class="timeline" id="timelineProfessional">
-          <div class="timeline__progress" id="timelineProgress"></div>
-        </div>
-      </div>
-
-      <div data-mode="personal" hidden>
-        <p class="about__bio reveal" id="aboutBioPersonal"></p>
-        <div class="placeholder-panel reveal">
-          <p>🚧 Personal timeline under construction — check back soon.</p>
-        </div>
+      <p class="about__bio reveal" id="aboutBioProfessional"></p>
+      <div class="timeline" id="timelineProfessional">
+        <div class="timeline__progress" id="timelineProgress"></div>
       </div>
     </section>
 
-    <section class="section" id="projects" data-mode-section>
+    <section class="section" id="projects" data-mode="professional">
       <div class="section-header">
         <span class="section-number mono">02</span>
         <h2 class="section-title">Projects</h2>
       </div>
 
-      <div data-mode="professional">
-        <div class="projects__grid" id="projectsGrid">
-          <div class="skeleton skeleton-card"></div>
-          <div class="skeleton skeleton-card"></div>
-          <div class="skeleton skeleton-card"></div>
-        </div>
+      <div class="projects__grid" id="projectsGrid">
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+      </div>
+    </section>
+
+    <section class="section" id="youtube" data-mode="personal" hidden>
+      <div class="section-header">
+        <span class="section-number mono">01</span>
+        <h2 class="section-title">YouTube</h2>
       </div>
 
-      <div data-mode="personal" hidden>
-        <div class="placeholder-panel reveal">
-          <p>🚧 Personal projects under construction — check back soon.</p>
-        </div>
+      <div class="youtube-carousel" id="youtubeCarousel">
+        <div class="skeleton youtube-card"></div>
+        <div class="skeleton youtube-card"></div>
+        <div class="skeleton youtube-card"></div>
+      </div>
+    </section>
+
+    <section class="section" id="blog" data-mode="personal" hidden>
+      <div class="section-header">
+        <span class="section-number mono">02</span>
+        <h2 class="section-title">Blog</h2>
+      </div>
+
+      <div class="blog-grid" id="blogGrid">
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
       </div>
     </section>
 
@@ -169,6 +179,13 @@
         <div class="project-overlay__gallery" id="overlayGallery"></div>
         <div class="project-overlay__links" id="overlayLinks"></div>
       </div>
+    </div>
+  </template>
+
+  <template id="blogOverlayTemplate">
+    <div class="project-overlay" id="blogOverlay">
+      <button class="project-overlay__close mono" id="blogOverlayClose" aria-label="Close">✕</button>
+      <div class="project-overlay__panel blog-overlay__panel" id="blogOverlaySections"></div>
     </div>
   </template>
 

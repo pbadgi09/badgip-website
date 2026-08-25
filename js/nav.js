@@ -16,7 +16,7 @@ export function initNav() {
     });
   });
 
-  const sections = ['home', 'about', 'projects', 'contact']
+  const sections = ['home', 'about', 'projects', 'youtube', 'blog', 'contact']
     .map((id) => document.getElementById(id))
     .filter(Boolean);
 

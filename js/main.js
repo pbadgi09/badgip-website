@@ -1,7 +1,8 @@
-import { getSettings, getAbout, getProjects } from './data-service.js';
+import { getSettings, getAbout, getProjects, getPersonalYoutube, getPersonalBlog } from './data-service.js';
 import { renderHero, renderNav, renderContactAndFooter } from './render-home.js';
 import { renderAbout } from './render-about.js';
 import { renderProjects } from './render-projects.js';
+import { renderYoutubeCarousel, renderBlogGrid } from './render-personal.js';
 import { initContactForm } from './contact-form.js';
 import { initModeSwitch } from './mode-switch.js';
 import { initNav } from './nav.js';
@@ -18,13 +19,21 @@ async function boot() {
 
   const preloaderDone = initPreloader();
 
-  const [settings, about, projects] = await Promise.all([getSettings(), getAbout(), getProjects()]);
+  const [settings, about, projects, youtubeVideos, blogPosts] = await Promise.all([
+    getSettings(),
+    getAbout(),
+    getProjects(),
+    getPersonalYoutube(),
+    getPersonalBlog(),
+  ]);
 
   renderHero(settings);
   renderNav(settings);
   renderContactAndFooter(settings);
   renderAbout(about);
   renderProjects(projects);
+  renderYoutubeCarousel(youtubeVideos);
+  renderBlogGrid(blogPosts);
 
   if (settings.theme?.accentColor) {
     document.documentElement.style.setProperty('--color-accent', settings.theme.accentColor);

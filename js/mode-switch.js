@@ -26,7 +26,7 @@ function applyMode(mode, { animate }) {
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  document.querySelectorAll('[data-mode-section] [data-mode]').forEach((el) => {
+  document.querySelectorAll('main > section[data-mode], #navList > li[data-mode]').forEach((el) => {
     const matches = el.dataset.mode === mode;
     if (animate && window.gsap && !reducedMotion) {
       if (matches) {

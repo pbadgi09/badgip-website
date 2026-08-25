@@ -1,7 +1,6 @@
 export function renderAbout(about) {
   document.getElementById('aboutBioProfessional').textContent =
     about.professionalBio || "I'm a developer who cares about building things well.";
-  document.getElementById('aboutBioPersonal').textContent = about.personalBio || '';
 
   const timelineEl = document.getElementById('timelineProfessional');
   const entries = [...(about.professionalTimeline || [])].sort(
