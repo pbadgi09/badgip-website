@@ -1,3 +1,5 @@
+import { updateSectionNumbers } from './render-sections.js';
+
 const STORAGE_KEY = 'badgip.mode';
 
 export function initModeSwitch() {
@@ -24,9 +26,11 @@ function applyMode(mode, { animate }) {
     btn.setAttribute('aria-selected', String(isActive));
   });
 
+  updateSectionNumbers(mode);
+
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  document.querySelectorAll('main > section[data-mode], #navList > li[data-mode]').forEach((el) => {
+  document.querySelectorAll('#dynamicSections > [data-mode], #navList > li[data-mode]').forEach((el) => {
     const matches = el.dataset.mode === mode;
     if (animate && window.gsap && !reducedMotion) {
       if (matches) {

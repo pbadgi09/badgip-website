@@ -1,3 +1,5 @@
+import { getMountedSectionIds } from './render-sections.js';
+
 export function initNav() {
   const nav = document.getElementById('siteNav');
   const toggle = document.getElementById('navToggle');
@@ -16,7 +18,7 @@ export function initNav() {
     });
   });
 
-  const sections = ['home', 'about', 'projects', 'youtube', 'blog', 'contact']
+  const sections = getMountedSectionIds()
     .map((id) => document.getElementById(id))
     .filter(Boolean);
 

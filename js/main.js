@@ -1,8 +1,9 @@
-import { getSettings, getAbout, getProjects, getPersonalYoutube, getPersonalBlog } from './data-service.js';
-import { renderHero, renderNav, renderContactAndFooter } from './render-home.js';
+import { getSettings, getAbout, getProjects, getPersonalYoutube, getPersonalBlog, getPageSections } from './data-service.js';
+import { renderHero, renderContactAndFooter } from './render-home.js';
 import { renderAbout } from './render-about.js';
 import { renderProjects } from './render-projects.js';
 import { renderYoutubeCarousel, renderBlogGrid } from './render-personal.js';
+import { mountPageSections } from './render-sections.js';
 import { initContactForm } from './contact-form.js';
 import { initModeSwitch } from './mode-switch.js';
 import { initNav } from './nav.js';
@@ -13,22 +14,25 @@ import { initWebglHero } from './webgl-hero.js';
 async function boot() {
   document.body.classList.add('js-ready');
 
-  initModeSwitch();
-  initNav();
   initContactForm();
 
   const preloaderDone = initPreloader();
 
-  const [settings, about, projects, youtubeVideos, blogPosts] = await Promise.all([
+  const [settings, about, projects, youtubeVideos, blogPosts, pageSections] = await Promise.all([
     getSettings(),
     getAbout(),
     getProjects(),
     getPersonalYoutube(),
     getPersonalBlog(),
+    getPageSections(),
   ]);
 
+  // Sections must exist in the DOM before mode-switch/nav try to select them.
+  mountPageSections(pageSections);
+  initModeSwitch();
+  initNav();
+
   renderHero(settings);
-  renderNav(settings);
   renderContactAndFooter(settings);
   renderAbout(about);
   renderProjects(projects);

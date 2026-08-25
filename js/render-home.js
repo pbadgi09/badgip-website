@@ -18,24 +18,6 @@ export function renderHero(settings) {
   if (metaDesc) metaDesc.setAttribute('content', settings.meta.description);
 }
 
-export function renderNav(settings) {
-  const links = document.querySelectorAll('[data-nav-link]');
-  const map = {
-    home: settings.nav.items[0],
-    about: settings.nav.items[1],
-    projects: settings.nav.items[2],
-    contact: settings.nav.items[3],
-  };
-  links.forEach((link) => {
-    const key = link.dataset.navLink;
-    const item = map[key];
-    if (!item) return;
-    link.querySelector('.num').textContent = item.number;
-    link.lastChild.textContent = item.label;
-    link.href = item.href;
-  });
-}
-
 export function renderContactAndFooter(settings) {
   const { social } = settings;
   const year = new Date().getFullYear();

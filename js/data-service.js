@@ -12,14 +12,6 @@ const DEFAULT_SETTINGS = {
     ctaSecondaryText: 'Get In Touch',
     ctaSecondaryHref: '#contact',
   },
-  nav: {
-    items: [
-      { label: 'Home', href: '#home', number: '00' },
-      { label: 'About', href: '#about', number: '01' },
-      { label: 'Projects', href: '#projects', number: '02' },
-      { label: 'Contact', href: '#contact', number: '03' },
-    ],
-  },
   social: {
     github: 'https://github.com/pbadgi09',
     linkedin: '',
@@ -120,6 +112,28 @@ export async function getPersonalBlog() {
   } catch (err) {
     console.error('Failed to fetch blog posts:', err);
     return [];
+  }
+}
+
+// Fallback used before `pageSections` exists in RTDB (or its rules haven't
+// been published yet) so the site still renders in its original section
+// order instead of coming up empty.
+const DEFAULT_PAGE_SECTIONS = [
+  { id: 'default-about', kind: 'about', mode: 'professional', order: 0 },
+  { id: 'default-projects', kind: 'projects', mode: 'professional', order: 1 },
+  { id: 'default-youtube', kind: 'youtube', mode: 'personal', order: 0 },
+  { id: 'default-blog', kind: 'blog', mode: 'personal', order: 1 },
+];
+
+export async function getPageSections() {
+  try {
+    const snapshot = await get(ref(db, 'pageSections'));
+    const val = snapshot.val();
+    if (!val) return DEFAULT_PAGE_SECTIONS;
+    return Object.entries(val).map(([id, section]) => ({ id, ...section }));
+  } catch (err) {
+    console.error('Failed to fetch page sections, using defaults:', err);
+    return DEFAULT_PAGE_SECTIONS;
   }
 }
 

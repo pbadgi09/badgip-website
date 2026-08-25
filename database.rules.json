@@ -20,6 +20,10 @@
       ".read": true,
       ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'"
     },
+    "pageSections": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'"
+    },
     "messages": {
       ".read": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'",
       ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'",

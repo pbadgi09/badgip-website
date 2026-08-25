@@ -50,7 +50,7 @@ export function renderProjects(projects) {
         </div>
       </div>
     `;
-    const open = () => openProjectOverlay(project);
+    const open = () => toggleProjectDetail(project, card);
     card.addEventListener('click', open);
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -79,71 +79,108 @@ export function renderProjects(projects) {
   });
 }
 
-function openProjectOverlay(project) {
-  // Guard against stacking overlays if a card is clicked/activated more than
-  // once before the previous overlay finishes its close animation/removal.
-  document.getElementById('projectOverlay')?.remove();
+// Only one project can be expanded inline at a time.
+let openDetail = null; // { id, card, panel }
 
-  const template = document.getElementById('projectOverlayTemplate');
-  const fragment = template.content.cloneNode(true);
-  document.body.appendChild(fragment);
-
-  const overlay = document.getElementById('projectOverlay');
-
-  document.getElementById('overlayTag').textContent = (project.tags || [])[0] || 'Project';
-  document.getElementById('overlayTitle').textContent = project.title;
-  document.getElementById('overlayDescription').textContent = project.description || project.summary;
-
-  const videoEl = document.getElementById('overlayVideo');
+function buildDetailMarkup(project) {
   const embedId = youtubeEmbedId(project.youtubeUrl);
-  if (embedId) {
-    videoEl.hidden = false;
-    videoEl.innerHTML = `<iframe src="https://www.youtube.com/embed/${embedId}" title="${escapeHtml(project.title)} video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+  const galleryPaths = project.gallery || [];
+
+  const galleryHtml = galleryPaths.length
+    ? `<div class="project-detail-inline__gallery">
+        ${galleryPaths
+          .map(
+            (path) =>
+              `<img src="${imageUrl(path)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.remove()" />`
+          )
+          .join('')}
+      </div>`
+    : '';
+
+  const videoHtml = embedId
+    ? `<div class="project-detail-inline__video"><iframe src="https://www.youtube.com/embed/${embedId}" title="${escapeHtml(project.title)} video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
+    : '';
+
+  const links = [];
+  if (project.liveUrl) links.push(`<a href="${project.liveUrl}" target="_blank" rel="noopener" class="btn btn--primary">Live Site</a>`);
+  if (project.repoUrl) links.push(`<a href="${project.repoUrl}" target="_blank" rel="noopener" class="btn btn--ghost">Source</a>`);
+
+  return `
+    <div class="project-detail-inline__panel">
+      <button class="project-detail-inline__close mono" aria-label="Close">✕</button>
+      ${galleryHtml}
+      ${videoHtml}
+      <div class="project-detail-inline__body">
+        <span class="eyebrow">${escapeHtml((project.tags || [])[0] || 'Project')}</span>
+        <h3 class="section-title">${escapeHtml(project.title)}</h3>
+        <p>${escapeHtml(project.description || project.summary)}</p>
+        ${links.length ? `<div class="project-detail-inline__links">${links.join('')}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function closeDetail(immediate) {
+  if (!openDetail) return;
+  const { card, panel } = openDetail;
+  card.classList.remove('is-expanded');
+  openDetail = null;
+
+  if (immediate || !window.gsap) {
+    panel.remove();
+    window.ScrollTrigger?.refresh();
+    return;
   }
 
-  const galleryEl = document.getElementById('overlayGallery');
-  (project.gallery || []).forEach((path) => {
-    const img = document.createElement('img');
-    img.src = imageUrl(path);
-    img.loading = 'lazy';
-    img.alt = project.title;
-    img.addEventListener('error', () => img.remove(), { once: true });
-    galleryEl.appendChild(img);
+  window.gsap.to(panel, {
+    height: 0,
+    opacity: 0,
+    duration: 0.35,
+    ease: 'power2.in',
+    onComplete: () => {
+      panel.remove();
+      window.ScrollTrigger?.refresh();
+    },
   });
+}
 
-  const linksEl = document.getElementById('overlayLinks');
-  const addLink = (href, label, className) => {
-    const a = document.createElement('a');
-    a.href = href;
-    a.textContent = label;
-    a.className = className;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    linksEl.appendChild(a);
-  };
-  if (project.liveUrl) addLink(project.liveUrl, 'Live Site', 'btn btn--primary');
-  if (project.repoUrl) addLink(project.repoUrl, 'Source', 'btn btn--ghost');
+function toggleProjectDetail(project, card) {
+  if (openDetail && openDetail.id === project.id) {
+    closeDetail();
+    return;
+  }
 
-  const close = () => {
-    overlay.classList.remove('is-open');
-    document.body.style.overflow = '';
-    setTimeout(() => overlay.remove(), 400);
-  };
+  const wasOpenForAnotherCard = Boolean(openDetail);
+  if (wasOpenForAnotherCard) closeDetail(true);
 
-  document.getElementById('projectOverlayClose').addEventListener('click', close);
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) close();
+  const panel = document.createElement('div');
+  panel.className = 'project-detail-inline';
+  panel.innerHTML = buildDetailMarkup(project);
+  card.insertAdjacentElement('afterend', panel);
+  card.classList.add('is-expanded');
+
+  panel.querySelector('.project-detail-inline__close').addEventListener('click', () => closeDetail());
+
+  openDetail = { id: project.id, card, panel };
+
+  if (!window.gsap) {
+    panel.style.height = 'auto';
+    panel.style.opacity = '1';
+    return;
+  }
+
+  window.gsap.set(panel, { height: 0, opacity: 0 });
+  requestAnimationFrame(() => {
+    const targetHeight = panel.scrollHeight;
+    window.gsap.to(panel, {
+      height: targetHeight,
+      opacity: 1,
+      duration: 0.5,
+      ease: 'power3.out',
+      onComplete: () => {
+        panel.style.height = 'auto';
+        window.ScrollTrigger?.refresh();
+      },
+    });
   });
-  document.addEventListener(
-    'keydown',
-    function escHandler(e) {
-      if (e.key === 'Escape') {
-        close();
-        document.removeEventListener('keydown', escHandler);
-      }
-    }
-  );
-
-  document.body.style.overflow = 'hidden';
-  requestAnimationFrame(() => overlay.classList.add('is-open'));
 }
