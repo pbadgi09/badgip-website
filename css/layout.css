@@ -858,7 +858,6 @@
   }
 
   .about__bio {
-    padding-left: var(--space-4);
     margin-bottom: var(--space-16);
   }
 
@@ -868,6 +867,15 @@
 
   .timeline__dot {
     left: calc(-1 * var(--space-6) - 4px);
+  }
+
+  .contact-form {
+    padding: var(--space-6);
+  }
+
+  .btn--lg {
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--fs-base);
   }
 }
 
