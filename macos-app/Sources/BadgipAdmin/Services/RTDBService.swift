@@ -64,6 +64,11 @@ final class RTDBService: ObservableObject {
     private var messagesHandle: DatabaseHandle?
 
     func observeMessages(onChange: @escaping ([ContactMessage]) -> Void) {
+        // Defensive: if a previous observer was never stopped (e.g. a view
+        // re-appearing before its own onDisappear fires), remove it first
+        // so calling this twice can't silently leak a listener that keeps
+        // firing against a stale closure indefinitely.
+        stopObservingMessages()
         messagesHandle = db.child("messages").observe(.value) { snapshot in
             guard let value = snapshot.value as? [String: [String: Any]] else {
                 onChange([])
