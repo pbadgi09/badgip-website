@@ -99,16 +99,26 @@ export function mountPageSections(pageSections) {
       sectionEl.hidden = true;
       container.appendChild(sectionEl);
 
-      const navLi = document.createElement('li');
-      navLi.dataset.mode = mode;
-      navLi.dataset.dynamicNav = 'true';
-      navLi.hidden = true;
-      navLi.innerHTML = `<a href="#${sectionEl.id}" class="site-nav__link mono" data-nav-link="${sectionEl.id}"><span class="num"></span>${escapeHtml(label)}</a>`;
-      navContactItem.insertAdjacentElement('beforebegin', navLi);
+      // Every section still gets a page position/number regardless of nav
+      // visibility — only whether it gets a <li> in the floating nav pill
+      // is conditional. Lets someone keep a section on the page (in its own
+      // scroll order) while leaving it out of the compact nav list.
+      const showInNav = entry.showInNav !== false;
+      let navNumEl = null;
+
+      if (showInNav) {
+        const navLi = document.createElement('li');
+        navLi.dataset.mode = mode;
+        navLi.dataset.dynamicNav = 'true';
+        navLi.hidden = true;
+        navLi.innerHTML = `<a href="#${sectionEl.id}" class="site-nav__link mono" data-nav-link="${sectionEl.id}"><span class="num"></span>${escapeHtml(label)}</a>`;
+        navContactItem.insertAdjacentElement('beforebegin', navLi);
+        navNumEl = navLi.querySelector('.num');
+      }
 
       mountedByMode[mode].push({
         sectionNumEl: sectionEl.querySelector('.section-number'),
-        navNumEl: navLi.querySelector('.num'),
+        navNumEl,
       });
     });
   });
@@ -116,17 +126,20 @@ export function mountPageSections(pageSections) {
 
 export function updateSectionNumbers(mode) {
   const items = mountedByMode[mode] || [];
+  let navIndex = 0;
   items.forEach((item, i) => {
-    const num = String(i + 1).padStart(2, '0');
-    if (item.sectionNumEl) item.sectionNumEl.textContent = num;
-    if (item.navNumEl) item.navNumEl.textContent = num;
+    const pageNum = String(i + 1).padStart(2, '0');
+    if (item.sectionNumEl) item.sectionNumEl.textContent = pageNum;
+    if (item.navNumEl) {
+      navIndex += 1;
+      item.navNumEl.textContent = String(navIndex).padStart(2, '0');
+    }
   });
 
-  const contactNum = String(items.length + 1).padStart(2, '0');
   const contactSectionNumberEl = document.getElementById('contactSectionNumber');
-  if (contactSectionNumberEl) contactSectionNumberEl.textContent = contactNum;
+  if (contactSectionNumberEl) contactSectionNumberEl.textContent = String(items.length + 1).padStart(2, '0');
   const contactNavNumEl = document.querySelector('#navContactItem .num');
-  if (contactNavNumEl) contactNavNumEl.textContent = contactNum;
+  if (contactNavNumEl) contactNavNumEl.textContent = String(navIndex + 1).padStart(2, '0');
 }
 
 export function getMountedSectionIds() {

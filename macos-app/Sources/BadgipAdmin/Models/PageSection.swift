@@ -12,6 +12,10 @@ struct PageSection: Identifiable, Codable, Equatable {
     var kind: String = "custom" // "about" | "projects" | "youtube" | "blog" | "custom"
     var mode: String = "professional" // "professional" | "personal"
     var order: Int = 0
+    // Whether this section gets an entry in the floating nav pill. It always
+    // stays on the page (in its own scroll position) either way — this only
+    // controls whether it's also one of the compact nav tabs.
+    var showInNav: Bool = true
     var title: String = "" // custom only
     var items: [SectionItem] = [] // custom only
 
@@ -38,7 +42,7 @@ struct PageSection: Identifiable, Codable, Equatable {
     }
 
     var asDictionary: [String: Any] {
-        var dict: [String: Any] = ["kind": kind, "mode": mode, "order": order]
+        var dict: [String: Any] = ["kind": kind, "mode": mode, "order": order, "showInNav": showInNav]
         if kind == "custom" {
             dict["title"] = title
             dict["items"] = items.map { ["icon": $0.icon, "label": $0.label, "order": $0.order] }
@@ -60,6 +64,7 @@ struct PageSection: Identifiable, Codable, Equatable {
             kind: dict["kind"] as? String ?? "custom",
             mode: dict["mode"] as? String ?? "professional",
             order: dict["order"] as? Int ?? 0,
+            showInNav: dict["showInNav"] as? Bool ?? true,
             title: dict["title"] as? String ?? "",
             items: items
         )

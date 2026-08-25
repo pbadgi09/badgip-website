@@ -20,6 +20,15 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Set once at boot from settings.hero so the blog byline can show an
+// avatar + author name without every render-personal.js call needing to
+// thread settings through.
+let authorInfo = { name: '', avatar: '' };
+
+export function setBlogAuthor({ name, avatar }) {
+  authorInfo = { name: name || '', avatar: avatar || '' };
+}
+
 // ---------- YouTube carousel ----------
 
 export function renderYoutubeCarousel(videos) {
@@ -206,12 +215,25 @@ function buildBlogFullscreenMarkup(post) {
     if (titleIndex >= 0) bodySections = sections.filter((_, i) => i !== titleIndex);
   }
 
+  const dateLabel = post.publishedAt
+    ? new Date(post.publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    : '';
+  const bylineHtml =
+    authorInfo.name || dateLabel
+      ? `<div class="blog-byline">
+          ${authorInfo.avatar ? `<img class="blog-byline__avatar" src="${imageUrl(authorInfo.avatar)}" alt="" />` : ''}
+          <div class="blog-byline__meta">
+            ${authorInfo.name ? `<span class="blog-byline__name">${escapeHtml(authorInfo.name)}</span>` : ''}
+            ${dateLabel ? `<span class="blog-byline__date mono">${dateLabel}</span>` : ''}
+          </div>
+        </div>`
+      : '';
+
   return `
     ${heroHtml}
-    <button class="fullscreen-panel__close mono" aria-label="Close and return to blog">
-      <span aria-hidden="true">←</span> Back to Blog
-    </button>
+    <button class="fullscreen-panel__close" aria-label="Close">✕</button>
     <div class="fullscreen-panel__content fullscreen-panel__content--article">
+      ${bylineHtml}
       ${bodySections.map(renderBlogSection).join('')}
     </div>
   `;

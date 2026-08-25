@@ -36,7 +36,7 @@ struct SectionsView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 10)
 
-            Text("Drag rows to reorder — the live site's section order and numbering update to match. Home and Contact always stay first and last.")
+            Text("Drag rows to reorder — the live site's section order and numbering update to match. \"In nav\" controls only the floating nav pill; a section stays on the page in its scroll order either way. Home and Contact always stay first and last.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 24)
@@ -63,7 +63,8 @@ struct SectionsView: View {
                         SectionRow(
                             section: section,
                             onEdit: section.kind == "custom" ? { editingSection = section } : nil,
-                            onDelete: section.kind == "custom" ? { pendingDelete = section } : nil
+                            onDelete: section.kind == "custom" ? { pendingDelete = section } : nil,
+                            onToggleNav: { toggleNav(section) }
                         )
                     }
                     .onMove(perform: move)
@@ -115,6 +116,15 @@ struct SectionsView: View {
         rtdb.reorderPageSections(renumbered)
     }
 
+    private func toggleNav(_ section: PageSection) {
+        var updated = section
+        updated.showInNav.toggle()
+        if let index = allSections.firstIndex(where: { $0.id == section.id }) {
+            allSections[index] = updated
+        }
+        _ = try? rtdb.savePageSection(updated)
+    }
+
     private func load() async {
         isLoading = true
         do {
@@ -130,6 +140,7 @@ private struct SectionRow: View {
     let section: PageSection
     let onEdit: (() -> Void)?
     let onDelete: (() -> Void)?
+    let onToggleNav: () -> Void
 
     var body: some View {
         HStack(spacing: 14) {
@@ -143,6 +154,11 @@ private struct SectionRow: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Toggle(isOn: Binding(get: { section.showInNav }, set: { _ in onToggleNav() })) {
+                Text("In nav").font(.caption)
+            }
+            .toggleStyle(.switch)
+            .controlSize(.small)
             if let onEdit {
                 Button("Edit", action: onEdit).buttonStyle(.badgipSecondary)
             }

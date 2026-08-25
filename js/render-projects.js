@@ -112,9 +112,7 @@ function buildFullscreenMarkup(project) {
 
   return `
     ${heroHtml}
-    <button class="fullscreen-panel__close mono" aria-label="Close and return to projects">
-      <span aria-hidden="true">←</span> Back to Projects
-    </button>
+    <button class="fullscreen-panel__close" aria-label="Close">✕</button>
     <div class="fullscreen-panel__content">
       <div class="project-detail-inline__body">
         <span class="eyebrow">${escapeHtml((project.tags || [])[0] || 'Project')}</span>

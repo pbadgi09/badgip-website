@@ -59,25 +59,37 @@ export function renderHero(settings) {
 }
 
 export function renderContactAndFooter(settings) {
-  const { social, contact } = settings;
+  const { contact } = settings;
   const year = new Date().getFullYear();
   document.getElementById('footerYear').textContent = String(year);
 
-  const footerGithub = document.getElementById('footerGithub');
-  footerGithub.href = social.github;
-
-  const footerLinkedin = document.getElementById('footerLinkedin');
-  footerLinkedin.href = social.linkedin || social.github;
-  footerLinkedin.hidden = !social.linkedin;
+  const footerSocials = document.getElementById('footerSocials');
+  footerSocials.innerHTML = (contact.socialLinks || [])
+    .map(
+      (link) => `
+      <a class="site-footer__social-link" href="${escapeHtml(link.url || '#')}" target="_blank" rel="noopener" aria-label="Social link">
+        ${iconMarkup(link.icon)}
+      </a>
+    `
+    )
+    .join('');
 
   document.getElementById('contactInfoTitle').textContent = contact.infoTitle;
   document.getElementById('contactInfoSubtitle').textContent = contact.infoSubtitle;
   document.getElementById('contactFormTitle').textContent = contact.heading;
   document.getElementById('contactFormSubtitle').textContent = contact.subheading;
 
+  // Falls back to a light "plain" card (matching the site's own theme)
+  // when no photo has been set, instead of an empty-looking dark box.
+  const panel = document.getElementById('contactInfoPanel');
   const bg = document.getElementById('contactInfoPanelBg');
   if (contact.backgroundImage) {
+    panel.classList.add('contact-info-panel--photo');
+    panel.classList.remove('contact-info-panel--plain');
     bg.style.backgroundImage = `url("${resolveUrl(contact.backgroundImage)}")`;
+  } else {
+    panel.classList.add('contact-info-panel--plain');
+    panel.classList.remove('contact-info-panel--photo');
   }
 
   const infoList = document.getElementById('contactInfoList');

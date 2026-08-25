@@ -2,7 +2,7 @@ import { getSettings, getAbout, getProjects, getPersonalYoutube, getPersonalBlog
 import { renderHero, renderContactAndFooter } from './render-home.js';
 import { renderAbout } from './render-about.js';
 import { renderProjects } from './render-projects.js';
-import { renderYoutubeCarousel, renderBlogGrid } from './render-personal.js';
+import { renderYoutubeCarousel, renderBlogGrid, setBlogAuthor } from './render-personal.js';
 import { mountPageSections } from './render-sections.js';
 import { initContactForm } from './contact-form.js';
 import { initModeSwitch } from './mode-switch.js';
@@ -37,6 +37,7 @@ async function boot() {
   renderAbout(about);
   renderProjects(projects);
   renderYoutubeCarousel(youtubeVideos);
+  setBlogAuthor({ name: settings.hero?.name, avatar: settings.hero?.profileImage });
   renderBlogGrid(blogPosts);
 
   if (settings.theme?.accentColor) {

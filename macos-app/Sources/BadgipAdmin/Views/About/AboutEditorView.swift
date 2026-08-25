@@ -9,19 +9,20 @@ struct AboutEditorView: View {
     @State private var statusMessage: String?
 
     private var hasChanges: Bool { about != original }
+    private var showSavedBadge: Bool { statusMessage == "Saved" && !hasChanges }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("About").font(.title.weight(.bold))
                 Spacer()
-                if let statusMessage {
+                if showSavedBadge {
                     HStack(spacing: 4) {
-                        if statusMessage == "Saved" {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.badgipAccent)
-                        }
-                        Text(statusMessage).font(.caption).foregroundStyle(.secondary)
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.badgipAccent)
+                        Text("Saved").font(.caption).foregroundStyle(.secondary)
                     }
+                } else if let statusMessage, statusMessage != "Saved" {
+                    Text(statusMessage).font(.caption).foregroundStyle(.red)
                 }
                 Button {
                     Task { await save() }

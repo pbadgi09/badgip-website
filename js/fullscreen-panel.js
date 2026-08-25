@@ -20,6 +20,12 @@ export function openFullscreen({ id, sourceEl, innerHTML, accentColor, textColor
 
   const panel = document.createElement('div');
   panel.className = 'fullscreen-panel';
+  // Lenis hijacks wheel input globally; without this it keeps intercepting
+  // (and preventDefault-ing) wheel events even inside this panel's own
+  // overflow-y:auto content, so trackpad scroll silently does nothing here
+  // and only dragging the native scrollbar thumb works. data-lenis-prevent
+  // is Lenis's documented opt-out for nested scroll regions.
+  panel.setAttribute('data-lenis-prevent', '');
   panel.innerHTML = innerHTML;
   if (accentColor) {
     panel.style.setProperty('--color-accent', accentColor);

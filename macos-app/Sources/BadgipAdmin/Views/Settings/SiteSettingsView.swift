@@ -9,19 +9,23 @@ struct SiteSettingsView: View {
     @State private var statusMessage: String?
 
     private var hasChanges: Bool { settings != original }
+    // "Saved" is only meaningful while nothing has changed since that save —
+    // the moment a new edit is made this stops showing, so it never lingers
+    // and falsely implies the new edit is already saved.
+    private var showSavedBadge: Bool { statusMessage == "Saved" && !hasChanges }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Site Settings").font(.title.weight(.bold))
                 Spacer()
-                if let statusMessage {
+                if showSavedBadge {
                     HStack(spacing: 4) {
-                        if statusMessage == "Saved" {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.badgipAccent)
-                        }
-                        Text(statusMessage).font(.caption).foregroundStyle(.secondary)
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.badgipAccent)
+                        Text("Saved").font(.caption).foregroundStyle(.secondary)
                     }
+                } else if let statusMessage, statusMessage != "Saved" {
+                    Text(statusMessage).font(.caption).foregroundStyle(.red)
                 }
                 Button {
                     Task { await save() }
