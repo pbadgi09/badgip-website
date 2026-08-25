@@ -684,6 +684,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+  padding: var(--space-8);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
 }
 
 .form-field {
@@ -692,24 +696,23 @@
 
 .form-field label {
   display: block;
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-sm);
   color: var(--color-text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   margin-bottom: var(--space-2);
 }
 
 .form-field input,
 .form-field textarea {
   width: 100%;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--color-border-strong);
-  padding: var(--space-3) 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
   font-size: var(--fs-md);
   color: var(--color-text);
-  transition: border-color var(--duration-fast) var(--ease-out);
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
   resize: vertical;
 }
 
@@ -717,7 +720,8 @@
 .form-field textarea:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 1px 0 0 var(--color-accent-glow);
+  background: rgba(62, 255, 163, 0.04);
+  box-shadow: 0 0 0 3px var(--color-accent-glow);
 }
 
 .form-field label {
