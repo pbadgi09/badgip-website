@@ -24,9 +24,11 @@ function applyMode(mode, { animate }) {
     btn.setAttribute('aria-selected', String(isActive));
   });
 
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   document.querySelectorAll('[data-mode-section] [data-mode]').forEach((el) => {
     const matches = el.dataset.mode === mode;
-    if (animate && window.gsap) {
+    if (animate && window.gsap && !reducedMotion) {
       if (matches) {
         el.hidden = false;
         window.gsap.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });

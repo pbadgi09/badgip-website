@@ -36,15 +36,15 @@ struct DashboardView: View {
                         Label(section.rawValue, systemImage: section.icon)
                     }
                 }
-
-                Spacer()
-
+            }
+            .listStyle(SidebarListStyle())
+            .safeAreaInset(edge: .bottom) {
                 Button("Sign Out") {
                     authService.signOut()
                 }
-                .padding(.top, 24)
+                .padding(12)
+                .frame(maxWidth: .infinity)
             }
-            .listStyle(SidebarListStyle())
             .frame(minWidth: 200)
             .navigationTitle("Badgip Admin")
 

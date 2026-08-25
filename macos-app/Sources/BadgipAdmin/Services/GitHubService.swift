@@ -23,9 +23,10 @@ final class GitHubService {
         KeychainService.read(key: KeychainKey.githubPAT)
     }
 
-    private func authorizedRequest(url: URL) throws -> URLRequest {
+    private func authorizedRequest(url: URL, method: String = "GET") throws -> URLRequest {
         guard let pat, !pat.isEmpty else { throw GitHubServiceError.missingPAT }
         var request = URLRequest(url: url)
+        request.httpMethod = method
         request.setValue("Bearer \(pat)", forHTTPHeaderField: "Authorization")
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
@@ -37,17 +38,16 @@ final class GitHubService {
     func uploadFile(path: String, data: Data, commitMessage: String) async throws {
         let contentsURL = URL(string: "https://api.github.com/repos/\(Self.owner)/\(Self.repo)/contents/\(path)")!
 
+        // A 404 here (file doesn't exist yet, i.e. a new upload) isn't a thrown
+        // Swift error — URLSession only throws for transport-level failures
+        // (no connection, timeout, etc.), which are swallowed below since a
+        // genuine problem (bad PAT, no network) will surface from the PUT
+        // request either way, with a clearer error message.
         var existingSHA: String?
-        do {
-            var getRequest = try authorizedRequest(url: contentsURL)
-            getRequest.httpMethod = "GET"
-            let (data, response) = try await URLSession.shared.data(for: getRequest)
-            if let http = response as? HTTPURLResponse, http.statusCode == 200,
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                existingSHA = json["sha"] as? String
-            }
-        } catch {
-            // 404 (file doesn't exist yet) is expected for new uploads; ignore.
+        if let (data, response) = try? await URLSession.shared.data(for: authorizedRequest(url: contentsURL, method: "GET")),
+           let http = response as? HTTPURLResponse, http.statusCode == 200,
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            existingSHA = json["sha"] as? String
         }
 
         var putRequest = try authorizedRequest(url: contentsURL)

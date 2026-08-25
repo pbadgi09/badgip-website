@@ -3,6 +3,7 @@ import SwiftUI
 struct MessagesInboxView: View {
     @EnvironmentObject private var rtdb: RTDBService
     @State private var messages: [ContactMessage] = []
+    @State private var pendingDelete: ContactMessage?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -39,7 +40,7 @@ struct MessagesInboxView: View {
                                     rtdb.markMessageRead(id: message.id, read: !message.read)
                                 }
                                 Button("Delete", role: .destructive) {
-                                    rtdb.deleteMessage(id: message.id)
+                                    pendingDelete = message
                                 }
                             }
                             .font(.caption)
@@ -56,6 +57,18 @@ struct MessagesInboxView: View {
         }
         .onDisappear {
             rtdb.stopObservingMessages()
+        }
+        .alert(
+            "Delete message from \(pendingDelete?.name ?? "")?",
+            isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })
+        ) {
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+            Button("Delete", role: .destructive) {
+                if let message = pendingDelete {
+                    rtdb.deleteMessage(id: message.id)
+                }
+                pendingDelete = nil
+            }
         }
     }
 }

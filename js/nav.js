@@ -41,12 +41,14 @@ export function initNav() {
 
 export function initCursor() {
   if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const dot = document.getElementById('cursorDot');
   let x = 0;
   let y = 0;
   let targetX = 0;
   let targetY = 0;
+  let scale = 1;
 
   window.addEventListener('mousemove', (e) => {
     targetX = e.clientX;
@@ -56,13 +58,17 @@ export function initCursor() {
   function tick() {
     x += (targetX - x) * 0.2;
     y += (targetY - y) * 0.2;
-    dot.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+    dot.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${scale})`;
     requestAnimationFrame(tick);
   }
   tick();
 
   document.querySelectorAll('a, button, .project-card').forEach((el) => {
-    el.addEventListener('mouseenter', () => dot.style.transform += ' scale(2.2)');
-    el.addEventListener('mouseleave', () => {});
+    el.addEventListener('mouseenter', () => {
+      scale = 2.2;
+    });
+    el.addEventListener('mouseleave', () => {
+      scale = 1;
+    });
   });
 }

@@ -74,7 +74,7 @@ struct ProjectEditView: View {
         isSaving = true
         errorMessage = nil
         do {
-            try rtdb.saveProject(project)
+            project.id = try rtdb.saveProject(project)
             onSave(project)
         } catch {
             errorMessage = error.localizedDescription

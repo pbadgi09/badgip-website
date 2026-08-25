@@ -6,7 +6,7 @@ struct ProjectListView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var editingProject: Project?
-    @State private var showingNewProject = false
+    @State private var pendingDelete: Project?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -20,6 +20,10 @@ struct ProjectListView: View {
                 }
             }
             .padding()
+
+            if let errorMessage {
+                Text(errorMessage).foregroundStyle(.red).font(.caption).padding(.horizontal)
+            }
 
             if isLoading {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -40,8 +44,7 @@ struct ProjectListView: View {
                             Spacer()
                             Button("Edit") { editingProject = project }
                             Button(role: .destructive) {
-                                rtdb.deleteProject(id: project.id)
-                                projects.removeAll { $0.id == project.id }
+                                pendingDelete = project
                             } label: {
                                 Image(systemName: "trash")
                             }
@@ -59,6 +62,21 @@ struct ProjectListView: View {
                 }
                 editingProject = nil
             }
+        }
+        .alert(
+            "Delete \"\(pendingDelete?.title ?? "")\"?",
+            isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })
+        ) {
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+            Button("Delete", role: .destructive) {
+                if let project = pendingDelete {
+                    rtdb.deleteProject(id: project.id)
+                    projects.removeAll { $0.id == project.id }
+                }
+                pendingDelete = nil
+            }
+        } message: {
+            Text("This removes it from the live site immediately and can't be undone.")
         }
         .task { await loadProjects() }
     }

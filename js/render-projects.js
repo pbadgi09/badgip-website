@@ -58,6 +58,10 @@ export function renderProjects(projects) {
 }
 
 function openProjectOverlay(project) {
+  // Guard against stacking overlays if a card is clicked/activated more than
+  // once before the previous overlay finishes its close animation/removal.
+  document.getElementById('projectOverlay')?.remove();
+
   const template = document.getElementById('projectOverlayTemplate');
   const fragment = template.content.cloneNode(true);
   document.body.appendChild(fragment);
