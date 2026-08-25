@@ -27,29 +27,44 @@ struct DashboardView: View {
     var body: some View {
         NavigationView {
             List {
-                ForEach(DashboardSection.allCases) { section in
-                    NavigationLink(
-                        destination: destination(for: section),
-                        tag: section,
-                        selection: $selection
-                    ) {
-                        Label(section.rawValue, systemImage: section.icon)
+                Section {
+                    ForEach(DashboardSection.allCases) { section in
+                        NavigationLink(
+                            destination: destination(for: section),
+                            tag: section,
+                            selection: $selection
+                        ) {
+                            Label(section.rawValue, systemImage: section.icon)
+                                .symbolRenderingMode(.hierarchical)
+                        }
                     }
                 }
             }
             .listStyle(SidebarListStyle())
             .safeAreaInset(edge: .bottom) {
-                Button("Sign Out") {
-                    authService.signOut()
+                VStack(spacing: 0) {
+                    Divider()
+                    Button {
+                        authService.signOut()
+                    } label: {
+                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .padding(12)
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity)
             }
             .frame(minWidth: 200)
             .navigationTitle("Badgip Admin")
 
-            Text("Select a section")
-                .foregroundStyle(.secondary)
+            VStack(spacing: 8) {
+                Image(systemName: "arrow.left")
+                    .font(.title2)
+                    .foregroundStyle(.tertiary)
+                Text("Select a section to get started")
+                    .foregroundStyle(.secondary)
+            }
         }
         .navigationViewStyle(DoubleColumnNavigationViewStyle())
     }
