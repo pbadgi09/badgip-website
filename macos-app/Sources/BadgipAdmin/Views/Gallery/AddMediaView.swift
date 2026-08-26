@@ -164,15 +164,21 @@ struct AddMediaView: View {
                 await JsDelivrService.purge(repoPath: repoPath)
                 if destination == .projectCover {
                     project.coverImage = storedPath
-                    if previousCover != storedPath {
-                        RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for project \(slug)")
-                    }
                 } else {
                     project.gallery.append(storedPath)
                 }
                 let saved = try rtdb.saveProject(project)
                 onDone(.project(saved))
                 dismiss()
+                // Cleanup must run AFTER the save above, not before — it
+                // does a fresh RTDB scan to decide whether the old file is
+                // still referenced elsewhere, and that scan needs to see
+                // this field's new value already committed (same
+                // save-then-cleanup order every other call site uses; see
+                // RepoFileCleanup.deleteStoredImage's doc comment).
+                if destination == .projectCover, previousCover != storedPath {
+                    RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for project \(slug)")
+                }
 
             case .blogCover, .blogImage:
                 guard var post = posts.first(where: { $0.id == selectedPostId }) else { return }
@@ -184,15 +190,15 @@ struct AddMediaView: View {
                 await JsDelivrService.purge(repoPath: repoPath)
                 if destination == .blogCover {
                     post.coverImage = storedPath
-                    if previousCover != storedPath {
-                        RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for blog post \(slug)")
-                    }
                 } else {
                     post.sections.append(BlogSection(type: "image", value: storedPath))
                 }
                 let saved = try rtdb.saveBlogPost(post)
                 onDone(.blog(saved))
                 dismiss()
+                if destination == .blogCover, previousCover != storedPath {
+                    RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for blog post \(slug)")
+                }
 
             case .sectionIcon:
                 guard var section = sections.first(where: { $0.id == selectedSectionId }) else { return }
@@ -223,12 +229,9 @@ struct AddMediaView: View {
             switch destination {
             case .projectCover, .projectGallery:
                 guard var project = projects.first(where: { $0.id == selectedProjectId }) else { return }
+                let previousCover = project.coverImage
                 if destination == .projectCover {
-                    let previousCover = project.coverImage
                     project.coverImage = storedPath
-                    if previousCover != storedPath {
-                        RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for project \(project.slug)")
-                    }
                 } else {
                     guard !project.gallery.contains(storedPath) else { return }
                     project.gallery.append(storedPath)
@@ -236,21 +239,25 @@ struct AddMediaView: View {
                 let saved = try rtdb.saveProject(project)
                 onDone(.project(saved))
                 dismiss()
+                // Save-then-cleanup — see the matching comment in upload(from:).
+                if destination == .projectCover, previousCover != storedPath {
+                    RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for project \(project.slug)")
+                }
 
             case .blogCover, .blogImage:
                 guard var post = posts.first(where: { $0.id == selectedPostId }) else { return }
+                let previousCover = post.coverImage
                 if destination == .blogCover {
-                    let previousCover = post.coverImage
                     post.coverImage = storedPath
-                    if previousCover != storedPath {
-                        RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for blog post \(post.slug)")
-                    }
                 } else {
                     post.sections.append(BlogSection(type: "image", value: storedPath))
                 }
                 let saved = try rtdb.saveBlogPost(post)
                 onDone(.blog(saved))
                 dismiss()
+                if destination == .blogCover, previousCover != storedPath {
+                    RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for blog post \(post.slug)")
+                }
 
             case .sectionIcon:
                 guard var section = sections.first(where: { $0.id == selectedSectionId }) else { return }
