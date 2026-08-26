@@ -57,10 +57,12 @@ struct ProjectEditView: View {
             EditorCard(title: "Look (optional — overrides the site default for this project's detail view)") {
                 OptionalColorField(label: "Accent color", hex: $project.accentColor, fallback: "#3effa3")
                 OptionalColorField(label: "Text color", hex: $project.textColor, fallback: "#0a0a0a")
+                titleFontSizeControl
             }
 
             EditorCard(title: "Links") {
                 LabeledField(label: "Live URL", text: $project.liveUrl)
+                LabeledField(label: "Live Site button label (optional, defaults to \"Live Site\")", text: $project.liveButtonLabel)
                 LabeledField(label: "Repo URL", text: $project.repoUrl)
             }
 
@@ -88,6 +90,27 @@ struct ProjectEditView: View {
             }
         }
         .onAppear { tagsText = project.tags.joined(separator: ", ") }
+    }
+
+    // Same "0 = use the site default" convention as About's bio font size
+    // control (AboutEditorView.fontSizeControl).
+    @ViewBuilder
+    private var titleFontSizeControl: some View {
+        HStack(spacing: 10) {
+            Text("Title chip font size").font(.caption).foregroundStyle(.secondary)
+            Stepper(
+                project.titleFontSize > 0 ? "\(project.titleFontSize)px" : "Default",
+                value: $project.titleFontSize,
+                in: 0...96,
+                step: 2
+            )
+            .frame(width: 140)
+            if project.titleFontSize > 0 {
+                Button("Reset") { project.titleFontSize = 0 }
+                    .buttonStyle(.badgipSecondary)
+                    .controlSize(.small)
+            }
+        }
     }
 
     private func save() async {

@@ -20,6 +20,11 @@ struct Project: Identifiable, Codable, Equatable {
     // empty string means "use the site's default accent/text colors".
     var accentColor: String = ""
     var textColor: String = ""
+    // 0 means "use the site's default font size" for the detail-view title
+    // chip — matches the About bio's professionalBioFontSize convention.
+    var titleFontSize: Int = 0
+    // Empty string means "Live Site" (the site's default button label).
+    var liveButtonLabel: String = ""
     var createdAt: Double = 0
     var updatedAt: Double = 0
 
@@ -41,6 +46,8 @@ struct Project: Identifiable, Codable, Equatable {
             "category": category,
             "accentColor": accentColor,
             "textColor": textColor,
+            "titleFontSize": titleFontSize,
+            "liveButtonLabel": liveButtonLabel,
             "createdAt": createdAt,
             "updatedAt": updatedAt,
         ]
@@ -65,6 +72,8 @@ struct Project: Identifiable, Codable, Equatable {
             category: dict["category"] as? String ?? "professional",
             accentColor: dict["accentColor"] as? String ?? "",
             textColor: dict["textColor"] as? String ?? "",
+            titleFontSize: dict["titleFontSize"] as? Int ?? 0,
+            liveButtonLabel: dict["liveButtonLabel"] as? String ?? "",
             createdAt: dict["createdAt"] as? Double ?? 0,
             updatedAt: dict["updatedAt"] as? Double ?? 0
         )

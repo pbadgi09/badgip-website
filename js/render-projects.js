@@ -135,12 +135,24 @@ function buildFullscreenMarkup(project) {
   const embedId = youtubeEmbedId(project.youtubeUrl);
   const galleryPaths = project.gallery || [];
 
+  const chipStyleDecls = [];
+  if (project.accentColor) chipStyleDecls.push(`--chip-bg: ${project.accentColor}`);
+  if (project.titleFontSize) chipStyleDecls.push(`font-size: ${project.titleFontSize}px`);
+  const chipStyle = chipStyleDecls.length ? ` style="${chipStyleDecls.join('; ')}"` : '';
+
   const heroHtml = project.coverImage
     ? `<div class="fullscreen-panel__hero">
         <img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" />
-        <div class="fullscreen-panel__hero-caption"><span class="text-chip">${escapeHtml(project.title)}</span></div>
+        <div class="fullscreen-panel__hero-caption"><span class="text-chip"${chipStyle}>${escapeHtml(project.title)}</span></div>
       </div>`
     : '';
+
+  const dotsHtml =
+    galleryPaths.length > 1
+      ? `<div class="project-detail-inline__gallery-dots">
+          ${galleryPaths.map((_, i) => `<span class="gallery-dot${i === 0 ? ' is-active' : ''}"></span>`).join('')}
+        </div>`
+      : '';
 
   const galleryHtml = galleryPaths.length
     ? `<div class="project-detail-inline__gallery">
@@ -150,7 +162,8 @@ function buildFullscreenMarkup(project) {
               `<img src="${imageUrl(path)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.remove()" />`
           )
           .join('')}
-      </div>`
+      </div>
+      ${dotsHtml}`
     : '';
 
   const videoHtml = embedId
@@ -158,7 +171,10 @@ function buildFullscreenMarkup(project) {
     : '';
 
   const links = [];
-  if (project.liveUrl) links.push(`<a href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener" class="btn btn--primary">Live Site</a>`);
+  if (project.liveUrl)
+    links.push(
+      `<a href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener" class="btn btn--primary">${escapeHtml(project.liveButtonLabel || 'Live Site')}</a>`
+    );
   if (project.repoUrl) links.push(`<a href="${escapeHtml(project.repoUrl)}" target="_blank" rel="noopener" class="btn btn--ghost">Source</a>`);
 
   return `
@@ -177,6 +193,36 @@ function buildFullscreenMarkup(project) {
   `;
 }
 
+// Highlights the dot nearest the gallery's current scroll position — the
+// active dot's color comes from --color-accent, which openFullscreen
+// already sets per-project, so no per-project styling needed here.
+function wireGalleryDots(panel) {
+  const gallery = panel.querySelector('.project-detail-inline__gallery');
+  const dots = panel.querySelectorAll('.project-detail-inline__gallery-dots .gallery-dot');
+  if (!gallery || !dots.length) return;
+  const images = Array.from(gallery.querySelectorAll('img'));
+
+  let ticking = false;
+  gallery.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      const center = gallery.scrollLeft + gallery.clientWidth / 2;
+      let closest = 0;
+      let closestDistance = Infinity;
+      images.forEach((img, i) => {
+        const distance = Math.abs(img.offsetLeft + img.offsetWidth / 2 - center);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closest = i;
+        }
+      });
+      dots.forEach((dot, i) => dot.classList.toggle('is-active', i === closest));
+    });
+  });
+}
+
 function openProjectDetail(project, card) {
   if (isFullscreenOpen()) return;
   openFullscreen({
@@ -186,4 +232,7 @@ function openProjectDetail(project, card) {
     accentColor: project.accentColor,
     textColor: project.textColor,
   });
+  // Only exists once openFullscreen has inserted the markup — wire right after.
+  const panel = document.querySelector('.fullscreen-panel');
+  if (panel) wireGalleryDots(panel);
 }
