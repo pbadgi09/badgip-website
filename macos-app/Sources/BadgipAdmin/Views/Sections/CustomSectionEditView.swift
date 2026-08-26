@@ -25,6 +25,7 @@ struct CustomSectionEditView: View {
             title: section.id.isEmpty ? "New Custom Section" : "Edit Section",
             isSaving: isSaving,
             canSave: !section.title.isEmpty && hasChanges,
+            hasChanges: hasChanges,
             onCancel: { dismiss() },
             onSave: { Task { await save() } }
         ) {

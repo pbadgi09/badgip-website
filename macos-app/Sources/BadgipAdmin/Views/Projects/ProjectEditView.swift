@@ -25,6 +25,7 @@ struct ProjectEditView: View {
             title: project.id.isEmpty ? "New Project" : "Edit Project",
             isSaving: isSaving,
             canSave: !project.title.isEmpty && hasChanges,
+            hasChanges: hasChanges,
             onCancel: { dismiss() },
             onSave: { Task { await save() } }
         ) {
@@ -65,10 +66,14 @@ struct ProjectEditView: View {
                     Text("Draft").tag("draft")
                     Text("Published").tag("published")
                 }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 260)
                 Picker("Category", selection: $project.category) {
                     Text("Professional").tag("professional")
                     Text("Personal").tag("personal")
                 }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 260)
                 Toggle("Featured", isOn: $project.featured)
                 Text("Featured projects fill the site's first 6 slots (2 rows) before the rest are hidden behind \"Show More.\" Drag rows on the Projects list to reorder.")
                     .font(.caption)

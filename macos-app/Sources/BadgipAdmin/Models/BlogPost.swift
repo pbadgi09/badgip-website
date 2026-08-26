@@ -31,15 +31,19 @@ struct BlogPost: Identifiable, Codable, Equatable {
             "status": status,
             "order": order,
             "sections": sections.map {
-                ["type": $0.type, "value": $0.value, "title": $0.title, "subtitle": $0.subtitle, "accentColor": $0.accentColor, "textColor": $0.textColor]
+                ["id": $0.id, "type": $0.type, "value": $0.value, "title": $0.title, "subtitle": $0.subtitle, "accentColor": $0.accentColor, "textColor": $0.textColor]
             },
         ]
     }
 
     static func from(id: String, dict: [String: Any]) -> BlogPost {
         let sectionsRaw = dict["sections"] as? [[String: Any]] ?? []
+        // `id` round-trips through RTDB (same reasoning as TimelineEntry in
+        // AboutContent.swift) so a re-fetch doesn't hand every section a
+        // fresh random id.
         let sections = sectionsRaw.map {
             BlogSection(
+                id: $0["id"] as? String ?? UUID().uuidString,
                 type: $0["type"] as? String ?? "text",
                 value: $0["value"] as? String ?? "",
                 title: $0["title"] as? String ?? "",

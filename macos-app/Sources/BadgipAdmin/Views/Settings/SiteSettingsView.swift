@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SiteSettingsView: View {
     @EnvironmentObject private var rtdb: RTDBService
+    @EnvironmentObject private var unsavedGuard: UnsavedChangesGuard
     @State private var settings = SiteSettings()
     @State private var original = SiteSettings()
     @State private var isLoading = true
@@ -131,6 +132,8 @@ struct SiteSettingsView: View {
             }
         }
         .task { await load() }
+        .onChange(of: hasChanges) { unsavedGuard.hasUnsavedChanges = $0 }
+        .onDisappear { unsavedGuard.hasUnsavedChanges = false }
     }
 
     @ViewBuilder

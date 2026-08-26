@@ -38,7 +38,6 @@ struct DeployControlsView: View {
                             savedToast.flash()
                         }
                         .buttonStyle(.badgipSecondary)
-                        .tint(.red)
                     }
                 }
 

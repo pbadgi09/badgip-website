@@ -37,7 +37,10 @@ enum DashboardSection: String, CaseIterable, Identifiable {
 // NavigationView's own chrome for that look anyway.
 struct DashboardView: View {
     @EnvironmentObject private var authService: FirebaseAuthService
+    @EnvironmentObject private var unsavedGuard: UnsavedChangesGuard
     @State private var selection: DashboardSection = .projects
+    @State private var pendingAction: (() -> Void)?
+    @State private var showDiscardConfirm = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -47,6 +50,29 @@ struct DashboardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 960, minHeight: 640)
+        .alert("Discard unsaved changes?", isPresented: $showDiscardConfirm) {
+            Button("Discard", role: .destructive) {
+                unsavedGuard.hasUnsavedChanges = false
+                pendingAction?()
+                pendingAction = nil
+            }
+            Button("Keep Editing", role: .cancel) { pendingAction = nil }
+        } message: {
+            Text("You have unsaved changes on this screen that will be lost.")
+        }
+    }
+
+    // Every navigation-away action (switching sidebar sections, signing
+    // out) goes through here so an in-progress edit on About/Settings (the
+    // only two screens with a deliberate Save button — everything else
+    // auto-persists instantly) can't be silently discarded.
+    private func requestNavigation(_ action: @escaping () -> Void) {
+        if unsavedGuard.hasUnsavedChanges {
+            pendingAction = action
+            showDiscardConfirm = true
+        } else {
+            action()
+        }
     }
 
     private var sidebar: some View {
@@ -66,7 +92,8 @@ struct DashboardView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(DashboardSection.allCases) { section in
                         SidebarRow(section: section, isSelected: section == selection) {
-                            selection = section
+                            guard section != selection else { return }
+                            requestNavigation { selection = section }
                         }
                     }
                 }
@@ -77,7 +104,7 @@ struct DashboardView: View {
 
             Divider()
             Button {
-                authService.signOut()
+                requestNavigation { authService.signOut() }
             } label: {
                 Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                     .font(.callout.weight(.medium))

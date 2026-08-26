@@ -5,6 +5,7 @@ import SwiftUI
 struct BadgipAdminApp: App {
     @StateObject private var authService = FirebaseAuthService()
     @StateObject private var rtdbService = RTDBService()
+    @StateObject private var unsavedChangesGuard = UnsavedChangesGuard()
 
     init() {
         Self.configureFirebase()
@@ -21,6 +22,7 @@ struct BadgipAdminApp: App {
             }
             .environmentObject(authService)
             .environmentObject(rtdbService)
+            .environmentObject(unsavedChangesGuard)
             .frame(minWidth: 960, minHeight: 640)
             .tint(.badgipAccent)
             // .tint() alone doesn't reach AppKit-bridged controls like the

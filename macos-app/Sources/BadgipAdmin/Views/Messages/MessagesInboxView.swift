@@ -98,10 +98,12 @@ private struct MessageRow: View {
                 }
                 .buttonStyle(.badgipSecondary)
                 .controlSize(.small)
-                Button("Delete", action: onDelete)
-                    .buttonStyle(.badgipSecondary)
-                    .controlSize(.small)
-                    .tint(.red)
+                Button {
+                    onDelete()
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.badgipIcon(tint: .red))
             }
             .padding(.top, 4)
         }

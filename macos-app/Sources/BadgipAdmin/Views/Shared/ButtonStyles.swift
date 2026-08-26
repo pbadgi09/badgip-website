@@ -17,17 +17,21 @@ struct PrimaryButtonStyle: ButtonStyle {
     }
 }
 
-/// Outlined secondary action button — mirrors .btn--ghost.
+/// Outlined secondary action button — mirrors .btn--ghost. A `.destructive`
+/// role (e.g. `Button("Remove…", role: .destructive)`) renders in red — a
+/// plain `.tint(.red)` has no effect on a custom ButtonStyle like this one,
+/// so this is the one place that needs to read the role explicitly.
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
+        let isDestructive = configuration.role == .destructive
         configuration.label
             .font(.body.weight(.medium))
             .padding(.horizontal, 16)
             .padding(.vertical, 9)
             .background(
-                Capsule().strokeBorder(Color.primary.opacity(0.25), lineWidth: 1)
+                Capsule().strokeBorder((isDestructive ? Color.red : Color.primary).opacity(0.25), lineWidth: 1)
             )
-            .foregroundStyle(.primary)
+            .foregroundStyle(isDestructive ? Color.red : Color.primary)
             .contentShape(Capsule())
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)

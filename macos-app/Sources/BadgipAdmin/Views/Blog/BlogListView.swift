@@ -204,6 +204,7 @@ private struct BlogEditView: View {
             title: post.id.isEmpty ? "New Post" : "Edit Post",
             isSaving: isSaving,
             canSave: hasChanges,
+            hasChanges: hasChanges,
             onCancel: { dismiss() },
             onSave: { Task { await save() } }
         ) {
@@ -217,6 +218,8 @@ private struct BlogEditView: View {
                     Text("Draft").tag("draft")
                     Text("Published").tag("published")
                 }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 260)
                 Text("Drag rows on the Blog list to reorder.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

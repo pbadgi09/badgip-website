@@ -186,6 +186,7 @@ private struct YoutubeEditView: View {
             title: video.id.isEmpty ? "New Video" : "Edit Video",
             isSaving: isSaving,
             canSave: !video.url.isEmpty && hasChanges,
+            hasChanges: hasChanges,
             onCancel: { dismiss() },
             onSave: { Task { await save() } }
         ) {

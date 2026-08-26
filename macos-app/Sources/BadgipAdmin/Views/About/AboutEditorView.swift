@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AboutEditorView: View {
     @EnvironmentObject private var rtdb: RTDBService
+    @EnvironmentObject private var unsavedGuard: UnsavedChangesGuard
     @State private var about = AboutContent()
     @State private var original = AboutContent()
     @State private var isLoading = true
@@ -72,6 +73,8 @@ struct AboutEditorView: View {
             }
         }
         .task { await load() }
+        .onChange(of: hasChanges) { unsavedGuard.hasUnsavedChanges = $0 }
+        .onDisappear { unsavedGuard.hasUnsavedChanges = false }
     }
 
     @ViewBuilder

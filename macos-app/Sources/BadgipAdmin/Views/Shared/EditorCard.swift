@@ -71,16 +71,28 @@ struct EditorSheet<Content: View>: View {
     let title: String
     var isSaving: Bool
     var canSave: Bool
+    // Defaults to true (always confirm) so a caller that forgets to pass
+    // this explicitly fails safe rather than silently discarding edits.
+    var hasChanges: Bool = true
     var onCancel: () -> Void
     var onSave: () -> Void
     @ViewBuilder var content: () -> Content
+
+    @State private var showDiscardConfirm = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text(title).font(.title2.weight(.bold))
                 Spacer()
-                Button("Cancel", action: onCancel).buttonStyle(.badgipSecondary)
+                Button("Cancel") {
+                    if hasChanges {
+                        showDiscardConfirm = true
+                    } else {
+                        onCancel()
+                    }
+                }
+                .buttonStyle(.badgipSecondary)
                 Button(action: onSave) {
                     if isSaving {
                         ProgressView().controlSize(.small).tint(.black)
@@ -103,5 +115,11 @@ struct EditorSheet<Content: View>: View {
             }
         }
         .frame(width: 640, height: 720)
+        .alert("Discard changes?", isPresented: $showDiscardConfirm) {
+            Button("Discard", role: .destructive, action: onCancel)
+            Button("Keep Editing", role: .cancel) {}
+        } message: {
+            Text("You have unsaved changes that will be lost.")
+        }
     }
 }

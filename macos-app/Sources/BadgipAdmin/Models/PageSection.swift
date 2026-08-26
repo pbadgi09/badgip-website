@@ -45,15 +45,19 @@ struct PageSection: Identifiable, Codable, Equatable {
         var dict: [String: Any] = ["kind": kind, "mode": mode, "order": order, "showInNav": showInNav]
         if kind == "custom" {
             dict["title"] = title
-            dict["items"] = items.map { ["icon": $0.icon, "label": $0.label, "order": $0.order] }
+            dict["items"] = items.map { ["id": $0.id, "icon": $0.icon, "label": $0.label, "order": $0.order] }
         }
         return dict
     }
 
     static func from(id: String, dict: [String: Any]) -> PageSection {
         let itemsRaw = dict["items"] as? [[String: Any]] ?? []
+        // `id` round-trips through RTDB (same reasoning as TimelineEntry in
+        // AboutContent.swift) so a re-fetch — reopening this screen, or
+        // relaunching the app — doesn't hand every item a fresh random id.
         let items = itemsRaw.enumerated().map { index, item -> SectionItem in
             SectionItem(
+                id: item["id"] as? String ?? UUID().uuidString,
                 icon: item["icon"] as? String ?? "",
                 label: item["label"] as? String ?? "",
                 order: item["order"] as? Int ?? index

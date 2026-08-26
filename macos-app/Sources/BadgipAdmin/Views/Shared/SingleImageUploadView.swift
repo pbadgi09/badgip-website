@@ -60,7 +60,7 @@ struct SingleImageUploadView: View {
         Group {
             if path.isEmpty {
                 RoundedRectangle(cornerRadius: thumbnailCornerRadius)
-                    .fill(Color.gray.opacity(0.15))
+                    .fill(Color.badgipSurfaceHover)
                     .overlay(Image(systemName: "photo").foregroundStyle(.secondary))
             } else if let url = JsDelivrService.composeURL(forStoredPath: path) {
                 AsyncImage(url: url) { phase in
@@ -69,7 +69,7 @@ struct SingleImageUploadView: View {
                         image.resizable().aspectRatio(contentMode: .fill)
                     case .failure:
                         RoundedRectangle(cornerRadius: thumbnailCornerRadius)
-                            .fill(Color.gray.opacity(0.15))
+                            .fill(Color.badgipSurfaceHover)
                             .overlay(Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary))
                     default:
                         ProgressView().controlSize(.small)
