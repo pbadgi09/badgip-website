@@ -1,4 +1,12 @@
-export function initPreloader() {
+// `readyPromise` is the real data-fetch promise (Firebase settings/about/etc)
+// — the preloader used to run a fixed ~1.75s animation regardless of how
+// fast the actual load was, which meant it was still blocking the page on
+// a fast connection where the data was ready in a few hundred ms. Now the
+// counter climbs toward 90% over a short capped runway (so it never looks
+// instant/jarring), then jumps to 100% and fades the moment the real data
+// arrives — so a fast load reveals fast, and a slow one still shows
+// believable progress instead of stalling silently.
+export function initPreloader(readyPromise) {
   return new Promise((resolve) => {
     const preloader = document.getElementById('preloader');
     const digit = document.getElementById('preloaderDigit');
@@ -11,24 +19,36 @@ export function initPreloader() {
     }
 
     const counter = { value: 0 };
-    window.gsap.to(counter, {
-      value: 100,
-      duration: 1.1,
-      ease: 'power2.out',
-      onUpdate: () => {
-        digit.textContent = String(Math.floor(counter.value)).padStart(2, '0');
-      },
-      onComplete: () => {
-        window.gsap.to(preloader, {
-          opacity: 0,
-          duration: 0.5,
-          delay: 0.15,
-          onComplete: () => {
-            preloader.classList.add('is-hidden');
-            resolve();
-          },
-        });
-      },
+    const setDigit = () => {
+      digit.textContent = String(Math.floor(counter.value)).padStart(2, '0');
+    };
+
+    const climbTween = window.gsap.to(counter, {
+      value: 90,
+      duration: 0.9,
+      ease: 'power1.out',
+      onUpdate: setDigit,
+    });
+
+    const minShown = new Promise((r) => setTimeout(r, 300));
+    Promise.all([readyPromise || Promise.resolve(), minShown]).then(() => {
+      climbTween.kill();
+      window.gsap.to(counter, {
+        value: 100,
+        duration: 0.2,
+        ease: 'power1.out',
+        onUpdate: setDigit,
+        onComplete: () => {
+          window.gsap.to(preloader, {
+            opacity: 0,
+            duration: 0.35,
+            onComplete: () => {
+              preloader.classList.add('is-hidden');
+              resolve();
+            },
+          });
+        },
+      });
     });
   });
 }

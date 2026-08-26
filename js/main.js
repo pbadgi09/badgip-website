@@ -16,9 +16,7 @@ async function boot() {
 
   initContactForm();
 
-  const preloaderDone = initPreloader();
-
-  const [settings, about, projects, youtubeVideos, blogPosts, pageSections] = await Promise.all([
+  const dataPromise = Promise.all([
     getSettings(),
     getAbout(),
     getProjects(),
@@ -26,6 +24,9 @@ async function boot() {
     getPersonalBlog(),
     getPageSections(),
   ]);
+  const preloaderDone = initPreloader(dataPromise);
+
+  const [settings, about, projects, youtubeVideos, blogPosts, pageSections] = await dataPromise;
 
   // Sections must exist in the DOM before mode-switch/nav try to select
   // them. `about` is passed through so a personal/professional bio with no
