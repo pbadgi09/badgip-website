@@ -271,9 +271,16 @@ private struct BlogEditView: View {
             List {
                 ForEach($post.sections) { $section in
                     sectionRow(section: $section, onDelete: {
+                        // Capture before removing — same crash-causing
+                        // pattern as AboutEditorView (confirmed via a real
+                        // crash log): `section` reads through a live
+                        // Binding, so reading it after removeAll has
+                        // shortened the array is an out-of-bounds crash.
+                        let value = section.value
+                        let type = section.type
                         post.sections.removeAll { $0.id == section.id }
-                        if RepoFileCleanup.isInternalPath(section.value), section.type == "image" {
-                            pendingImageDeletions.append(section.value)
+                        if RepoFileCleanup.isInternalPath(value), type == "image" {
+                            pendingImageDeletions.append(value)
                         }
                     })
                     .listRowInsets(EdgeInsets())

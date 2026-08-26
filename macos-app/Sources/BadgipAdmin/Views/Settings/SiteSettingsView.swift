@@ -220,8 +220,14 @@ struct SiteSettingsView: View {
                     .frame(width: 220)
                     TextField("Label (e.g. \"42 Berlin St\" or an email)", text: $item.label).textFieldStyle(.badgip)
                     Button {
+                        // Capture before removing — see AboutEditorView's
+                        // identical fix (confirmed via a real crash log):
+                        // `item` reads through a live Binding, so reading
+                        // it after removeAll has shortened the array is an
+                        // out-of-bounds crash.
+                        let icon = item.icon
                         settings.contactInfoItems.removeAll { $0.id == item.id }
-                        if RepoFileCleanup.isInternalImagePath(item.icon) { pendingImageDeletions.append(item.icon) }
+                        if RepoFileCleanup.isInternalImagePath(icon) { pendingImageDeletions.append(icon) }
                     } label: {
                         Image(systemName: "trash")
                     }
@@ -252,8 +258,12 @@ struct SiteSettingsView: View {
                     .frame(width: 220)
                     TextField("URL", text: $link.url).textFieldStyle(.badgip)
                     Button {
+                        // Capture before removing — same crash-causing
+                        // pattern as AboutEditorView (confirmed via a real
+                        // crash log): `link` reads through a live Binding.
+                        let icon = link.icon
                         settings.contactSocialLinks.removeAll { $0.id == link.id }
-                        if RepoFileCleanup.isInternalImagePath(link.icon) { pendingImageDeletions.append(link.icon) }
+                        if RepoFileCleanup.isInternalImagePath(icon) { pendingImageDeletions.append(icon) }
                     } label: {
                         Image(systemName: "trash")
                     }

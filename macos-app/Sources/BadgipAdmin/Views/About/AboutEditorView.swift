@@ -162,9 +162,18 @@ struct AboutEditorView: View {
             List {
                 ForEach(entries) { $entry in
                     timelineRow(entry: $entry, onDelete: {
+                        // Capture the logo path BEFORE removing the entry —
+                        // `entry` here reads through a live SwiftUI Binding,
+                        // not a frozen snapshot, so reading it after
+                        // removeAll has already shortened the array crashes
+                        // with an out-of-bounds fatal error (confirmed via
+                        // an actual crash log: EXC_BAD_INSTRUCTION in
+                        // Array.subscript.read, triggered from exactly this
+                        // pattern).
+                        let logo = entry.logo
                         entries.wrappedValue.removeAll { $0.id == entry.id }
-                        if RepoFileCleanup.isInternalPath(entry.logo) {
-                            pendingLogoDeletions.append(entry.logo)
+                        if RepoFileCleanup.isInternalPath(logo) {
+                            pendingLogoDeletions.append(logo)
                         }
                     })
                     .listRowInsets(EdgeInsets())

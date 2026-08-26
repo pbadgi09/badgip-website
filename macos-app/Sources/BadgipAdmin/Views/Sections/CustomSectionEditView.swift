@@ -70,9 +70,15 @@ struct CustomSectionEditView: View {
                         item: $item,
                         sectionTitle: section.title,
                         onDelete: {
+                            // Capture before removing — `item` reads through
+                            // a live Binding, so reading it after removeAll
+                            // has shortened the array is an out-of-bounds
+                            // crash (see AboutEditorView.swift's identical
+                            // fix, confirmed via a real crash log).
+                            let icon = item.icon
                             section.items.removeAll { $0.id == item.id }
-                            if RepoFileCleanup.isInternalImagePath(item.icon) {
-                                pendingIconDeletions.append(item.icon)
+                            if RepoFileCleanup.isInternalImagePath(icon) {
+                                pendingIconDeletions.append(icon)
                             }
                         },
                         onReplaceIcon: { oldPath in
