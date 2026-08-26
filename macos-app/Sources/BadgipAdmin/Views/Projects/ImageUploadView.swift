@@ -13,6 +13,14 @@ struct ImageUploadView: View {
 
     @State private var isUploading = false
     @State private var uploadError: String?
+    // isPickingNew drives the fileImporter's presentation; pickerTarget just
+    // records which slot (cover/gallery) it was opened for. These must be
+    // two separate State vars, not one Optional doing both jobs — macOS
+    // flips isPresented to false (and, if pickerTarget were used for that
+    // via a derived Binding, would nil pickerTarget through its setter)
+    // before invoking the completion closure below, so reading a shared
+    // Optional there would always see nil and silently no-op the upload.
+    @State private var isPickingNew = false
     @State private var pickerTarget: PickerTarget?
     @State private var existingPickerTarget: PickerTarget?
     // jsDelivr can take a while to pick up a brand-new repo path (a new
@@ -38,7 +46,7 @@ struct ImageUploadView: View {
                     Text("Cover image").font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Menu("Set Cover Image") {
-                            Button("Upload New Image…") { pickerTarget = .cover }
+                            Button("Upload New Image…") { pickerTarget = .cover; isPickingNew = true }
                             Button("Choose Existing Image…") { existingPickerTarget = .cover }
                         }
                         .buttonStyle(.badgipSecondary)
@@ -78,7 +86,7 @@ struct ImageUploadView: View {
                                 }
                         }
                         Menu("Add Gallery Image") {
-                            Button("Upload New Image…") { pickerTarget = .gallery }
+                            Button("Upload New Image…") { pickerTarget = .gallery; isPickingNew = true }
                             Button("Choose Existing Image…") { existingPickerTarget = .gallery }
                         }
                         .buttonStyle(.badgipSecondary)
@@ -97,11 +105,10 @@ struct ImageUploadView: View {
             }
         }
         .fileImporter(
-            isPresented: Binding(get: { pickerTarget != nil }, set: { if !$0 { pickerTarget = nil } }),
+            isPresented: $isPickingNew,
             allowedContentTypes: [.image]
         ) { result in
             guard let target = pickerTarget else { return }
-            pickerTarget = nil
             handlePicked(result: result, target: target)
         }
         .sheet(isPresented: Binding(get: { existingPickerTarget != nil }, set: { if !$0 { existingPickerTarget = nil } })) {
