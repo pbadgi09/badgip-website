@@ -16,6 +16,10 @@
       ".read": true,
       ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'"
     },
+    "youtubeChannel": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'"
+    },
     "personalBlog": {
       ".read": true,
       ".write": "auth != null && auth.uid === 'WnssuGlei3M2aSbav6iWftHCmug1'"
