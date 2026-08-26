@@ -10,7 +10,6 @@ import { initThemeToggle, applySettingsTheme } from './theme.js';
 import { initNav } from './nav.js';
 import { initSmoothScroll } from './smooth-scroll.js';
 import { initPreloader, initHeroEntrance, initScrollReveals, initTimelineScroll } from './animations.js';
-import { initWebglHero } from './webgl-hero.js';
 
 async function boot() {
   document.body.classList.add('js-ready');
@@ -52,7 +51,6 @@ async function boot() {
   initHeroEntrance();
   initScrollReveals();
   initTimelineScroll();
-  initWebglHero();
 }
 
 boot();
