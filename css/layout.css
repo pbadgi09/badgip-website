@@ -473,6 +473,90 @@
   max-width: 55ch;
 }
 
+/* Personal timeline: a horizontal scrolling strip mixing location entries
+   and blog-linked cards (see render-about.js), reusing the exact
+   scroll-snap recipe .youtube-carousel already established below. */
+.timeline-horizontal {
+  display: flex;
+  gap: var(--space-8);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: var(--space-4);
+  margin: 0 calc(var(--page-margin-x) * -1);
+  padding-left: var(--page-margin-x);
+  padding-right: var(--page-margin-x);
+  scrollbar-width: none;
+}
+
+.timeline-horizontal::-webkit-scrollbar {
+  display: none;
+}
+
+.timeline-card {
+  flex: 0 0 min(260px, 72vw);
+  scroll-snap-align: start;
+}
+
+.timeline-card--blog {
+  cursor: pointer;
+}
+
+.timeline-card--blog:hover .timeline-card__title {
+  color: var(--color-accent-dim);
+}
+
+.timeline-card__media {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-bg-elevated-2);
+}
+
+.timeline-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.timeline-card__media--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  color: var(--color-text-faint);
+  background: linear-gradient(135deg, var(--color-bg-elevated-2), var(--color-bg-elevated));
+}
+
+.timeline-card__body {
+  margin-top: var(--space-3);
+}
+
+.timeline-card__year {
+  font-size: var(--fs-xs);
+  color: var(--color-accent-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.timeline-card__title {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.timeline-card__description {
+  color: var(--color-text-dim);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  margin-top: var(--space-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .placeholder-panel {
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-lg);

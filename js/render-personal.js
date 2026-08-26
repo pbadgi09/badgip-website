@@ -23,6 +23,13 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Shared with the personal timeline (render-about.js), which needs to
+// look up a post's title without duplicating this lookup.
+export function firstValueOfType(sections, type) {
+  const match = (sections || []).find((s) => s.type === type);
+  return match ? match.value : '';
+}
+
 // Set once at boot from settings.hero so the blog byline can show an
 // avatar + author name without every render-personal.js call needing to
 // thread settings through.
@@ -97,11 +104,6 @@ export function renderYoutubeCarousel(allVideos) {
 }
 
 // ---------- Blog ----------
-
-function firstValueOfType(sections, type) {
-  const match = (sections || []).find((s) => s.type === type);
-  return match ? match.value : '';
-}
 
 // Blog is deliberately a list, not a card grid — it should read as
 // distinct from the Projects section rather than a second grid of tiles.
@@ -270,7 +272,10 @@ function buildBlogFullscreenMarkup(post) {
   `;
 }
 
-function openBlogDetail(post, row) {
+// Exported so the personal timeline (render-about.js) can open a
+// blog-linked card with the exact same matched-geometry transition used
+// for the Blog section's own list items.
+export function openBlogDetail(post, row) {
   if (isFullscreenOpen()) return;
   const panelReady = () => {
     document.querySelectorAll('.blog-section__map-overlay').forEach((btn) => {

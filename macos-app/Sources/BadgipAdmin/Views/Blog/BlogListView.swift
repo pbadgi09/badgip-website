@@ -81,6 +81,7 @@ struct BlogListView: View {
                     let sectionImages = post.sections.filter { $0.type == "image" }.map(\.value)
                     RepoFileCleanup.deleteStoredImages(sectionImages, commitMessage: "Remove section image for deleted blog post: \(post.slug)")
                     savedToast.flash()
+                    Task { await TimelineSync.removePersonalTimelinePointer(forPostId: post.id, rtdb: rtdb) }
                 }
                 pendingDelete = nil
             }
@@ -241,6 +242,17 @@ private struct BlogEditView: View {
                 Text("Drag rows on the Blog list to reorder.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                Divider().padding(.vertical, 4)
+
+                Toggle("Show on Timeline", isOn: $post.showOnTimeline)
+                    .toggleStyle(.switch)
+                if post.showOnTimeline {
+                    LabeledField(label: "Timeline Year", text: $post.timelineYear)
+                    Text("Appears on the Personal tab's horizontal timeline with this post's cover image and title. Reorder it there — this toggle only controls whether it's on the timeline at all.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             EditorCard(title: "Sections (rendered in this order)") {
@@ -405,6 +417,7 @@ private struct BlogEditView: View {
             onSave(post)
             RepoFileCleanup.deleteStoredImages(pendingImageDeletions, commitMessage: "Remove replaced/deleted image for blog post \(post.slug)")
             pendingImageDeletions = []
+            await TimelineSync.syncPersonalTimelinePointer(for: post, rtdb: rtdb)
         } catch {
             errorMessage = error.localizedDescription
         }

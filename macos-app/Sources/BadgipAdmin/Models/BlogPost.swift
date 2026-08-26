@@ -22,6 +22,12 @@ struct BlogPost: Identifiable, Codable, Equatable {
     var status: String = "draft" // "draft" | "published"
     var order: Int = 0
     var sections: [BlogSection] = []
+    // When true, this post also appears as a card on the Personal tab's
+    // horizontal timeline (see TimelineSync) — `timelineYear` is the year
+    // shown there, independent of `publishedAt`, since a trip/event often
+    // happened in a different year than when the post about it went live.
+    var showOnTimeline: Bool = false
+    var timelineYear: String = ""
 
     var asDictionary: [String: Any] {
         [
@@ -33,6 +39,8 @@ struct BlogPost: Identifiable, Codable, Equatable {
             "sections": sections.map {
                 ["id": $0.id, "type": $0.type, "value": $0.value, "title": $0.title, "subtitle": $0.subtitle, "accentColor": $0.accentColor, "textColor": $0.textColor]
             },
+            "showOnTimeline": showOnTimeline,
+            "timelineYear": timelineYear,
         ]
     }
 
@@ -59,7 +67,9 @@ struct BlogPost: Identifiable, Codable, Equatable {
             publishedAt: dict["publishedAt"] as? Double ?? 0,
             status: dict["status"] as? String ?? "draft",
             order: dict["order"] as? Int ?? 0,
-            sections: sections
+            sections: sections,
+            showOnTimeline: dict["showOnTimeline"] as? Bool ?? false,
+            timelineYear: dict["timelineYear"] as? String ?? ""
         )
     }
 }

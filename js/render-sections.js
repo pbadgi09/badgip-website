@@ -96,6 +96,14 @@ function mountEntry(entry, mode, container, navContactItem) {
     if (timelineListEl) timelineListEl.id = `timeline-${mode}`;
     const progressEl = sectionEl.querySelector('#timelineProgress');
     if (progressEl) progressEl.id = `timelineProgress-${mode}`;
+    // Personal's timeline is a horizontal scrolling strip (mixing location
+    // entries and blog-linked cards — see render-about.js), not the
+    // professional vertical dot-rail — swap its container class and drop
+    // the progress bar, which only makes sense against vertical scroll.
+    if (mode === 'personal' && timelineListEl) {
+      timelineListEl.className = 'timeline-horizontal';
+      if (progressEl) progressEl.remove();
+    }
   }
 
   sectionEl.dataset.mode = mode;

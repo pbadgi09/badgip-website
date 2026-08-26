@@ -27,6 +27,10 @@ struct AboutEditorView: View {
     // this screen would leave RTDB still pointing at a now-deleted file.
     // Collected here and only actually deleted once save() has committed.
     @State private var pendingLogoDeletions: [String] = []
+    // Used to resolve blog-linked timeline rows (TimelineEntry.blogRef) —
+    // fetched once alongside `about`, same fetch-once-then-edit model as
+    // the rest of this screen.
+    @State private var blogPosts: [BlogPost] = []
 
     private var hasChanges: Bool { about != original }
     // "Saved" only shows for a few seconds after a save, and only while
@@ -206,30 +210,75 @@ struct AboutEditorView: View {
 
     @ViewBuilder
     private func timelineRow(entry: Binding<TimelineEntry>, onDelete: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
-                SingleImageUploadView(
-                    path: entry.logo,
-                    buttonLabel: "Logo",
-                    thumbnailWidth: 32,
-                    thumbnailHeight: 32,
-                    thumbnailCornerRadius: 4,
-                    repoPath: { ImagePathBuilder.timelineLogoRepoPath(entryId: entry.wrappedValue.id, filename: $0) },
-                    storedPath: { ImagePathBuilder.timelineLogoStoredPath(entryId: entry.wrappedValue.id, filename: $0) },
-                    commitMessage: { "Set timeline logo: \($0)" },
-                    onReplaced: { pendingLogoDeletions.append($0) }
-                )
-                TextField("Year", text: entry.year).frame(width: 70).textFieldStyle(.badgip)
-                TextField("End (optional)", text: entry.endYear).frame(width: 100).textFieldStyle(.badgip)
-                TextField("Title", text: entry.title).textFieldStyle(.badgip)
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
+        if !entry.wrappedValue.blogRef.isEmpty, let post = blogPosts.first(where: { $0.id == entry.wrappedValue.blogRef }) {
+            blogPointerRow(post: post)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 10) {
+                    SingleImageUploadView(
+                        path: entry.logo,
+                        buttonLabel: "Logo",
+                        thumbnailWidth: 32,
+                        thumbnailHeight: 32,
+                        thumbnailCornerRadius: 4,
+                        repoPath: { ImagePathBuilder.timelineLogoRepoPath(entryId: entry.wrappedValue.id, filename: $0) },
+                        storedPath: { ImagePathBuilder.timelineLogoStoredPath(entryId: entry.wrappedValue.id, filename: $0) },
+                        commitMessage: { "Set timeline logo: \($0)" },
+                        onReplaced: { pendingLogoDeletions.append($0) }
+                    )
+                    TextField("Year", text: entry.year).frame(width: 70).textFieldStyle(.badgip)
+                    TextField("End (optional)", text: entry.endYear).frame(width: 100).textFieldStyle(.badgip)
+                    TextField("Title", text: entry.title).textFieldStyle(.badgip)
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.badgipIcon(tint: .red))
+                    Image(systemName: "line.3.horizontal")
+                        .foregroundStyle(.tertiary)
                 }
-                .buttonStyle(.badgipIcon(tint: .red))
-                Image(systemName: "line.3.horizontal")
-                    .foregroundStyle(.tertiary)
+                TextField("Description", text: entry.description).textFieldStyle(.badgip)
             }
-            TextField("Description", text: entry.description).textFieldStyle(.badgip)
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.badgipSurface))
+        }
+    }
+
+    // Blog-linked timeline entries (TimelineEntry.blogRef) are read-only
+    // here by design — image/title/year live on the blog post itself and
+    // are resolved live, and membership is only ever controlled by that
+    // post's own "Show on Timeline" toggle (see TimelineSync), so this row
+    // deliberately has no delete button. Drag-to-reorder still works,
+    // since that comes from the enclosing List's .onMove, not this row.
+    @ViewBuilder
+    private func blogPointerRow(post: BlogPost) -> some View {
+        HStack(spacing: 10) {
+            Group {
+                if let url = JsDelivrService.composeURL(forStoredPath: post.coverImage), !post.coverImage.isEmpty {
+                    AsyncImage(url: url) { phase in
+                        if let image = phase.image {
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        } else {
+                            Rectangle().fill(Color.badgipSurfaceHover)
+                        }
+                    }
+                } else {
+                    Rectangle().fill(Color.badgipSurfaceHover)
+                        .overlay(Image(systemName: "doc.richtext").foregroundStyle(.tertiary))
+                }
+            }
+            .frame(width: 32, height: 32)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(post.sections.first(where: { $0.type == "title" })?.value ?? "Untitled")
+                    .font(.body.weight(.medium))
+                Text(post.timelineYear.isEmpty ? "Blog post — edit in the Blog tab" : "\(post.timelineYear) · Blog post — edit in the Blog tab")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.tertiary)
         }
         .padding(10)
         .background(RoundedRectangle(cornerRadius: 8).fill(Color.badgipSurface))
@@ -240,6 +289,7 @@ struct AboutEditorView: View {
         do {
             about = try await rtdb.fetchAbout()
             original = about
+            blogPosts = try await rtdb.fetchBlogPosts()
         } catch {
             statusMessage = error.localizedDescription
         }

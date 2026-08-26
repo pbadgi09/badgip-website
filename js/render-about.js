@@ -1,19 +1,19 @@
 import { jsDelivrBase } from './config.js';
+import { firstValueOfType, openBlogDetail } from './render-personal.js';
 
-export function renderAbout(about) {
-  renderTimelineFor(
-    'professional',
+export function renderAbout(about, blogPosts) {
+  renderProfessionalTimeline(
     about.professionalBio,
     about.professionalTimeline,
     about.professionalBioFontSize,
     about.professionalHighlights
   );
-  renderTimelineFor(
-    'personal',
+  renderPersonalTimeline(
     about.personalBio,
     about.personalTimeline,
     about.personalBioFontSize,
-    about.personalHighlights
+    about.personalHighlights,
+    blogPosts || []
   );
 }
 
@@ -43,23 +43,26 @@ function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Renders into `#aboutBio-<mode>`/`#timeline-<mode>`, which only exist if a
-// page section for that mode was actually mounted (see render-sections.js) —
-// harmless no-op otherwise, so a mode without an About section configured
-// just silently has nothing to fill in.
-function renderTimelineFor(mode, bio, timelineEntries, fontSize, highlights) {
+// Fills `#aboutBio-<mode>`, which only exists if a page section for that
+// mode was actually mounted (see render-sections.js) — harmless no-op
+// otherwise, so a mode without an About section configured just silently
+// has nothing to fill in.
+function renderBio(mode, bio, fontSize, highlights) {
   const bioEl = document.getElementById(`aboutBio-${mode}`);
-  if (bioEl) {
-    const text = bio || (mode === 'professional' ? "I'm a developer who cares about building things well." : '');
-    bioEl.innerHTML = highlightKeywords(escapeHtml(text), highlights);
-    if (fontSize > 0) {
-      bioEl.style.fontSize = `${fontSize}px`;
-    } else {
-      bioEl.style.removeProperty('font-size');
-    }
+  if (!bioEl) return;
+  const text = bio || (mode === 'professional' ? "I'm a developer who cares about building things well." : '');
+  bioEl.innerHTML = highlightKeywords(escapeHtml(text), highlights);
+  if (fontSize > 0) {
+    bioEl.style.fontSize = `${fontSize}px`;
+  } else {
+    bioEl.style.removeProperty('font-size');
   }
+}
 
-  const timelineEl = document.getElementById(`timeline-${mode}`);
+function renderProfessionalTimeline(bio, timelineEntries, fontSize, highlights) {
+  renderBio('professional', bio, fontSize, highlights);
+
+  const timelineEl = document.getElementById('timeline-professional');
   if (!timelineEl) return;
 
   (timelineEntries || []).forEach((entry) => {
@@ -76,6 +79,80 @@ function renderTimelineFor(mode, bio, timelineEntries, fontSize, highlights) {
     `;
     timelineEl.appendChild(item);
   });
+}
+
+// Personal timeline: a horizontal scrolling strip (see .timeline-horizontal
+// in css/layout.css, and the mode==='personal' class-swap in
+// render-sections.js) mixing plain location/milestone entries with
+// blog-post-linked ones (TimelineEntry.blogRef), in whatever order the mac
+// app's drag-to-reorder left them in.
+function renderPersonalTimeline(bio, timelineEntries, fontSize, highlights, blogPosts) {
+  renderBio('personal', bio, fontSize, highlights);
+
+  const timelineEl = document.getElementById('timeline-personal');
+  if (!timelineEl) return;
+
+  const postsById = new Map(blogPosts.map((p) => [p.id, p]));
+
+  (timelineEntries || []).forEach((entry) => {
+    if (entry.blogRef) {
+      const post = postsById.get(entry.blogRef);
+      if (post) timelineEl.appendChild(buildBlogTimelineCard(post));
+      return;
+    }
+    timelineEl.appendChild(buildLocationTimelineCard(entry));
+  });
+}
+
+function timelineCardMedia(imagePath, fallbackLetter) {
+  if (imagePath) {
+    return `<img src="${resolveUrl(imagePath)}" alt="" loading="lazy" onerror="this.closest('.timeline-card__media').classList.add('timeline-card__media--empty'); this.remove();" />`;
+  }
+  return `<span class="mono">${escapeHtml(fallbackLetter)}</span>`;
+}
+
+function buildLocationTimelineCard(entry) {
+  const card = document.createElement('div');
+  card.className = 'timeline-card reveal';
+  const fallbackLetter = (entry.title || '?').charAt(0).toUpperCase();
+  card.innerHTML = `
+    <div class="timeline-card__media${entry.logo ? '' : ' timeline-card__media--empty'}">
+      ${timelineCardMedia(entry.logo, fallbackLetter)}
+    </div>
+    <div class="timeline-card__body">
+      <span class="timeline-card__year mono">${escapeHtml(formatYearRange(entry))}</span>
+      <h3 class="timeline-card__title">${escapeHtml(entry.title)}</h3>
+      ${entry.description ? `<p class="timeline-card__description">${escapeHtml(entry.description)}</p>` : ''}
+    </div>
+  `;
+  return card;
+}
+
+function buildBlogTimelineCard(post) {
+  const title = firstValueOfType(post.sections, 'title') || 'Untitled';
+  const card = document.createElement('div');
+  card.className = 'timeline-card timeline-card--blog reveal';
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
+  const fallbackLetter = title.charAt(0).toUpperCase();
+  card.innerHTML = `
+    <div class="timeline-card__media${post.coverImage ? '' : ' timeline-card__media--empty'}">
+      ${timelineCardMedia(post.coverImage, fallbackLetter)}
+    </div>
+    <div class="timeline-card__body">
+      ${post.timelineYear ? `<span class="timeline-card__year mono">${escapeHtml(post.timelineYear)}</span>` : ''}
+      <h3 class="timeline-card__title">${escapeHtml(title)}</h3>
+    </div>
+  `;
+  const open = () => openBlogDetail(post, card);
+  card.addEventListener('click', open);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      open();
+    }
+  });
+  return card;
 }
 
 function formatYearRange(entry) {

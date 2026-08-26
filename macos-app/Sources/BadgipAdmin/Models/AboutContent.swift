@@ -7,9 +7,18 @@ struct TimelineEntry: Identifiable, Codable, Equatable {
     var title: String = ""
     var description: String = ""
     var logo: String = ""
+    // Non-empty means this slot represents a blog post (holds its `id`)
+    // rather than a standalone location/milestone entry — its displayed
+    // title/image/year/description are resolved live from that post
+    // instead of living on this struct. Membership (adding/removing a
+    // blog post from the timeline) is only ever controlled from the Blog
+    // editor's "Show on Timeline" toggle, via TimelineSync — this array's
+    // position is still what drives manual reordering for every entry,
+    // blog-linked or not.
+    var blogRef: String = ""
 
     var asDictionary: [String: Any] {
-        ["id": id, "year": year, "endYear": endYear, "title": title, "description": description, "logo": logo]
+        ["id": id, "year": year, "endYear": endYear, "title": title, "description": description, "logo": logo, "blogRef": blogRef]
     }
 
     // `id` round-trips through RTDB (unlike most other fields here, it's
@@ -23,7 +32,8 @@ struct TimelineEntry: Identifiable, Codable, Equatable {
             endYear: dict["endYear"] as? String ?? "",
             title: dict["title"] as? String ?? "",
             description: dict["description"] as? String ?? "",
-            logo: dict["logo"] as? String ?? ""
+            logo: dict["logo"] as? String ?? "",
+            blogRef: dict["blogRef"] as? String ?? ""
         )
     }
 }

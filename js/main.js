@@ -40,7 +40,7 @@ async function boot() {
   renderHero(settings);
   applyNavItems(settings);
   renderContactAndFooter(settings);
-  renderAbout(about);
+  renderAbout(about, blogPosts);
   renderProjects(projects);
   renderYoutubeCarousel(youtubeVideos);
   renderYoutubeChannel(youtubeChannel);
