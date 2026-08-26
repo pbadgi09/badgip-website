@@ -77,6 +77,9 @@ struct BlogListView: View {
                 if let post = pendingDelete {
                     rtdb.deleteBlogPost(id: post.id)
                     posts.removeAll { $0.id == post.id }
+                    RepoFileCleanup.deleteStoredImage(post.coverImage, commitMessage: "Remove cover image for deleted blog post: \(post.slug)")
+                    let sectionImages = post.sections.filter { $0.type == "image" }.map(\.value)
+                    RepoFileCleanup.deleteStoredImages(sectionImages, commitMessage: "Remove section image for deleted blog post: \(post.slug)")
                     savedToast.flash()
                 }
                 pendingDelete = nil

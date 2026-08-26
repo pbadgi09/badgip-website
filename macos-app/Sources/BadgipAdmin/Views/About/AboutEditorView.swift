@@ -11,6 +11,12 @@ struct AboutEditorView: View {
     @StateObject private var savedToast = SavedToastController()
     @State private var draftProfessionalKeyword = ""
     @State private var draftPersonalKeyword = ""
+    // About only persists on a deliberate Save click (unlike most other
+    // screens, which write to RTDB instantly) — so removing a timeline
+    // row must NOT delete its logo file right away, or cancelling out of
+    // this screen would leave RTDB still pointing at a now-deleted file.
+    // Collected here and only actually deleted once save() has committed.
+    @State private var pendingLogoDeletions: [String] = []
 
     private var hasChanges: Bool { about != original }
     // "Saved" only shows for a few seconds after a save, and only while
@@ -157,6 +163,9 @@ struct AboutEditorView: View {
                 ForEach(entries) { $entry in
                     timelineRow(entry: $entry, onDelete: {
                         entries.wrappedValue.removeAll { $0.id == entry.id }
+                        if RepoFileCleanup.isInternalPath(entry.logo) {
+                            pendingLogoDeletions.append(entry.logo)
+                        }
                     })
                     .listRowInsets(EdgeInsets())
                 }
@@ -224,6 +233,8 @@ struct AboutEditorView: View {
         statusMessage = "Saved"
         isSaving = false
         savedToast.flash(seconds: 3)
+        RepoFileCleanup.deleteStoredImages(pendingLogoDeletions, commitMessage: "Remove logo for deleted timeline entry")
+        pendingLogoDeletions = []
     }
 }
 

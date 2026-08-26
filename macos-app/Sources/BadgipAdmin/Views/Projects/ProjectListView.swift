@@ -73,6 +73,8 @@ struct ProjectListView: View {
                 if let project = pendingDelete {
                     rtdb.deleteProject(id: project.id)
                     projects.removeAll { $0.id == project.id }
+                    RepoFileCleanup.deleteStoredImage(project.coverImage, commitMessage: "Remove cover image for deleted project: \(project.title)")
+                    RepoFileCleanup.deleteStoredImages(project.gallery, commitMessage: "Remove gallery image for deleted project: \(project.title)")
                     savedToast.flash()
                 }
                 pendingDelete = nil

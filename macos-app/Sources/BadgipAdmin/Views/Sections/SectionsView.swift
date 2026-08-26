@@ -117,6 +117,9 @@ struct SectionsView: View {
                 if let section = pendingDelete {
                     rtdb.deletePageSection(id: section.id)
                     allSections.removeAll { $0.id == section.id }
+                    for item in section.items {
+                        RepoFileCleanup.deleteStoredIcon(item.icon, commitMessage: "Remove icon for deleted section item: \(item.label)")
+                    }
                     savedToast.flash()
                 }
                 pendingDelete = nil

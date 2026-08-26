@@ -11,6 +11,11 @@ struct CustomSectionEditView: View {
     @State private var original: PageSection
     @State private var isSaving = false
     @State private var errorMessage: String?
+    // This sheet only persists on Save (Cancel discards everything) — so
+    // removing an item must NOT delete its icon file right away, or
+    // cancelling out of the sheet would leave RTDB (still holding the
+    // original, unsaved section) pointing at a now-deleted file.
+    @State private var pendingIconDeletions: [String] = []
 
     init(section: PageSection, onSave: @escaping (PageSection) -> Void) {
         _section = State(initialValue: section)
@@ -63,6 +68,9 @@ struct CustomSectionEditView: View {
                 ForEach($section.items) { $item in
                     SectionItemRow(item: $item, sectionTitle: section.title) {
                         section.items.removeAll { $0.id == item.id }
+                        if RepoFileCleanup.isInternalImagePath(item.icon) {
+                            pendingIconDeletions.append(item.icon)
+                        }
                     }
                     .listRowInsets(EdgeInsets())
                 }
@@ -90,6 +98,8 @@ struct CustomSectionEditView: View {
             section = try rtdb.savePageSection(section)
             original = section
             onSave(section)
+            RepoFileCleanup.deleteStoredImages(pendingIconDeletions, commitMessage: "Remove icon for deleted section item")
+            pendingIconDeletions = []
         } catch {
             errorMessage = error.localizedDescription
         }
