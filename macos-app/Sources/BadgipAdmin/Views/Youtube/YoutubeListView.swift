@@ -7,6 +7,7 @@ struct YoutubeListView: View {
     @State private var errorMessage: String?
     @State private var editingVideo: YoutubeVideo?
     @State private var pendingDelete: YoutubeVideo?
+    @StateObject private var savedToast = SavedToastController()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -56,6 +57,7 @@ struct YoutubeListView: View {
                 .listStyle(.plain)
             }
         }
+        .savedToast(savedToast)
         .sheet(item: $editingVideo) { video in
             YoutubeEditView(video: video) { saved in
                 if let index = videos.firstIndex(where: { $0.id == saved.id }) {
@@ -75,6 +77,7 @@ struct YoutubeListView: View {
                 if let video = pendingDelete {
                     rtdb.deleteYoutubeVideo(id: video.id)
                     videos.removeAll { $0.id == video.id }
+                    savedToast.flash()
                 }
                 pendingDelete = nil
             }
@@ -88,6 +91,7 @@ struct YoutubeListView: View {
         videos.move(fromOffsets: source, toOffset: destination)
         for index in videos.indices { videos[index].order = index }
         rtdb.reorderYoutubeVideos(videos)
+        savedToast.flash()
     }
 
     private func loadVideos() async {
@@ -122,7 +126,7 @@ private struct YoutubeRow: View {
                 if let image = phase.image {
                     image.resizable().aspectRatio(contentMode: .fill)
                 } else {
-                    Rectangle().fill(Color.primary.opacity(0.06))
+                    Rectangle().fill(Color.badgipSurfaceHover)
                 }
             }
             .frame(width: 80, height: 45)
@@ -147,11 +151,11 @@ private struct YoutubeRow: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.primary.opacity(isHovering ? 0.06 : 0.03))
+                .fill(isHovering ? Color.badgipSurfaceHover : Color.badgipSurface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                .strokeBorder(Color.badgipBorder, lineWidth: 1)
         )
         .onHover { isHovering = $0 }
         .animation(.easeOut(duration: 0.15), value: isHovering)
@@ -188,7 +192,6 @@ private struct YoutubeEditView: View {
             EditorCard(title: "Video") {
                 LabeledField(label: "YouTube URL", text: $video.url)
                 LabeledField(label: "Title", text: $video.title)
-                Stepper("Order: \(video.order)", value: $video.order, in: 0...999)
             }
 
             if let errorMessage {

@@ -34,6 +34,8 @@ struct CustomSectionEditView: View {
                     Text("Professional").tag("professional")
                     Text("Personal").tag("personal")
                 }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 260)
             }
 
             EditorCard(title: "Items — each shown as an icon with a label underneath") {
@@ -52,11 +54,25 @@ struct CustomSectionEditView: View {
     @ViewBuilder
     private var itemsEditor: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach($section.items) { $item in
-                SectionItemRow(item: $item, sectionTitle: section.title) {
-                    section.items.removeAll { $0.id == item.id }
+            // Same nested-List sizing approach as the About tab's timeline
+            // editor — this lives inside EditorSheet's own ScrollView, and
+            // macOS 12 (this app's deployment target) has no .scrollDisabled
+            // to suppress the List's own scroll region.
+            List {
+                ForEach($section.items) { $item in
+                    SectionItemRow(item: $item, sectionTitle: section.title) {
+                        section.items.removeAll { $0.id == item.id }
+                    }
+                    .listRowInsets(EdgeInsets())
+                }
+                .onMove { source, destination in
+                    section.items.move(fromOffsets: source, toOffset: destination)
+                    for index in section.items.indices { section.items[index].order = index }
                 }
             }
+            .listStyle(.plain)
+            .frame(height: CGFloat(section.items.count) * 68 + 8)
+
             Button {
                 section.items.append(SectionItem(order: section.items.count))
             } label: {
@@ -109,7 +125,7 @@ private struct SectionItemRow: View {
             HStack {
                 iconPreview
                 TextField("Icon (emoji, URL, or upload →)", text: $item.icon)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.badgip)
                 Button {
                     isPickingFile = true
                 } label: {
@@ -122,19 +138,20 @@ private struct SectionItemRow: View {
                 .buttonStyle(.badgipIcon)
                 .disabled(isUploading)
 
-                TextField("Label", text: $item.label).textFieldStyle(.roundedBorder)
-                Stepper("", value: $item.order, in: 0...999).labelsHidden()
+                TextField("Label", text: $item.label).textFieldStyle(.badgip)
                 Button(action: onDelete) {
                     Image(systemName: "trash")
                 }
                 .buttonStyle(.badgipIcon(tint: .red))
+                Image(systemName: "line.3.horizontal")
+                    .foregroundStyle(.tertiary)
             }
             if let uploadError {
                 Text(uploadError).font(.caption2).foregroundStyle(.red)
             }
         }
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.badgipSurface))
         .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.image]) { result in
             handlePicked(result)
         }
@@ -144,7 +161,7 @@ private struct SectionItemRow: View {
     private var iconPreview: some View {
         Group {
             if item.icon.isEmpty {
-                RoundedRectangle(cornerRadius: 6).fill(Color.gray.opacity(0.12))
+                RoundedRectangle(cornerRadius: 6).fill(Color.badgipSurfaceHover)
             } else if isImagePath, let url = resolvedURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
@@ -161,7 +178,7 @@ private struct SectionItemRow: View {
             }
         }
         .frame(width: 32, height: 32)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
+        .background(RoundedRectangle(cornerRadius: 6).fill(Color.badgipSurfaceHover))
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 

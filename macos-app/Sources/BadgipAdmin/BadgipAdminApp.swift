@@ -28,7 +28,9 @@ struct BadgipAdminApp: App {
             // this) — .accentColor() is the older but still-necessary path
             // for that specific case.
             .accentColor(.badgipAccent)
-            .preferredColorScheme(.dark)
+            // Follows the system appearance like a normal Mac app, rather
+            // than being locked to dark — mirrors the website, which
+            // defaults to a light theme with an optional dark mode toggle.
         }
         .windowStyle(.titleBar)
     }

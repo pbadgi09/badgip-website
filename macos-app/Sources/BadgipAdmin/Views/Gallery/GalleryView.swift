@@ -32,6 +32,7 @@ struct GalleryView: View {
     @State private var errorMessage: String?
     @State private var isAdding = false
     @State private var pendingDelete: MediaReference?
+    @StateObject private var savedToast = SavedToastController()
 
     private let columns = [GridItem(.adaptive(minimum: 160), spacing: 16)]
 
@@ -75,6 +76,7 @@ struct GalleryView: View {
                 }
             }
         }
+        .savedToast(savedToast)
         .sheet(isPresented: $isAdding) {
             AddMediaView(projects: projects, posts: posts, sections: sections) { updated in
                 apply(updated)
@@ -184,6 +186,7 @@ struct GalleryView: View {
             }
         }
         references.removeAll { $0.id == ref.id }
+        savedToast.flash()
         await deleteFromGitHub(ref)
     }
 
@@ -232,10 +235,10 @@ private struct MediaCard: View {
                     case .success(let image):
                         image.resizable().aspectRatio(contentMode: .fill)
                     case .failure:
-                        Rectangle().fill(Color.gray.opacity(0.12))
+                        Rectangle().fill(Color.badgipSurfaceHover)
                             .overlay(Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary))
                     default:
-                        Rectangle().fill(Color.gray.opacity(0.08))
+                        Rectangle().fill(Color.badgipSurface)
                             .overlay(ProgressView().controlSize(.small))
                     }
                 }

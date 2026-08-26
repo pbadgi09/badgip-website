@@ -4,6 +4,7 @@ struct MessagesInboxView: View {
     @EnvironmentObject private var rtdb: RTDBService
     @State private var messages: [ContactMessage] = []
     @State private var pendingDelete: ContactMessage?
+    @StateObject private var savedToast = SavedToastController()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -36,7 +37,7 @@ struct MessagesInboxView: View {
                 ScrollView {
                     LazyVStack(spacing: 10) {
                         ForEach(messages) { message in
-                            MessageRow(message: message, onDelete: { pendingDelete = message })
+                            MessageRow(message: message, savedToast: savedToast, onDelete: { pendingDelete = message })
                         }
                     }
                     .padding(.horizontal, 24)
@@ -60,16 +61,19 @@ struct MessagesInboxView: View {
             Button("Delete", role: .destructive) {
                 if let message = pendingDelete {
                     rtdb.deleteMessage(id: message.id)
+                    savedToast.flash()
                 }
                 pendingDelete = nil
             }
         }
+        .savedToast(savedToast)
     }
 }
 
 private struct MessageRow: View {
     @EnvironmentObject private var rtdb: RTDBService
     let message: ContactMessage
+    @ObservedObject var savedToast: SavedToastController
     let onDelete: () -> Void
 
     var body: some View {
@@ -90,6 +94,7 @@ private struct MessageRow: View {
             HStack(spacing: 8) {
                 Button(message.read ? "Mark Unread" : "Mark Read") {
                     rtdb.markMessageRead(id: message.id, read: !message.read)
+                    savedToast.flash()
                 }
                 .buttonStyle(.badgipSecondary)
                 .controlSize(.small)
@@ -101,7 +106,7 @@ private struct MessageRow: View {
             .padding(.top, 4)
         }
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.03)))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.badgipSurface))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.badgipBorder, lineWidth: 1))
     }
 }

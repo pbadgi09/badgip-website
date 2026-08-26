@@ -7,14 +7,14 @@ struct AboutEditorView: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var statusMessage: String?
-    @State private var savedBadgeVisible = false
-    @State private var savedBadgeTask: Task<Void, Never>?
+    @StateObject private var savedToast = SavedToastController()
 
     private var hasChanges: Bool { about != original }
-    // "Saved" only shows for 3s after a save, and only while nothing has
-    // changed since — so it never lingers indefinitely, and a new edit
-    // hides it immediately rather than falsely implying it's already saved.
-    private var showSavedBadge: Bool { savedBadgeVisible && !hasChanges }
+    // "Saved" only shows for a few seconds after a save, and only while
+    // nothing has changed since — so it never lingers indefinitely, and a
+    // new edit hides it immediately rather than falsely implying it's
+    // already saved.
+    private var showSavedBadge: Bool { savedToast.isVisible && !hasChanges }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -117,9 +117,9 @@ struct AboutEditorView: View {
                     storedPath: { ImagePathBuilder.timelineLogoStoredPath(entryId: entry.wrappedValue.id, filename: $0) },
                     commitMessage: { "Set timeline logo: \($0)" }
                 )
-                TextField("Year", text: entry.year).frame(width: 70).textFieldStyle(.roundedBorder)
-                TextField("End (optional)", text: entry.endYear).frame(width: 100).textFieldStyle(.roundedBorder)
-                TextField("Title", text: entry.title).textFieldStyle(.roundedBorder)
+                TextField("Year", text: entry.year).frame(width: 70).textFieldStyle(.badgip)
+                TextField("End (optional)", text: entry.endYear).frame(width: 100).textFieldStyle(.badgip)
+                TextField("Title", text: entry.title).textFieldStyle(.badgip)
                 Button(action: onDelete) {
                     Image(systemName: "trash")
                 }
@@ -127,10 +127,10 @@ struct AboutEditorView: View {
                 Image(systemName: "line.3.horizontal")
                     .foregroundStyle(.tertiary)
             }
-            TextField("Description", text: entry.description).textFieldStyle(.roundedBorder)
+            TextField("Description", text: entry.description).textFieldStyle(.badgip)
         }
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.badgipSurface))
     }
 
     private func load() async {
@@ -150,13 +150,6 @@ struct AboutEditorView: View {
         original = about
         statusMessage = "Saved"
         isSaving = false
-
-        savedBadgeTask?.cancel()
-        savedBadgeVisible = true
-        savedBadgeTask = Task {
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
-            guard !Task.isCancelled else { return }
-            savedBadgeVisible = false
-        }
+        savedToast.flash(seconds: 3)
     }
 }

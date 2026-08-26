@@ -7,6 +7,7 @@ struct BlogListView: View {
     @State private var errorMessage: String?
     @State private var editingPost: BlogPost?
     @State private var pendingDelete: BlogPost?
+    @StateObject private var savedToast = SavedToastController()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -56,6 +57,7 @@ struct BlogListView: View {
                 .listStyle(.plain)
             }
         }
+        .savedToast(savedToast)
         .sheet(item: $editingPost) { post in
             BlogEditView(post: post) { saved in
                 if let index = posts.firstIndex(where: { $0.id == saved.id }) {
@@ -75,6 +77,7 @@ struct BlogListView: View {
                 if let post = pendingDelete {
                     rtdb.deleteBlogPost(id: post.id)
                     posts.removeAll { $0.id == post.id }
+                    savedToast.flash()
                 }
                 pendingDelete = nil
             }
@@ -88,6 +91,7 @@ struct BlogListView: View {
         posts.move(fromOffsets: source, toOffset: destination)
         for index in posts.indices { posts[index].order = index }
         rtdb.reorderBlogPosts(posts)
+        savedToast.flash()
     }
 
     private func loadPosts() async {
@@ -119,11 +123,11 @@ private struct BlogRow: View {
                         if let image = phase.image {
                             image.resizable().aspectRatio(contentMode: .fill)
                         } else {
-                            Rectangle().fill(Color.primary.opacity(0.06))
+                            Rectangle().fill(Color.badgipSurfaceHover)
                         }
                     }
                 } else {
-                    Rectangle().fill(Color.primary.opacity(0.06))
+                    Rectangle().fill(Color.badgipSurfaceHover)
                         .overlay(Image(systemName: "doc.richtext").foregroundStyle(.tertiary))
                 }
             }
@@ -154,11 +158,11 @@ private struct BlogRow: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.primary.opacity(isHovering ? 0.06 : 0.03))
+                .fill(isHovering ? Color.badgipSurfaceHover : Color.badgipSurface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                .strokeBorder(Color.badgipBorder, lineWidth: 1)
         )
         .onHover { isHovering = $0 }
         .animation(.easeOut(duration: 0.15), value: isHovering)
@@ -213,7 +217,9 @@ private struct BlogEditView: View {
                     Text("Draft").tag("draft")
                     Text("Published").tag("published")
                 }
-                Stepper("Order: \(post.order)", value: $post.order, in: 0...999)
+                Text("Drag rows on the Blog list to reorder.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             EditorCard(title: "Sections (rendered in this order)") {
@@ -247,6 +253,8 @@ private struct BlogEditView: View {
                             Text("Code").tag("code")
                             Text("Map").tag("map")
                         }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
                         .frame(width: 160)
                         Spacer()
                         Button {
@@ -281,8 +289,8 @@ private struct BlogEditView: View {
                                 .font(.system(.body, design: .monospaced))
                                 .frame(minHeight: 90)
                                 .padding(6)
-                                .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
-                                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.primary.opacity(0.1)))
+                                .background(RoundedRectangle(cornerRadius: 6).fill(Color.badgipSurface))
+                                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.badgipBorder))
                         }
                     } else if section.type == "map" {
                         LabeledField(label: "Location (e.g. \"Cupertino, CA\")", text: $section.value)
@@ -296,8 +304,8 @@ private struct BlogEditView: View {
                     }
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.03)))
-                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.primary.opacity(0.06)))
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color.badgipSurface))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.badgipBorder))
             }
             Button {
                 post.sections.append(BlogSection(type: "text", value: ""))

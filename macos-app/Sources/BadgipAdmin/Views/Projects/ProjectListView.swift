@@ -7,6 +7,7 @@ struct ProjectListView: View {
     @State private var errorMessage: String?
     @State private var editingProject: Project?
     @State private var pendingDelete: Project?
+    @StateObject private var savedToast = SavedToastController()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -14,7 +15,7 @@ struct ProjectListView: View {
                 Text("Projects").font(.title.weight(.bold))
                 Spacer()
                 Button {
-                    editingProject = Project(id: "")
+                    editingProject = Project(id: "", order: projects.count)
                 } label: {
                     Label("New Project", systemImage: "plus")
                 }
@@ -38,21 +39,21 @@ struct ProjectListView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        ForEach(projects) { project in
-                            ProjectRow(
-                                project: project,
-                                onEdit: { editingProject = project },
-                                onDelete: { pendingDelete = project }
-                            )
-                        }
+                List {
+                    ForEach(projects) { project in
+                        ProjectRow(
+                            project: project,
+                            onEdit: { editingProject = project },
+                            onDelete: { pendingDelete = project }
+                        )
+                        .listRowInsets(EdgeInsets())
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    .onMove(perform: move)
                 }
+                .listStyle(.plain)
             }
         }
+        .savedToast(savedToast)
         .sheet(item: $editingProject) { project in
             ProjectEditView(project: project) { saved in
                 if let index = projects.firstIndex(where: { $0.id == saved.id }) {
@@ -72,6 +73,7 @@ struct ProjectListView: View {
                 if let project = pendingDelete {
                     rtdb.deleteProject(id: project.id)
                     projects.removeAll { $0.id == project.id }
+                    savedToast.flash()
                 }
                 pendingDelete = nil
             }
@@ -79,6 +81,13 @@ struct ProjectListView: View {
             Text("This removes it from the live site immediately and can't be undone.")
         }
         .task { await loadProjects() }
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        projects.move(fromOffsets: source, toOffset: destination)
+        for index in projects.indices { projects[index].order = index }
+        rtdb.reorderProjects(projects)
+        savedToast.flash()
     }
 
     private func loadProjects() async {
@@ -120,15 +129,17 @@ private struct ProjectRow: View {
                 Image(systemName: "trash")
             }
             .buttonStyle(.badgipIcon(tint: .red))
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.tertiary)
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.primary.opacity(isHovering ? 0.06 : 0.03))
+                .fill(isHovering ? Color.badgipSurfaceHover : Color.badgipSurface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                .strokeBorder(Color.badgipBorder, lineWidth: 1)
         )
         .onHover { isHovering = $0 }
         .animation(.easeOut(duration: 0.15), value: isHovering)

@@ -35,6 +35,16 @@ final class RTDBService: ObservableObject {
         db.child("projects").child(id).removeValue()
     }
 
+    /// Batch-writes just the `order` field for every project passed in —
+    /// used after a drag-and-drop reorder.
+    func reorderProjects(_ projects: [Project]) {
+        var updates: [String: Any] = [:]
+        for project in projects {
+            updates["projects/\(project.id)/order"] = project.order
+        }
+        db.updateChildValues(updates)
+    }
+
     // MARK: - Settings
 
     func fetchSettings() async throws -> SiteSettings {

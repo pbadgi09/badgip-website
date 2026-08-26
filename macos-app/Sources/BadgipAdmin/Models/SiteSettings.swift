@@ -42,6 +42,31 @@ struct ContactSocialLink: Identifiable, Codable, Equatable {
     }
 }
 
+/// The curated, directly-configurable colors for one theme (light or dark)
+/// — matches the 4 tokens css/variables.css lets settings override
+/// (--color-bg/--color-text/--color-accent/--color-border); every other
+/// shade on the site is derived from these via CSS color-mix(), so this
+/// stays a short, always-coherent set instead of the full ~11-token palette.
+struct ThemePalette: Codable, Equatable {
+    var background: String = ""
+    var text: String = ""
+    var accent: String = ""
+    var border: String = ""
+
+    var asDictionary: [String: Any] {
+        ["background": background, "text": text, "accent": accent, "border": border]
+    }
+
+    static func from(_ dict: [String: Any]) -> ThemePalette {
+        ThemePalette(
+            background: dict["background"] as? String ?? "",
+            text: dict["text"] as? String ?? "",
+            accent: dict["accent"] as? String ?? "",
+            border: dict["border"] as? String ?? ""
+        )
+    }
+}
+
 struct SiteSettings: Codable, Equatable {
     // hero
     var greeting: String = "Hello, I'm"
@@ -63,10 +88,10 @@ struct SiteSettings: Codable, Equatable {
     var twitter: String = ""
     var email: String = ""
 
-    // theme
-    var accentColor: String = "#3effa3"
-    var backgroundColor: String = "#0a0a0a"
-    var textColor: String = "#e5e5e5"
+    // theme — kept in sync with the defaults in css/variables.css and
+    // js/data-service.js's DEFAULT_SETTINGS.theme.
+    var themeLight = ThemePalette(background: "#ffffff", text: "#0a0a0a", accent: "#3effa3", border: "#e2e2e2")
+    var themeDark = ThemePalette(background: "#0a0a0c", text: "#f5f5f5", accent: "#3effa3", border: "#2a2a30")
 
     // meta
     var metaTitle: String = ""
@@ -97,7 +122,7 @@ struct SiteSettings: Codable, Equatable {
             ],
             "nav": ["items": navItems.map { $0.asDictionary }],
             "social": ["github": github, "linkedin": linkedin, "twitter": twitter, "email": email],
-            "theme": ["accentColor": accentColor, "backgroundColor": backgroundColor, "textColor": textColor],
+            "theme": ["light": themeLight.asDictionary, "dark": themeDark.asDictionary],
             "meta": ["title": metaTitle, "description": metaDescription, "ogImage": ogImage],
             "contact": [
                 "heading": contactHeading,
@@ -135,9 +160,8 @@ struct SiteSettings: Codable, Equatable {
             settings.email = social["email"] as? String ?? ""
         }
         if let theme = dict["theme"] as? [String: Any] {
-            settings.accentColor = theme["accentColor"] as? String ?? settings.accentColor
-            settings.backgroundColor = theme["backgroundColor"] as? String ?? settings.backgroundColor
-            settings.textColor = theme["textColor"] as? String ?? settings.textColor
+            if let light = theme["light"] as? [String: Any] { settings.themeLight = ThemePalette.from(light) }
+            if let dark = theme["dark"] as? [String: Any] { settings.themeDark = ThemePalette.from(dark) }
         }
         if let meta = dict["meta"] as? [String: Any] {
             settings.metaTitle = meta["title"] as? String ?? ""

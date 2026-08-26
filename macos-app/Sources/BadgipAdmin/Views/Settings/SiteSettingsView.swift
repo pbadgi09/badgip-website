@@ -7,14 +7,14 @@ struct SiteSettingsView: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var statusMessage: String?
-    @State private var savedBadgeVisible = false
-    @State private var savedBadgeTask: Task<Void, Never>?
+    @StateObject private var savedToast = SavedToastController()
 
     private var hasChanges: Bool { settings != original }
-    // "Saved" only shows for 3s after a save, and only while nothing has
-    // changed since — so it never lingers indefinitely, and a new edit
-    // hides it immediately rather than falsely implying it's already saved.
-    private var showSavedBadge: Bool { savedBadgeVisible && !hasChanges }
+    // "Saved" only shows for a few seconds after a save, and only while
+    // nothing has changed since — so it never lingers indefinitely, and a
+    // new edit hides it immediately rather than falsely implying it's
+    // already saved.
+    private var showSavedBadge: Bool { savedToast.isVisible && !hasChanges }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -79,10 +79,18 @@ struct SiteSettingsView: View {
                             LabeledField(label: "Email", text: $settings.email)
                         }
 
-                        EditorCard(title: "Theme") {
-                            OptionalColorField(label: "Accent color", hex: $settings.accentColor, fallback: "#3effa3")
-                            OptionalColorField(label: "Background color", hex: $settings.backgroundColor, fallback: "#ffffff")
-                            OptionalColorField(label: "Text color", hex: $settings.textColor, fallback: "#0a0a0a")
+                        EditorCard(title: "Theme — Light") {
+                            OptionalColorField(label: "Background", hex: $settings.themeLight.background, fallback: "#ffffff")
+                            OptionalColorField(label: "Text", hex: $settings.themeLight.text, fallback: "#0a0a0a")
+                            OptionalColorField(label: "Accent", hex: $settings.themeLight.accent, fallback: "#3effa3")
+                            OptionalColorField(label: "Border", hex: $settings.themeLight.border, fallback: "#e2e2e2")
+                        }
+
+                        EditorCard(title: "Theme — Dark") {
+                            OptionalColorField(label: "Background", hex: $settings.themeDark.background, fallback: "#0a0a0c")
+                            OptionalColorField(label: "Text", hex: $settings.themeDark.text, fallback: "#f5f5f5")
+                            OptionalColorField(label: "Accent", hex: $settings.themeDark.accent, fallback: "#3effa3")
+                            OptionalColorField(label: "Border", hex: $settings.themeDark.border, fallback: "#2a2a30")
                         }
 
                         EditorCard(title: "Meta") {
@@ -130,8 +138,8 @@ struct SiteSettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach($settings.contactInfoItems) { $item in
                 HStack {
-                    TextField("Icon (emoji or URL)", text: $item.icon).frame(width: 160).textFieldStyle(.roundedBorder)
-                    TextField("Label (e.g. \"42 Berlin St\" or an email)", text: $item.label).textFieldStyle(.roundedBorder)
+                    TextField("Icon (emoji or URL)", text: $item.icon).frame(width: 160).textFieldStyle(.badgip)
+                    TextField("Label (e.g. \"42 Berlin St\" or an email)", text: $item.label).textFieldStyle(.badgip)
                     Button {
                         settings.contactInfoItems.removeAll { $0.id == item.id }
                     } label: {
@@ -154,8 +162,8 @@ struct SiteSettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach($settings.contactSocialLinks) { $link in
                 HStack {
-                    TextField("Icon (emoji or URL)", text: $link.icon).frame(width: 160).textFieldStyle(.roundedBorder)
-                    TextField("URL", text: $link.url).textFieldStyle(.roundedBorder)
+                    TextField("Icon (emoji or URL)", text: $link.icon).frame(width: 160).textFieldStyle(.badgip)
+                    TextField("URL", text: $link.url).textFieldStyle(.badgip)
                     Button {
                         settings.contactSocialLinks.removeAll { $0.id == link.id }
                     } label: {
@@ -198,13 +206,6 @@ struct SiteSettingsView: View {
         original = settings
         statusMessage = "Saved"
         isSaving = false
-
-        savedBadgeTask?.cancel()
-        savedBadgeVisible = true
-        savedBadgeTask = Task {
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
-            guard !Task.isCancelled else { return }
-            savedBadgeVisible = false
-        }
+        savedToast.flash(seconds: 3)
     }
 }

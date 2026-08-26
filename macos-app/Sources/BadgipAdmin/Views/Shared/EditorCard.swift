@@ -15,14 +15,32 @@ struct EditorCard<Content: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.03)))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.badgipSurface))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.badgipBorder, lineWidth: 1))
     }
 }
 
-/// A labeled text field — small caption above a rounded-border field,
-/// matching SiteSettingsView's look so every text input in the app reads
-/// the same way.
+/// A soft-filled, rounded field matching the website's own `.form-field`
+/// inputs — used in place of the system-default `.roundedBorder` style so
+/// text fields read consistently with the rest of the app's pill/card
+/// language instead of standing out as a plain macOS form control.
+struct BadgipTextFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .textFieldStyle(.plain)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.badgipSurface))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.badgipBorder, lineWidth: 1))
+    }
+}
+
+extension TextFieldStyle where Self == BadgipTextFieldStyle {
+    static var badgip: BadgipTextFieldStyle { BadgipTextFieldStyle() }
+}
+
+/// A labeled text field — small caption above a styled field, matching
+/// SiteSettingsView's look so every text input in the app reads the same way.
 struct LabeledField: View {
     let label: String
     @Binding var text: String
@@ -35,10 +53,10 @@ struct LabeledField: View {
                 TextEditor(text: $text)
                     .frame(minHeight: 90)
                     .padding(6)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
-                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.primary.opacity(0.1)))
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.badgipSurface))
+                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.badgipBorder))
             } else {
-                TextField(label, text: $text).textFieldStyle(.roundedBorder)
+                TextField(label, text: $text).textFieldStyle(.badgip)
             }
         }
     }

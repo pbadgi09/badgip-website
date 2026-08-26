@@ -5,7 +5,12 @@ struct SignInView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            // No hardcoded background — letting the window's own adaptive
+            // background show through keeps the default (SwiftUI-provided)
+            // text color legible now that the app follows system appearance
+            // instead of being locked to dark; a fixed black backdrop here
+            // would have made that same default text invisible in light mode.
+            Color(nsColor: .windowBackgroundColor).ignoresSafeArea()
 
             VStack(spacing: 28) {
                 ZStack {

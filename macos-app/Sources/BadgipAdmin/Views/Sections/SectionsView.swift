@@ -8,6 +8,7 @@ struct SectionsView: View {
     @State private var mode: String = "professional"
     @State private var editingSection: PageSection?
     @State private var pendingDelete: PageSection?
+    @StateObject private var savedToast = SavedToastController()
 
     private var filtered: [PageSection] {
         allSections.filter { $0.mode == mode }.sorted { $0.order < $1.order }
@@ -96,6 +97,7 @@ struct SectionsView: View {
                 .listStyle(.plain)
             }
         }
+        .savedToast(savedToast)
         .sheet(item: $editingSection) { section in
             CustomSectionEditView(section: section) { saved in
                 if let index = allSections.firstIndex(where: { $0.id == saved.id }) {
@@ -115,6 +117,7 @@ struct SectionsView: View {
                 if let section = pendingDelete {
                     rtdb.deletePageSection(id: section.id)
                     allSections.removeAll { $0.id == section.id }
+                    savedToast.flash()
                 }
                 pendingDelete = nil
             }
@@ -138,12 +141,14 @@ struct SectionsView: View {
             }
         }
         rtdb.reorderPageSections(renumbered)
+        savedToast.flash()
     }
 
     private func addBuiltIn(_ kind: String) {
         let section = PageSection(id: "", kind: kind, mode: mode, order: filtered.count)
         if let saved = try? rtdb.savePageSection(section) {
             allSections.append(saved)
+            savedToast.flash()
         }
     }
 
@@ -154,6 +159,7 @@ struct SectionsView: View {
             allSections[index] = updated
         }
         _ = try? rtdb.savePageSection(updated)
+        savedToast.flash()
     }
 
     private func load() async {
@@ -217,6 +223,9 @@ private struct SectionRow: View {
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 6)
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.badgipSurface))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.badgipBorder, lineWidth: 1))
+        .listRowInsets(EdgeInsets())
     }
 }

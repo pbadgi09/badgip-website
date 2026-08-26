@@ -70,10 +70,9 @@ struct ProjectEditView: View {
                     Text("Personal").tag("personal")
                 }
                 Toggle("Featured", isOn: $project.featured)
-                Text("Featured projects fill the site's first 6 slots (2 rows) before the rest are hidden behind \"Show More.\"")
+                Text("Featured projects fill the site's first 6 slots (2 rows) before the rest are hidden behind \"Show More.\" Drag rows on the Projects list to reorder.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Stepper("Order: \(project.order)", value: $project.order, in: 0...999)
             }
 
             if let errorMessage {

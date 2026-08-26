@@ -28,53 +28,68 @@ enum DashboardSection: String, CaseIterable, Identifiable {
     }
 }
 
+// A custom-built sidebar instead of NavigationView/SidebarListStyle — this
+// app targets macOS 12, so NavigationSplitView (13+) isn't available, and
+// the stock sidebar list didn't give the pill-shaped, accent-highlighted
+// selection state that matches the website's own nav (.site-nav__link.is-
+// active). Since navigation here is just "pick one of nine screens" with no
+// push/pop stack, a plain HStack + custom rows is simpler than fighting
+// NavigationView's own chrome for that look anyway.
 struct DashboardView: View {
     @EnvironmentObject private var authService: FirebaseAuthService
-    @State private var selection: DashboardSection? = .projects
+    @State private var selection: DashboardSection = .projects
 
     var body: some View {
-        NavigationView {
-            List {
-                Section {
+        HStack(spacing: 0) {
+            sidebar
+            Divider()
+            destination(for: selection)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(minWidth: 960, minHeight: 640)
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(Color.badgipAccent)
+                    .frame(width: 8, height: 8)
+                Text("Badgip Admin")
+                    .font(.system(.headline, design: .rounded).weight(.bold))
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
                     ForEach(DashboardSection.allCases) { section in
-                        NavigationLink(
-                            destination: destination(for: section),
-                            tag: section,
-                            selection: $selection
-                        ) {
-                            Label(section.rawValue, systemImage: section.icon)
-                                .symbolRenderingMode(.hierarchical)
+                        SidebarRow(section: section, isSelected: section == selection) {
+                            selection = section
                         }
                     }
                 }
+                .padding(.horizontal, 12)
             }
-            .listStyle(SidebarListStyle())
-            .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 0) {
-                    Divider()
-                    Button {
-                        authService.signOut()
-                    } label: {
-                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .padding(12)
-                }
-            }
-            .frame(minWidth: 200)
-            .navigationTitle("Badgip Admin")
 
-            VStack(spacing: 8) {
-                Image(systemName: "arrow.left")
-                    .font(.title2)
-                    .foregroundStyle(.tertiary)
-                Text("Select a section to get started")
-                    .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+
+            Divider()
+            Button {
+                authService.signOut()
+            } label: {
+                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    .font(.callout.weight(.medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
         }
-        .navigationViewStyle(DoubleColumnNavigationViewStyle())
+        .frame(width: 220)
+        .background(Color.badgipSurface)
     }
 
     @ViewBuilder
@@ -90,5 +105,37 @@ struct DashboardView: View {
         case .messages: MessagesInboxView()
         case .deploy: DeployControlsView()
         }
+    }
+}
+
+private struct SidebarRow: View {
+    let section: DashboardSection
+    let isSelected: Bool
+    let onSelect: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 10) {
+                Image(systemName: section.icon)
+                    .symbolRenderingMode(.hierarchical)
+                    .frame(width: 18)
+                Text(section.rawValue)
+                    .font(.callout.weight(isSelected ? .semibold : .regular))
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(isSelected ? .black : Color.primary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                Capsule().fill(
+                    isSelected ? Color.badgipAccent : (isHovering ? Color.badgipSurfaceHover : .clear)
+                )
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: isHovering)
+        .animation(.easeOut(duration: 0.12), value: isSelected)
     }
 }

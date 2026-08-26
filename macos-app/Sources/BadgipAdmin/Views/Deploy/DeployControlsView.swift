@@ -6,6 +6,7 @@ struct DeployControlsView: View {
     @State private var purgePath: String = ""
     @State private var statusMessage: String?
     @State private var isWorking = false
+    @StateObject private var savedToast = SavedToastController()
 
     private let githubService = GitHubService()
 
@@ -20,11 +21,12 @@ struct DeployControlsView: View {
                         .foregroundStyle(.secondary)
                     HStack {
                         SecureField("Fine-grained PAT (repo-scoped, Contents + Actions: Read and write)", text: $patInput)
-                            .textFieldStyle(.roundedBorder)
+                            .textFieldStyle(.badgip)
                         Button("Save") {
                             KeychainService.save(key: KeychainKey.githubPAT, value: patInput)
                             patInput = ""
                             hasSavedPAT = true
+                            savedToast.flash()
                         }
                         .buttonStyle(.badgipSecondary)
                         .disabled(patInput.isEmpty)
@@ -33,6 +35,7 @@ struct DeployControlsView: View {
                         Button("Remove Saved Token", role: .destructive) {
                             KeychainService.delete(key: KeychainKey.githubPAT)
                             hasSavedPAT = false
+                            savedToast.flash()
                         }
                         .buttonStyle(.badgipSecondary)
                         .tint(.red)
@@ -58,7 +61,7 @@ struct DeployControlsView: View {
                         .foregroundStyle(.secondary)
                     HStack {
                         TextField("assets/projects/my-app/cover.jpg", text: $purgePath)
-                            .textFieldStyle(.roundedBorder)
+                            .textFieldStyle(.badgip)
                         Button("Purge") {
                             Task { await purgeManually() }
                         }
@@ -73,6 +76,7 @@ struct DeployControlsView: View {
             }
             .padding(24)
         }
+        .savedToast(savedToast)
         .onAppear {
             hasSavedPAT = (KeychainService.read(key: KeychainKey.githubPAT)?.isEmpty == false)
         }
