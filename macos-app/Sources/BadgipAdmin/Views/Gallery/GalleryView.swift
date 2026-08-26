@@ -21,7 +21,6 @@ struct MediaReference: Identifiable {
 
 struct GalleryView: View {
     @EnvironmentObject private var rtdb: RTDBService
-    private let github = GitHubService()
 
     @State private var projects: [Project] = []
     @State private var posts: [BlogPost] = []
@@ -187,24 +186,15 @@ struct GalleryView: View {
         }
         references.removeAll { $0.id == ref.id }
         savedToast.flash()
-        await deleteFromGitHub(ref)
-    }
-
-    /// Also removes the committed file from GitHub (not just the RTDB
-    /// reference), so a deleted image doesn't keep sitting in the repo
-    /// forever. Skipped for references that aren't our own repo files (an
-    /// externally-hosted http(s) URL pasted into a field) since there's
-    /// nothing on GitHub to delete.
-    private func deleteFromGitHub(_ ref: MediaReference) async {
-        let lowered = ref.path.lowercased()
-        guard !lowered.hasPrefix("http://"), !lowered.hasPrefix("https://") else { return }
-        let repoPath = "assets/\(ref.path)"
-        do {
-            try await github.deleteFile(path: repoPath, commitMessage: "Remove \(ref.label)")
-            await JsDelivrService.purge(repoPath: repoPath)
-        } catch {
-            errorMessage = "Removed from the site, but couldn't delete the file from GitHub: \(error.localizedDescription)"
-        }
+        // Routed through the shared cleanup helper (rather than this
+        // screen's own delete-from-GitHub logic) so it gets the same
+        // reference-safety check everywhere else already has: an image
+        // reused elsewhere (the "choose existing" picker makes this
+        // possible now) won't be deleted out from under whatever else is
+        // still pointing at it. The RTDB removal above already happened,
+        // so the fresh scan this runs correctly won't see this reference
+        // anymore either.
+        RepoFileCleanup.deleteStoredImage(ref.path, commitMessage: "Remove \(ref.label)")
     }
 
     /// Merges an AddMediaView result back into local state (it already wrote

@@ -32,6 +32,7 @@ struct AddMediaView: View {
     @State private var newItemLabel: String = ""
 
     @State private var isPicking = false
+    @State private var isChoosingExisting = false
     @State private var isUploading = false
     @State private var errorMessage: String?
 
@@ -66,17 +67,19 @@ struct AddMediaView: View {
                         Text(errorMessage).foregroundStyle(.red).font(.caption)
                     }
 
-                    Button {
-                        isPicking = true
-                    } label: {
-                        if isUploading {
-                            HStack { ProgressView().controlSize(.small); Text("Uploading…") }
-                        } else {
-                            Label("Choose Image & Upload", systemImage: "square.and.arrow.up")
+                    if isUploading {
+                        HStack { ProgressView().controlSize(.small); Text("Uploading…") }
+                    } else {
+                        Menu {
+                            Button("Upload New Image…") { isPicking = true }
+                            Button("Choose Existing Image…") { isChoosingExisting = true }
+                        } label: {
+                            Label("Choose Image", systemImage: "square.and.arrow.up")
                         }
+                        .buttonStyle(.badgipPrimary)
+                        .fixedSize()
+                        .disabled(isUploading || !hasValidTarget)
                     }
-                    .buttonStyle(.badgipPrimary)
-                    .disabled(isUploading || !hasValidTarget)
                 }
                 .padding(20)
             }
@@ -84,6 +87,9 @@ struct AddMediaView: View {
         .frame(width: 560, height: 480)
         .fileImporter(isPresented: $isPicking, allowedContentTypes: [.image]) { result in
             handlePicked(result)
+        }
+        .sheet(isPresented: $isChoosingExisting) {
+            ExistingImagePicker(onPick: { picked in Task { await attachExisting(picked) } })
         }
     }
 
@@ -197,6 +203,57 @@ struct AddMediaView: View {
                 let storedPath = ImagePathBuilder.sectionIconStoredPath(sectionId: slug.isEmpty ? "section" : slug, filename: filename)
                 try await githubService.uploadFile(path: repoPath, data: data, commitMessage: "Add section icon (\(slug)): \(filename)")
                 await JsDelivrService.purge(repoPath: repoPath)
+                section.items.append(SectionItem(icon: storedPath, label: newItemLabel, order: section.items.count))
+                let saved = try rtdb.savePageSection(section)
+                onDone(.section(saved))
+                dismiss()
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Reusing an already-committed image — no upload, no compression, no
+    /// network call to GitHub at all, just attach the picked stored path
+    /// to whichever destination is selected and save. Mirrors upload(from:)'s
+    /// per-destination assignment, just without the upload step.
+    private func attachExisting(_ storedPath: String) async {
+        errorMessage = nil
+        do {
+            switch destination {
+            case .projectCover, .projectGallery:
+                guard var project = projects.first(where: { $0.id == selectedProjectId }) else { return }
+                if destination == .projectCover {
+                    let previousCover = project.coverImage
+                    project.coverImage = storedPath
+                    if previousCover != storedPath {
+                        RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for project \(project.slug)")
+                    }
+                } else {
+                    guard !project.gallery.contains(storedPath) else { return }
+                    project.gallery.append(storedPath)
+                }
+                let saved = try rtdb.saveProject(project)
+                onDone(.project(saved))
+                dismiss()
+
+            case .blogCover, .blogImage:
+                guard var post = posts.first(where: { $0.id == selectedPostId }) else { return }
+                if destination == .blogCover {
+                    let previousCover = post.coverImage
+                    post.coverImage = storedPath
+                    if previousCover != storedPath {
+                        RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for blog post \(post.slug)")
+                    }
+                } else {
+                    post.sections.append(BlogSection(type: "image", value: storedPath))
+                }
+                let saved = try rtdb.saveBlogPost(post)
+                onDone(.blog(saved))
+                dismiss()
+
+            case .sectionIcon:
+                guard var section = sections.first(where: { $0.id == selectedSectionId }) else { return }
                 section.items.append(SectionItem(icon: storedPath, label: newItemLabel, order: section.items.count))
                 let saved = try rtdb.savePageSection(section)
                 onDone(.section(saved))

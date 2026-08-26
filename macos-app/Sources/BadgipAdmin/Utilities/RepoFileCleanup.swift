@@ -36,6 +36,16 @@ enum RepoFileCleanup {
         guard isInternalPath(storedPath) else { return }
         let repoPath = "assets/\(storedPath)"
         Task {
+            // Images can now be reused across multiple fields (the "choose
+            // existing" picker) — deleting the underlying file just because
+            // *one* reference to it was removed would silently break every
+            // other place still pointing at it. A fresh scan (not
+            // in-memory state) is what makes this correct regardless of
+            // which screen is calling in: the caller already saved its own
+            // change to RTDB before reaching this point.
+            if await ImageReferenceScanner.isPathStillUsed(storedPath) {
+                return
+            }
             do {
                 try await githubService.deleteFile(path: repoPath, commitMessage: commitMessage)
             } catch {

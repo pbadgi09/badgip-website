@@ -156,6 +156,7 @@ struct IconPickerField: View {
     @State private var isUploading = false
     @State private var uploadError: String?
     @State private var isPickingFile = false
+    @State private var isChoosingExisting = false
 
     private let githubService = GitHubService()
 
@@ -172,17 +173,19 @@ struct IconPickerField: View {
             HStack {
                 iconPreview
                 TextField(placeholder, text: $icon).textFieldStyle(.badgip)
-                Button {
-                    isPickingFile = true
-                } label: {
-                    if isUploading {
-                        ProgressView().controlSize(.small)
-                    } else {
+                if isUploading {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Menu {
+                        Button("Upload New Image…") { isPickingFile = true }
+                        Button("Choose Existing Image…") { isChoosingExisting = true }
+                    } label: {
                         Image(systemName: "square.and.arrow.up")
                     }
+                    .menuStyle(.borderlessButton)
+                    .frame(width: 20)
+                    .disabled(isUploading)
                 }
-                .buttonStyle(.badgipIcon)
-                .disabled(isUploading)
             }
             if let uploadError {
                 Text(uploadError).font(.caption2).foregroundStyle(.red)
@@ -190,6 +193,20 @@ struct IconPickerField: View {
         }
         .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.image]) { result in
             handlePicked(result)
+        }
+        .sheet(isPresented: $isChoosingExisting) {
+            ExistingImagePicker(onPick: { picked in useExisting(picked) })
+        }
+    }
+
+    /// Reusing an already-committed image — no upload, no compression, no
+    /// network call at all, just point this field at the same stored path.
+    private func useExisting(_ picked: String) {
+        guard picked != icon else { return }
+        let previous = icon
+        icon = picked
+        if RepoFileCleanup.isInternalImagePath(previous) {
+            onReplaced?(previous)
         }
     }
 

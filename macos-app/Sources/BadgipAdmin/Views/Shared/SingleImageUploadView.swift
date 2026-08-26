@@ -29,6 +29,7 @@ struct SingleImageUploadView: View {
     @State private var isUploading = false
     @State private var uploadError: String?
     @State private var isPicking = false
+    @State private var isChoosingExisting = false
 
     private let githubService = GitHubService()
 
@@ -37,18 +38,18 @@ struct SingleImageUploadView: View {
             thumbnail
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Button {
-                        isPicking = true
-                    } label: {
-                        if isUploading {
-                            HStack { ProgressView().controlSize(.small); Text("Uploading…") }
-                        } else {
-                            Text(buttonLabel)
+                    if isUploading {
+                        HStack { ProgressView().controlSize(.small); Text("Uploading…") }
+                    } else {
+                        Menu(buttonLabel) {
+                            Button("Upload New Image…") { isPicking = true }
+                            Button("Choose Existing Image…") { isChoosingExisting = true }
                         }
+                        .buttonStyle(.badgipSecondary)
+                        .controlSize(.small)
+                        .fixedSize()
+                        .disabled(isUploading)
                     }
-                    .buttonStyle(.badgipSecondary)
-                    .controlSize(.small)
-                    .disabled(isUploading)
 
                     if !path.isEmpty {
                         Button("Clear") {
@@ -68,6 +69,20 @@ struct SingleImageUploadView: View {
         }
         .fileImporter(isPresented: $isPicking, allowedContentTypes: [.image]) { result in
             handlePicked(result)
+        }
+        .sheet(isPresented: $isChoosingExisting) {
+            ExistingImagePicker(onPick: { picked in useExisting(picked) })
+        }
+    }
+
+    /// Reusing an already-committed image — no upload, no compression, no
+    /// network call at all, just point this field at the same stored path.
+    private func useExisting(_ picked: String) {
+        guard picked != path else { return }
+        let previousPath = path
+        path = picked
+        if RepoFileCleanup.isInternalPath(previousPath) {
+            onReplaced?(previousPath)
         }
     }
 

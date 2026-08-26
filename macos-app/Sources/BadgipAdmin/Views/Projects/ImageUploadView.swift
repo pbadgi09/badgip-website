@@ -13,6 +13,7 @@ struct ImageUploadView: View {
     @State private var isUploading = false
     @State private var uploadError: String?
     @State private var pickerTarget: PickerTarget?
+    @State private var existingPickerTarget: PickerTarget?
 
     private enum PickerTarget {
         case cover
@@ -28,10 +29,14 @@ struct ImageUploadView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Cover image").font(.caption).foregroundStyle(.secondary)
                     HStack {
-                        Button("Set Cover Image") { pickerTarget = .cover }
-                            .buttonStyle(.badgipSecondary)
-                            .controlSize(.small)
-                            .disabled(isUploading)
+                        Menu("Set Cover Image") {
+                            Button("Upload New Image…") { pickerTarget = .cover }
+                            Button("Choose Existing Image…") { existingPickerTarget = .cover }
+                        }
+                        .buttonStyle(.badgipSecondary)
+                        .controlSize(.small)
+                        .fixedSize()
+                        .disabled(isUploading)
                         if !project.coverImage.isEmpty {
                             Button("Clear") {
                                 let old = project.coverImage
@@ -64,10 +69,14 @@ struct ImageUploadView: View {
                                     .offset(x: 4, y: -4)
                                 }
                         }
-                        Button("Add Gallery Image") { pickerTarget = .gallery }
-                            .buttonStyle(.badgipSecondary)
-                            .controlSize(.small)
-                            .disabled(isUploading)
+                        Menu("Add Gallery Image") {
+                            Button("Upload New Image…") { pickerTarget = .gallery }
+                            Button("Choose Existing Image…") { existingPickerTarget = .gallery }
+                        }
+                        .buttonStyle(.badgipSecondary)
+                        .controlSize(.small)
+                        .fixedSize()
+                        .disabled(isUploading)
                     }
                 }
             }
@@ -86,6 +95,31 @@ struct ImageUploadView: View {
             guard let target = pickerTarget else { return }
             pickerTarget = nil
             handlePicked(result: result, target: target)
+        }
+        .sheet(isPresented: Binding(get: { existingPickerTarget != nil }, set: { if !$0 { existingPickerTarget = nil } })) {
+            ExistingImagePicker(onPick: { picked in
+                guard let target = existingPickerTarget else { return }
+                existingPickerTarget = nil
+                useExisting(picked, target: target)
+            })
+        }
+    }
+
+    /// Reusing an already-committed image — no upload, no compression, no
+    /// network call at all, just point this field/slot at the same stored
+    /// path.
+    private func useExisting(_ picked: String, target: PickerTarget) {
+        switch target {
+        case .cover:
+            guard picked != project.coverImage else { return }
+            let previousCover = project.coverImage
+            project.coverImage = picked
+            if RepoFileCleanup.isInternalPath(previousCover) {
+                onImageRemoved(previousCover)
+            }
+        case .gallery:
+            guard !project.gallery.contains(picked) else { return }
+            project.gallery.append(picked)
         }
     }
 
