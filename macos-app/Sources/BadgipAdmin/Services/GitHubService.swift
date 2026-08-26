@@ -46,6 +46,26 @@ final class GitHubService {
         return URL(string: "https://api.github.com/repos/\(Self.owner)/\(Self.repo)/contents/\(encodedPath)")
     }
 
+    /// Reads a text file's current content straight from the repo (main
+    /// branch) — used for the few source files the app edits directly
+    /// (e.g. patching index.html's og:image tag) rather than just adding
+    /// new content assets.
+    func fetchFileContent(path: String) async throws -> String {
+        guard let contentsURL = contentsURL(for: path) else {
+            throw GitHubServiceError.requestFailed("Couldn't build a valid GitHub URL for path: \(path)")
+        }
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: contentsURL))
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let base64Content = (json["content"] as? String)?.replacingOccurrences(of: "\n", with: ""),
+              let decoded = Data(base64Encoded: base64Content),
+              let text = String(data: decoded, encoding: .utf8) else {
+            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw GitHubServiceError.requestFailed("Couldn't fetch content for path \(path): \(message)")
+        }
+        return text
+    }
+
     /// Commits a file to the repo at `path` (e.g. "assets/projects/my-app/cover.jpg").
     /// Fetches the existing file's sha first so this works for both create and update.
     func uploadFile(path: String, data: Data, commitMessage: String) async throws {

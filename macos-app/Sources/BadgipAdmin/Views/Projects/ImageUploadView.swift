@@ -3,6 +3,12 @@ import UniformTypeIdentifiers
 
 struct ImageUploadView: View {
     @Binding var project: Project
+    /// This view is always embedded in ProjectEditView's sheet, which only
+    /// persists on Save (Cancel discards) — so a replaced/removed image's
+    /// old file must not be deleted here immediately, or discarding the
+    /// edit would leave RTDB pointing at an already-deleted file. Reports
+    /// the old path for the parent to queue until its own save() commits.
+    var onImageRemoved: (String) -> Void = { _ in }
 
     @State private var isUploading = false
     @State private var uploadError: String?
@@ -27,10 +33,14 @@ struct ImageUploadView: View {
                             .controlSize(.small)
                             .disabled(isUploading)
                         if !project.coverImage.isEmpty {
-                            Button("Clear") { project.coverImage = "" }
-                                .buttonStyle(.badgipSecondary)
-                                .controlSize(.small)
-                                .disabled(isUploading)
+                            Button("Clear") {
+                                let old = project.coverImage
+                                project.coverImage = ""
+                                if RepoFileCleanup.isInternalPath(old) { onImageRemoved(old) }
+                            }
+                            .buttonStyle(.badgipSecondary)
+                            .controlSize(.small)
+                            .disabled(isUploading)
                         }
                     }
                 }
@@ -45,6 +55,7 @@ struct ImageUploadView: View {
                                 .overlay(alignment: .topTrailing) {
                                     Button {
                                         project.gallery.removeAll { $0 == path }
+                                        if RepoFileCleanup.isInternalPath(path) { onImageRemoved(path) }
                                     } label: {
                                         Image(systemName: "xmark.circle.fill")
                                             .foregroundStyle(.white, .black.opacity(0.6))
@@ -125,11 +136,13 @@ struct ImageUploadView: View {
         defer { url.stopAccessingSecurityScopedResource() }
 
         do {
-            let data = try Data(contentsOf: url)
+            let rawData = try Data(contentsOf: url)
+            let data = ImageCompressor.compress(rawData)
             let filename = url.lastPathComponent
             let slug = project.slug.isEmpty ? "untitled" : project.slug
             let repoPath = ImagePathBuilder.repoPath(slug: slug, filename: filename)
             let storedPath = ImagePathBuilder.storedPath(slug: slug, filename: filename)
+            let previousCover = project.coverImage
 
             try await githubService.uploadFile(
                 path: repoPath,
@@ -141,6 +154,9 @@ struct ImageUploadView: View {
             switch target {
             case .cover:
                 project.coverImage = storedPath
+                if previousCover != storedPath, RepoFileCleanup.isInternalPath(previousCover) {
+                    onImageRemoved(previousCover)
+                }
             case .gallery:
                 project.gallery.append(storedPath)
             }

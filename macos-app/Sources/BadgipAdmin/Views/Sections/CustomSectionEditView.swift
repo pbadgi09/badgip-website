@@ -66,12 +66,19 @@ struct CustomSectionEditView: View {
             // to suppress the List's own scroll region.
             List {
                 ForEach($section.items) { $item in
-                    SectionItemRow(item: $item, sectionTitle: section.title) {
-                        section.items.removeAll { $0.id == item.id }
-                        if RepoFileCleanup.isInternalImagePath(item.icon) {
-                            pendingIconDeletions.append(item.icon)
+                    SectionItemRow(
+                        item: $item,
+                        sectionTitle: section.title,
+                        onDelete: {
+                            section.items.removeAll { $0.id == item.id }
+                            if RepoFileCleanup.isInternalImagePath(item.icon) {
+                                pendingIconDeletions.append(item.icon)
+                            }
+                        },
+                        onReplaceIcon: { oldPath in
+                            pendingIconDeletions.append(oldPath)
                         }
-                    }
+                    )
                     .listRowInsets(EdgeInsets())
                 }
                 .onMove { source, destination in
@@ -111,6 +118,11 @@ private struct SectionItemRow: View {
     @Binding var item: SectionItem
     let sectionTitle: String
     let onDelete: () -> Void
+    /// Reports the just-replaced icon path so the parent can queue it for
+    /// deletion on Save rather than deleting it immediately — this sheet
+    /// only persists on Save, so an immediate delete here would leave RTDB
+    /// pointing at a deleted file if the user then hits Cancel.
+    let onReplaceIcon: (String) -> Void
 
     @State private var isUploading = false
     @State private var uploadError: String?
@@ -221,10 +233,14 @@ private struct SectionItemRow: View {
         defer { url.stopAccessingSecurityScopedResource() }
 
         do {
-            let data = try Data(contentsOf: url)
+            let rawData = try Data(contentsOf: url)
+            // Icons render small (a tile in a grid) — no need for the
+            // general 2000px cap other content photos get.
+            let data = ImageCompressor.compress(rawData, maxDimension: 800)
             let filename = url.lastPathComponent
             let repoPath = ImagePathBuilder.sectionIconRepoPath(sectionId: slug, filename: filename)
             let storedPath = ImagePathBuilder.sectionIconStoredPath(sectionId: slug, filename: filename)
+            let previousIcon = item.icon
 
             try await githubService.uploadFile(
                 path: repoPath,
@@ -233,6 +249,9 @@ private struct SectionItemRow: View {
             )
             await JsDelivrService.purge(repoPath: repoPath)
             item.icon = storedPath
+            if previousIcon != storedPath, RepoFileCleanup.isInternalImagePath(previousIcon) {
+                onReplaceIcon(previousIcon)
+            }
         } catch {
             uploadError = error.localizedDescription
         }

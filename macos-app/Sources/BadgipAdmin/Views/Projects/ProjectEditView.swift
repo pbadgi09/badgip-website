@@ -11,6 +11,9 @@ struct ProjectEditView: View {
     @State private var tagsText: String = ""
     @State private var isSaving = false
     @State private var errorMessage: String?
+    // This sheet only persists on Save (Cancel discards) — see
+    // ImageUploadView's onImageRemoved doc comment.
+    @State private var pendingImageDeletions: [String] = []
 
     init(project: Project, onSave: @escaping (Project) -> Void) {
         _project = State(initialValue: project)
@@ -47,7 +50,7 @@ struct ProjectEditView: View {
                 Text("Cover: 16:10 works best. Full-screen hero: 21:9 (a wide, short crop) works best.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                ImageUploadView(project: $project)
+                ImageUploadView(project: $project, onImageRemoved: { pendingImageDeletions.append($0) })
                 LabeledField(label: "YouTube URL (optional)", text: $project.youtubeUrl)
             }
 
@@ -94,6 +97,8 @@ struct ProjectEditView: View {
             project = try rtdb.saveProject(project)
             original = project
             onSave(project)
+            RepoFileCleanup.deleteStoredImages(pendingImageDeletions, commitMessage: "Remove replaced/cleared image for project \(project.slug)")
+            pendingImageDeletions = []
         } catch {
             errorMessage = error.localizedDescription
         }

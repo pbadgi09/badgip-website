@@ -13,6 +13,18 @@ struct SingleImageUploadView: View {
     var repoPath: (String) -> String
     var storedPath: (String) -> String
     var commitMessage: (String) -> String
+    /// Fires after a successful upload with the new stored path — used
+    /// where something else needs to react (e.g. patching index.html's
+    /// og:image tag to match a newly-uploaded OG image).
+    var onUploaded: ((String) -> Void)? = nil
+    /// Fires with the OLD path whenever it's about to be superseded (a new
+    /// upload replacing it, or Clear) — this view is used exclusively by
+    /// deliberate-Save screens (Settings, About), so it must NOT delete the
+    /// old file itself: doing that immediately, before Save is ever
+    /// clicked, would leave RTDB pointing at a deleted file if the change
+    /// is later discarded. The caller decides whether/when to actually
+    /// delete (typically by queuing it until its own save() commits).
+    var onReplaced: ((String) -> Void)? = nil
 
     @State private var isUploading = false
     @State private var uploadError: String?
@@ -39,10 +51,14 @@ struct SingleImageUploadView: View {
                     .disabled(isUploading)
 
                     if !path.isEmpty {
-                        Button("Clear") { path = "" }
-                            .buttonStyle(.badgipSecondary)
-                            .controlSize(.small)
-                            .disabled(isUploading)
+                        Button("Clear") {
+                            let old = path
+                            path = ""
+                            onReplaced?(old)
+                        }
+                        .buttonStyle(.badgipSecondary)
+                        .controlSize(.small)
+                        .disabled(isUploading)
                     }
                 }
                 if let uploadError {
@@ -102,14 +118,25 @@ struct SingleImageUploadView: View {
         defer { url.stopAccessingSecurityScopedResource() }
 
         do {
-            let data = try Data(contentsOf: url)
+            let rawData = try Data(contentsOf: url)
+            let data = ImageCompressor.compress(rawData)
             let filename = url.lastPathComponent
             let repo = repoPath(filename)
             let stored = storedPath(filename)
+            let previousPath = path
 
             try await githubService.uploadFile(path: repo, data: data, commitMessage: commitMessage(filename))
             await JsDelivrService.purge(repoPath: repo)
             path = stored
+            onUploaded?(stored)
+
+            // Only report the old path as replaced after the new upload
+            // succeeds — if it fails, the old (still-referenced) file must
+            // stay put. Deletion itself is the caller's call (see
+            // `onReplaced`'s doc comment).
+            if previousPath != stored, RepoFileCleanup.isInternalPath(previousPath) {
+                onReplaced?(previousPath)
+            }
         } catch {
             uploadError = error.localizedDescription
         }

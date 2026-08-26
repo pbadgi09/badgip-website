@@ -143,7 +143,8 @@ struct AddMediaView: View {
         defer { url.stopAccessingSecurityScopedResource() }
 
         do {
-            let data = try Data(contentsOf: url)
+            let rawData = try Data(contentsOf: url)
+            let data = ImageCompressor.compress(rawData)
             let filename = url.lastPathComponent
 
             switch destination {
@@ -152,10 +153,14 @@ struct AddMediaView: View {
                 let slug = project.slug.isEmpty ? "untitled" : project.slug
                 let repoPath = ImagePathBuilder.repoPath(slug: slug, filename: filename)
                 let storedPath = ImagePathBuilder.storedPath(slug: slug, filename: filename)
+                let previousCover = project.coverImage
                 try await githubService.uploadFile(path: repoPath, data: data, commitMessage: "Add image for \(slug): \(filename)")
                 await JsDelivrService.purge(repoPath: repoPath)
                 if destination == .projectCover {
                     project.coverImage = storedPath
+                    if previousCover != storedPath {
+                        RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for project \(slug)")
+                    }
                 } else {
                     project.gallery.append(storedPath)
                 }
@@ -168,10 +173,14 @@ struct AddMediaView: View {
                 let slug = post.slug.isEmpty ? "untitled" : post.slug
                 let repoPath = ImagePathBuilder.blogImageRepoPath(slug: slug, filename: filename)
                 let storedPath = ImagePathBuilder.blogImageStoredPath(slug: slug, filename: filename)
+                let previousCover = post.coverImage
                 try await githubService.uploadFile(path: repoPath, data: data, commitMessage: "Add blog image for \(slug): \(filename)")
                 await JsDelivrService.purge(repoPath: repoPath)
                 if destination == .blogCover {
                     post.coverImage = storedPath
+                    if previousCover != storedPath {
+                        RepoFileCleanup.deleteStoredImage(previousCover, commitMessage: "Replace cover image for blog post \(slug)")
+                    }
                 } else {
                     post.sections.append(BlogSection(type: "image", value: storedPath))
                 }

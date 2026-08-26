@@ -9,6 +9,13 @@ struct SiteSettingsView: View {
     @State private var isSaving = false
     @State private var statusMessage: String?
     @StateObject private var savedToast = SavedToastController()
+    @State private var ogImageStatus: String?
+    // This screen only persists on Save (Cancel/navigating away discards
+    // in-memory edits, guarded by UnsavedChangesGuard) — so a replaced or
+    // cleared image's old file must not be deleted until save() actually
+    // commits, or discarding the edit would leave RTDB pointing at a file
+    // that's already gone.
+    @State private var pendingImageDeletions: [String] = []
 
     private var hasChanges: Bool { settings != original }
     // "Saved" only shows for a few seconds after a save, and only while
@@ -69,15 +76,27 @@ struct SiteSettingsView: View {
                                 thumbnailCornerRadius: 32,
                                 repoPath: { ImagePathBuilder.heroProfileRepoPath(filename: $0) },
                                 storedPath: { ImagePathBuilder.heroProfileStoredPath(filename: $0) },
-                                commitMessage: { "Set hero profile picture: \($0)" }
+                                commitMessage: { "Set hero profile picture: \($0)" },
+                                onReplaced: { pendingImageDeletions.append($0) }
                             )
                         }
 
                         EditorCard(title: "Social") {
+                            Text("These render as real brand icons in the site footer. Contact — social icons (below) is separate and supports any platform via a custom icon/URL.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                             LabeledField(label: "GitHub URL", text: $settings.github)
                             LabeledField(label: "LinkedIn URL", text: $settings.linkedin)
                             LabeledField(label: "Twitter/X URL", text: $settings.twitter)
                             LabeledField(label: "Email", text: $settings.email)
+                        }
+
+                        EditorCard(title: "Navigation") {
+                            Text("About and Projects get their nav labels from Sections — this only covers Home and Contact, the two fixed anchors.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            navItemField(href: "#home", defaultLabel: "Home", defaultNumber: "00")
+                            navItemField(href: "#contact", defaultLabel: "Contact", defaultNumber: "—")
                         }
 
                         EditorCard(title: "Theme — Light") {
@@ -97,34 +116,61 @@ struct SiteSettingsView: View {
                         EditorCard(title: "Meta") {
                             LabeledField(label: "Page title", text: $settings.metaTitle)
                             LabeledField(label: "Meta description", text: $settings.metaDescription)
-                        }
-
-                        EditorCard(title: "Contact — page copy") {
-                            LabeledField(label: "Form heading", text: $settings.contactHeading)
-                            LabeledField(label: "Form subheading", text: $settings.contactSubheading)
-                            LabeledField(label: "Info panel title", text: $settings.contactInfoTitle)
-                            LabeledField(label: "Info panel subtitle", text: $settings.contactInfoSubtitle)
-                        }
-
-                        EditorCard(title: "Contact — background photo") {
-                            Text("A tall portrait photo works best — it sits behind the info panel.")
+                            Text("Social preview image (og:image) — shown when the site link is shared on iMessage/Slack/X/etc. A 1200×630 landscape image works best.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             SingleImageUploadView(
-                                path: $settings.contactBackgroundImage,
-                                buttonLabel: "Set Background Photo",
-                                repoPath: { ImagePathBuilder.contactBackgroundRepoPath(filename: $0) },
-                                storedPath: { ImagePathBuilder.contactBackgroundStoredPath(filename: $0) },
-                                commitMessage: { "Set contact background photo: \($0)" }
+                                path: $settings.ogImage,
+                                buttonLabel: "Set Preview Image",
+                                thumbnailWidth: 96,
+                                thumbnailHeight: 50,
+                                thumbnailCornerRadius: 6,
+                                repoPath: { ImagePathBuilder.ogImageRepoPath(filename: $0) },
+                                storedPath: { ImagePathBuilder.ogImageStoredPath(filename: $0) },
+                                commitMessage: { "Set social preview image: \($0)" },
+                                onUploaded: { stored in
+                                    Task { await updateOgImageTag(storedPath: stored) }
+                                },
+                                onReplaced: { pendingImageDeletions.append($0) }
                             )
+                            if let ogImageStatus {
+                                Text(ogImageStatus).font(.caption2).foregroundStyle(.secondary)
+                            }
                         }
 
-                        EditorCard(title: "Contact — info rows (address, phone, email, ...)") {
-                            contactInfoItemsEditor
-                        }
+                        // Grouped — the outer VStack was already at
+                        // SwiftUI's 10-child ViewBuilder limit before the
+                        // Navigation card was added; a Group here keeps it
+                        // under that without changing anything visually.
+                        Group {
+                            EditorCard(title: "Contact — page copy") {
+                                LabeledField(label: "Form heading", text: $settings.contactHeading)
+                                LabeledField(label: "Form subheading", text: $settings.contactSubheading)
+                                LabeledField(label: "Info panel title", text: $settings.contactInfoTitle)
+                                LabeledField(label: "Info panel subtitle", text: $settings.contactInfoSubtitle)
+                            }
 
-                        EditorCard(title: "Contact — social icons") {
-                            contactSocialLinksEditor
+                            EditorCard(title: "Contact — background photo") {
+                                Text("A tall portrait photo works best — it sits behind the info panel.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                SingleImageUploadView(
+                                    path: $settings.contactBackgroundImage,
+                                    buttonLabel: "Set Background Photo",
+                                    repoPath: { ImagePathBuilder.contactBackgroundRepoPath(filename: $0) },
+                                    storedPath: { ImagePathBuilder.contactBackgroundStoredPath(filename: $0) },
+                                    commitMessage: { "Set contact background photo: \($0)" },
+                                    onReplaced: { pendingImageDeletions.append($0) }
+                                )
+                            }
+
+                            EditorCard(title: "Contact — info rows (address, phone, email, ...)") {
+                                contactInfoItemsEditor
+                            }
+
+                            EditorCard(title: "Contact — social icons") {
+                                contactSocialLinksEditor
+                            }
                         }
                     }
                     .padding(24)
@@ -134,6 +180,29 @@ struct SiteSettingsView: View {
         .task { await load() }
         .onChange(of: hasChanges) { unsavedGuard.hasUnsavedChanges = $0 }
         .onDisappear { unsavedGuard.hasUnsavedChanges = false }
+    }
+
+    @ViewBuilder
+    private func navItemField(href: String, defaultLabel: String, defaultNumber: String) -> some View {
+        LabeledField(label: defaultLabel, text: navLabelBinding(href: href, defaultLabel: defaultLabel, defaultNumber: defaultNumber))
+    }
+
+    // Home/Contact are the only two nav.items entries the website actually
+    // reads (see js/render-home.js's applyNavItems) — About/Projects get
+    // their nav labels from the dynamic page-sections system instead, so
+    // there's no slot for them here. Creates the entry on first edit rather
+    // than requiring it to pre-exist, since navItems can start empty.
+    private func navLabelBinding(href: String, defaultLabel: String, defaultNumber: String) -> Binding<String> {
+        Binding(
+            get: { settings.navItems.first(where: { $0.href == href })?.label ?? defaultLabel },
+            set: { newValue in
+                if let index = settings.navItems.firstIndex(where: { $0.href == href }) {
+                    settings.navItems[index].label = newValue
+                } else {
+                    settings.navItems.append(NavItem(label: newValue, href: href, number: defaultNumber))
+                }
+            }
+        )
     }
 
     @ViewBuilder
@@ -188,19 +257,41 @@ struct SiteSettingsView: View {
         isLoading = true
         do {
             settings = try await rtdb.fetchSettings()
-            if settings.navItems.isEmpty {
-                settings.navItems = [
-                    NavItem(label: "Home", href: "#home", number: "00"),
-                    NavItem(label: "About", href: "#about", number: "01"),
-                    NavItem(label: "Projects", href: "#projects", number: "02"),
-                    NavItem(label: "Contact", href: "#contact", number: "03"),
-                ]
-            }
             original = settings
         } catch {
             statusMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    // Social-media crawlers don't run JS, so saving ogImage to Firebase
+    // alone would never show up in a real link preview — this static site
+    // has no build step to template settings into the HTML at deploy time,
+    // so the app commits the edit to index.html's og:image tag directly,
+    // the same way it already commits content images.
+    private func updateOgImageTag(storedPath: String) async {
+        ogImageStatus = "Updating social preview image…"
+        do {
+            let githubService = GitHubService()
+            let content = try await githubService.fetchFileContent(path: "index.html")
+            let newURL = ImagePathBuilder.ogImageSiteURL(storedPath: storedPath)
+            let pattern = #"<meta property="og:image" content="[^"]*" />"#
+            let replacement = "<meta property=\"og:image\" content=\"\(newURL)\" />"
+            let regex = try NSRegularExpression(pattern: pattern)
+            let range = NSRange(content.startIndex..., in: content)
+            let updated = regex.stringByReplacingMatches(
+                in: content, range: range,
+                withTemplate: NSRegularExpression.escapedTemplate(for: replacement)
+            )
+            guard updated != content, let data = updated.data(using: .utf8) else {
+                ogImageStatus = "Couldn't find the og:image tag to update in index.html."
+                return
+            }
+            try await githubService.uploadFile(path: "index.html", data: data, commitMessage: "Update social preview image")
+            ogImageStatus = "Social preview image updated."
+        } catch {
+            ogImageStatus = "Image uploaded, but updating index.html failed: \(error.localizedDescription)"
+        }
     }
 
     private func save() async {
@@ -210,5 +301,7 @@ struct SiteSettingsView: View {
         statusMessage = "Saved"
         isSaving = false
         savedToast.flash(seconds: 3)
+        RepoFileCleanup.deleteStoredImages(pendingImageDeletions, commitMessage: "Remove replaced/cleared site image")
+        pendingImageDeletions = []
     }
 }

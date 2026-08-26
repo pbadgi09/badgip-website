@@ -75,4 +75,26 @@ enum ImagePathBuilder {
         let safeId = entryId.isEmpty ? "untitled" : entryId
         return "timeline/\(safeId)/\(filename)"
     }
+
+    /// The Open Graph preview image: "assets/site/og-image-<filename>" repo
+    /// side, "site/og-image-<filename>" stored. Unlike other images, this
+    /// one also needs a stable direct-domain URL (not jsDelivr) for
+    /// index.html's static <meta property="og:image"> tag — social-media
+    /// crawlers read that tag straight from the static HTML and don't run
+    /// JS, so it has to be right immediately, with no CDN purge delay.
+    static func ogImageRepoPath(filename: String) -> String {
+        "assets/site/og-image-\(filename)"
+    }
+
+    static func ogImageStoredPath(filename: String) -> String {
+        "site/og-image-\(filename)"
+    }
+
+    /// `storedPath` is the assets/-relative path (as returned by
+    /// `SingleImageUploadView`'s `onUploaded` callback) — every stored path
+    /// maps to "assets/" + itself on the real repo/site, same rule
+    /// RepoFileCleanup relies on.
+    static func ogImageSiteURL(storedPath: String) -> String {
+        "https://www.itspranavbadgi.com/assets/\(storedPath)"
+    }
 }

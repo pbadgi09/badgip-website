@@ -197,7 +197,8 @@ struct AboutEditorView: View {
                     thumbnailCornerRadius: 4,
                     repoPath: { ImagePathBuilder.timelineLogoRepoPath(entryId: entry.wrappedValue.id, filename: $0) },
                     storedPath: { ImagePathBuilder.timelineLogoStoredPath(entryId: entry.wrappedValue.id, filename: $0) },
-                    commitMessage: { "Set timeline logo: \($0)" }
+                    commitMessage: { "Set timeline logo: \($0)" },
+                    onReplaced: { pendingLogoDeletions.append($0) }
                 )
                 TextField("Year", text: entry.year).frame(width: 70).textFieldStyle(.badgip)
                 TextField("End (optional)", text: entry.endYear).frame(width: 100).textFieldStyle(.badgip)
