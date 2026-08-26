@@ -160,10 +160,27 @@ struct SectionsView: View {
         isLoading = true
         do {
             allSections = try await rtdb.fetchPageSections()
+            ensureDefaultAboutSections()
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    // About is meant to always exist as a real, manageable section in both
+    // modes — same as it already did in Professional — not just something
+    // that shows up on the live site via a JS-side fallback with no way to
+    // reorder or manage it from here. Seed it automatically for whichever
+    // mode is missing it, the same way clicking "Add Section" would.
+    private func ensureDefaultAboutSections() {
+        for defaultMode in ["professional", "personal"] {
+            guard !allSections.contains(where: { $0.mode == defaultMode && $0.kind == "about" }) else { continue }
+            let order = allSections.filter { $0.mode == defaultMode }.count
+            let section = PageSection(id: "", kind: "about", mode: defaultMode, order: order)
+            if let saved = try? rtdb.savePageSection(section) {
+                allSections.append(saved)
+            }
+        }
     }
 }
 
