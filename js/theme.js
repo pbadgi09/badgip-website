@@ -35,11 +35,13 @@ function applyThemeColors(theme) {
 export function initThemeToggle() {
   const toggle = document.getElementById('themeToggle');
   if (!toggle) return;
+  toggle.setAttribute('aria-checked', String(currentTheme() === 'dark'));
   toggle.addEventListener('click', () => {
     const next = currentTheme() === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem(STORAGE_KEY, next);
     applyThemeColors(next);
+    toggle.setAttribute('aria-checked', String(next === 'dark'));
   });
 }
 

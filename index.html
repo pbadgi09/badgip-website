@@ -39,7 +39,16 @@
   </div>
 
   <nav class="site-nav" id="siteNav" data-open="false">
-    <button type="button" class="site-nav__logo mono" id="themeToggle" aria-label="Switch between light and dark theme">PB</button>
+    <button type="button" class="theme-toggle" id="themeToggle" role="switch" aria-checked="false" aria-label="Switch between light and dark theme">
+      <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.5" />
+        <path d="M12 2.5v2.5M12 19v2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M2.5 12H5M19 12h2.5M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8" />
+      </svg>
+      <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
+      </svg>
+      <span class="theme-toggle__thumb mono" aria-hidden="true">PB</span>
+    </button>
     <button class="site-nav__toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
       <span class="bar-1"></span>
       <span class="bar-2"></span>
