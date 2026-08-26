@@ -9,6 +9,8 @@ struct AboutEditorView: View {
     @State private var isSaving = false
     @State private var statusMessage: String?
     @StateObject private var savedToast = SavedToastController()
+    @State private var draftProfessionalKeyword = ""
+    @State private var draftPersonalKeyword = ""
 
     private var hasChanges: Bool { about != original }
     // "Saved" only shows for a few seconds after a save, and only while
@@ -53,13 +55,13 @@ struct AboutEditorView: View {
                             TextEditor(text: $about.professionalBio)
                                 .frame(minHeight: 90)
                             fontSizeControl(label: "Bio font size", size: $about.professionalBioFontSize)
-                            highlightsEditor(label: "Highlighted Keywords", keywords: $about.professionalHighlights)
+                            highlightsEditor(label: "Highlighted Keywords", keywords: $about.professionalHighlights, draft: $draftProfessionalKeyword)
                         }
                         EditorCard(title: "Personal Bio") {
                             TextEditor(text: $about.personalBio)
                                 .frame(minHeight: 90)
                             fontSizeControl(label: "Bio font size", size: $about.personalBioFontSize)
-                            highlightsEditor(label: "Highlighted Keywords", keywords: $about.personalHighlights)
+                            highlightsEditor(label: "Highlighted Keywords", keywords: $about.personalHighlights, draft: $draftPersonalKeyword)
                         }
                         EditorCard(title: "Professional Timeline") {
                             timelineEditor(entries: $about.professionalTimeline)
@@ -98,38 +100,47 @@ struct AboutEditorView: View {
     }
 
     @ViewBuilder
-    private func highlightsEditor(label: String, keywords: Binding<[HighlightKeyword]>) -> some View {
+    private func highlightsEditor(label: String, keywords: Binding<[HighlightKeyword]>, draft: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label).font(.caption).foregroundStyle(.secondary)
-            ForEach(keywords) { $item in
-                HStack {
-                    TextField("Keyword", text: $item.keyword).textFieldStyle(.badgip)
-                    ColorPicker(
-                        "",
-                        selection: Binding(
-                            get: { Color(hex: item.color) ?? .badgipAccent },
-                            set: { newColor in
-                                if let converted = newColor.hexString { item.color = converted }
+
+            if !keywords.wrappedValue.isEmpty {
+                FlowLayout(data: keywords.wrappedValue, spacing: 8) { item in
+                    KeywordPill(
+                        keyword: item,
+                        onColorChange: { newColor in
+                            if let index = keywords.wrappedValue.firstIndex(where: { $0.id == item.id }) {
+                                keywords.wrappedValue[index].color = newColor
                             }
-                        )
+                        },
+                        onDelete: {
+                            keywords.wrappedValue.removeAll { $0.id == item.id }
+                        }
                     )
-                    .labelsHidden()
-                    Button {
-                        keywords.wrappedValue.removeAll { $0.id == item.id }
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.badgipIcon(tint: .red))
                 }
             }
-            Button {
-                keywords.wrappedValue.append(HighlightKeyword())
-            } label: {
-                Label("Add Keyword", systemImage: "plus")
+
+            HStack {
+                TextField("Add keyword, then press Return", text: draft)
+                    .textFieldStyle(.badgip)
+                    .onSubmit { addKeyword(to: keywords, draft: draft) }
+                Button {
+                    addKeyword(to: keywords, draft: draft)
+                } label: {
+                    Label("Add", systemImage: "plus")
+                }
+                .buttonStyle(.badgipSecondary)
+                .disabled(draft.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty)
             }
-            .buttonStyle(.badgipSecondary)
         }
         .padding(.top, 4)
+    }
+
+    private func addKeyword(to keywords: Binding<[HighlightKeyword]>, draft: Binding<String>) {
+        let trimmed = draft.wrappedValue.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        keywords.wrappedValue.append(HighlightKeyword(keyword: trimmed))
+        draft.wrappedValue = ""
     }
 
     @ViewBuilder
@@ -213,5 +224,52 @@ struct AboutEditorView: View {
         statusMessage = "Saved"
         isSaving = false
         savedToast.flash(seconds: 3)
+    }
+}
+
+private struct KeywordPill: View {
+    let keyword: HighlightKeyword
+    let onColorChange: (String) -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(Color(hex: keyword.color) ?? .badgipAccent)
+                    .frame(width: 14, height: 14)
+                // A real ColorPicker, made effectively invisible but still
+                // hit-testable, layered over the plain circle above — lets
+                // tapping the circle open the system color panel without
+                // giving up the compact custom-drawn swatch look.
+                ColorPicker(
+                    "",
+                    selection: Binding(
+                        get: { Color(hex: keyword.color) ?? .badgipAccent },
+                        set: { newColor in
+                            if let converted = newColor.hexString { onColorChange(converted) }
+                        }
+                    )
+                )
+                .labelsHidden()
+                .opacity(0.015)
+                .frame(width: 14, height: 14)
+            }
+            Text(keyword.keyword)
+                .font(.callout)
+                .lineLimit(1)
+            Button(action: onDelete) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .padding(3)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Capsule().fill(Color.badgipSurfaceHover))
+        .overlay(Capsule().strokeBorder(Color.badgipBorder))
+        .fixedSize()
     }
 }
