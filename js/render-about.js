@@ -81,78 +81,99 @@ function renderProfessionalTimeline(bio, timelineEntries, fontSize, highlights) 
   });
 }
 
-// Personal timeline: a horizontal scrolling strip (see .timeline-horizontal
-// in css/layout.css, and the mode==='personal' class-swap in
-// render-sections.js) mixing plain location/milestone entries with
+// Personal timeline: a real zigzag timeline (a continuous strip with a dot
+// per item, content alternating above/below — see .timeline-horizontal in
+// css/layout.css) mixing plain location/milestone entries with
 // blog-post-linked ones (TimelineEntry.blogRef), in whatever order the mac
-// app's drag-to-reorder left them in.
+// app's drag-to-reorder left them in. Horizontally scrollable since the
+// list is unbounded, unlike the reference design it's modeled on.
 function renderPersonalTimeline(bio, timelineEntries, fontSize, highlights, blogPosts) {
   renderBio('personal', bio, fontSize, highlights);
 
   const timelineEl = document.getElementById('timeline-personal');
   if (!timelineEl) return;
 
-  const postsById = new Map(blogPosts.map((p) => [p.id, p]));
+  const track = document.createElement('div');
+  track.className = 'timeline-horizontal__track';
 
+  const postsById = new Map(blogPosts.map((p) => [p.id, p]));
+  // Index only advances for items actually rendered (a blogRef pointing at
+  // a missing/unpublished post is skipped) so the above/below alternation
+  // never has a silent gap in it.
+  let index = 0;
   (timelineEntries || []).forEach((entry) => {
+    let item;
     if (entry.blogRef) {
       const post = postsById.get(entry.blogRef);
-      if (post) timelineEl.appendChild(buildBlogTimelineCard(post));
-      return;
+      if (!post) return;
+      item = buildBlogTimelineItem(post, index);
+    } else {
+      item = buildLocationTimelineItem(entry, index);
     }
-    timelineEl.appendChild(buildLocationTimelineCard(entry));
+    track.appendChild(item);
+    index += 1;
   });
+
+  timelineEl.appendChild(track);
 }
 
-function timelineCardMedia(imagePath, fallbackLetter) {
-  if (imagePath) {
-    return `<img src="${resolveUrl(imagePath)}" alt="" loading="lazy" onerror="this.closest('.timeline-card__media').classList.add('timeline-card__media--empty'); this.remove();" />`;
-  }
-  return `<span class="mono">${escapeHtml(fallbackLetter)}</span>`;
+// Image sits above year/title, per how this section is meant to read —
+// but is omitted entirely (not a placeholder box) when there's no image,
+// so an entry without one is simply shorter, not full of empty space.
+function timelineItemMedia(imagePath) {
+  if (!imagePath) return '';
+  return `<div class="timeline-item__media"><img src="${resolveUrl(imagePath)}" alt="" loading="lazy" onerror="this.closest('.timeline-item__media').remove();" /></div>`;
 }
 
-function buildLocationTimelineCard(entry) {
-  const card = document.createElement('div');
-  card.className = 'timeline-card reveal';
-  const fallbackLetter = (entry.title || '?').charAt(0).toUpperCase();
-  card.innerHTML = `
-    <div class="timeline-card__media${entry.logo ? '' : ' timeline-card__media--empty'}">
-      ${timelineCardMedia(entry.logo, fallbackLetter)}
-    </div>
-    <div class="timeline-card__body">
-      <span class="timeline-card__year mono">${escapeHtml(formatYearRange(entry))}</span>
-      <h3 class="timeline-card__title">${escapeHtml(entry.title)}</h3>
-      ${entry.description ? `<p class="timeline-card__description">${escapeHtml(entry.description)}</p>` : ''}
-    </div>
+// Builds the shared above/dot/below skeleton every timeline item uses —
+// `content` (already-built inner HTML) goes on whichever side `index`'s
+// parity puts it on; the other side stays an empty (but still
+// flex-sized) sibling, which is what keeps every item's dot vertically
+// centered on the shared line regardless of how tall its neighbors'
+// content is (see the flex layout in css/layout.css).
+function timelineItemSkeleton(content, index) {
+  const isAbove = index % 2 === 0;
+  return `
+    <div class="timeline-item__above">${isAbove ? content : ''}</div>
+    <div class="timeline-item__dot-row"><span class="timeline-item__dot"></span></div>
+    <div class="timeline-item__below">${isAbove ? '' : content}</div>
   `;
-  return card;
 }
 
-function buildBlogTimelineCard(post) {
+function buildLocationTimelineItem(entry, index) {
+  const content = `
+    ${timelineItemMedia(entry.logo)}
+    <span class="timeline-item__year mono">${escapeHtml(formatYearRange(entry))}</span>
+    <h3 class="timeline-item__title">${escapeHtml(entry.title)}</h3>
+    ${entry.description ? `<p class="timeline-item__description">${escapeHtml(entry.description)}</p>` : ''}
+  `;
+  const item = document.createElement('div');
+  item.className = 'timeline-item reveal';
+  item.innerHTML = timelineItemSkeleton(content, index);
+  return item;
+}
+
+function buildBlogTimelineItem(post, index) {
   const title = firstValueOfType(post.sections, 'title') || 'Untitled';
-  const card = document.createElement('div');
-  card.className = 'timeline-card timeline-card--blog reveal';
-  card.tabIndex = 0;
-  card.setAttribute('role', 'button');
-  const fallbackLetter = title.charAt(0).toUpperCase();
-  card.innerHTML = `
-    <div class="timeline-card__media${post.coverImage ? '' : ' timeline-card__media--empty'}">
-      ${timelineCardMedia(post.coverImage, fallbackLetter)}
-    </div>
-    <div class="timeline-card__body">
-      ${post.timelineYear ? `<span class="timeline-card__year mono">${escapeHtml(post.timelineYear)}</span>` : ''}
-      <h3 class="timeline-card__title">${escapeHtml(title)}</h3>
-    </div>
+  const content = `
+    ${timelineItemMedia(post.coverImage)}
+    ${post.timelineYear ? `<span class="timeline-item__year mono">${escapeHtml(post.timelineYear)}</span>` : ''}
+    <h3 class="timeline-item__title">${escapeHtml(title)}</h3>
   `;
-  const open = () => openBlogDetail(post, card);
-  card.addEventListener('click', open);
-  card.addEventListener('keydown', (e) => {
+  const item = document.createElement('div');
+  item.className = 'timeline-item timeline-item--blog reveal';
+  item.tabIndex = 0;
+  item.setAttribute('role', 'button');
+  item.innerHTML = timelineItemSkeleton(content, index);
+  const open = () => openBlogDetail(post, item);
+  item.addEventListener('click', open);
+  item.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       open();
     }
   });
-  return card;
+  return item;
 }
 
 function formatYearRange(entry) {
