@@ -23,6 +23,10 @@ struct YoutubeListView: View {
             }
             .padding(24)
 
+            ChannelInfoCard()
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+
             if let errorMessage {
                 Text(errorMessage).foregroundStyle(.red).font(.caption).padding(.horizontal, 24)
             }
@@ -212,5 +216,92 @@ private struct YoutubeEditView: View {
             errorMessage = error.localizedDescription
         }
         isSaving = false
+    }
+}
+
+/// Optional — the site only shows this as a clickable card (avatar + name,
+/// linking to the channel) once a URL is set; empty fields mean nothing
+/// renders there at all. Its own small always-visible card here (not a
+/// sheet) since it's just three fields and site-wide, not per-video.
+private struct ChannelInfoCard: View {
+    @EnvironmentObject private var rtdb: RTDBService
+    @State private var channel = YoutubeChannel()
+    @State private var original = YoutubeChannel()
+    @State private var isLoading = true
+    @State private var isSaving = false
+    @StateObject private var savedToast = SavedToastController()
+    // This card only persists on its own Save — a replaced/cleared avatar's
+    // old file must not be deleted until then, or discarding an in-progress
+    // edit (by navigating away before saving) would leave RTDB pointing at
+    // a file that's already gone. Same pattern as every other Save-button
+    // screen in the app.
+    @State private var pendingImageDeletions: [String] = []
+
+    private var hasChanges: Bool { channel != original }
+    private var showSavedBadge: Bool { savedToast.isVisible && !hasChanges }
+
+    var body: some View {
+        EditorCard(title: "Your Channel (optional)") {
+            Text("Shown as a clickable card below your videos, linking out to your channel. Leave the URL blank to hide it.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if isLoading {
+                ProgressView().controlSize(.small)
+            } else {
+                LabeledField(label: "Channel Name", text: $channel.name)
+                LabeledField(label: "Channel URL", text: $channel.url)
+                SingleImageUploadView(
+                    path: $channel.avatarImage,
+                    buttonLabel: "Set Avatar",
+                    thumbnailWidth: 48,
+                    thumbnailHeight: 48,
+                    thumbnailCornerRadius: 24,
+                    repoPath: { ImagePathBuilder.youtubeChannelAvatarRepoPath(filename: $0) },
+                    storedPath: { ImagePathBuilder.youtubeChannelAvatarStoredPath(filename: $0) },
+                    commitMessage: { "Set YouTube channel avatar: \($0)" },
+                    onReplaced: { pendingImageDeletions.append($0) }
+                )
+                HStack {
+                    if showSavedBadge {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.badgipAccent)
+                            Text("Saved").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        if isSaving {
+                            ProgressView().controlSize(.small).tint(.black)
+                        } else {
+                            Text("Save")
+                        }
+                    }
+                    .buttonStyle(.badgipPrimary)
+                    .controlSize(.small)
+                    .disabled(isSaving || !hasChanges)
+                }
+            }
+        }
+        .task { await load() }
+    }
+
+    private func load() async {
+        isLoading = true
+        channel = (try? await rtdb.fetchYoutubeChannel()) ?? YoutubeChannel()
+        original = channel
+        isLoading = false
+    }
+
+    private func save() async {
+        isSaving = true
+        rtdb.saveYoutubeChannel(channel)
+        original = channel
+        isSaving = false
+        savedToast.flash()
+        RepoFileCleanup.deleteStoredImages(pendingImageDeletions, commitMessage: "Remove replaced YouTube channel avatar")
+        pendingImageDeletions = []
     }
 }

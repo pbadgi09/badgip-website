@@ -22,6 +22,7 @@ enum ImageReferenceScanner {
         async let sections = (try? await rtdb.fetchPageSections()) ?? []
         async let settings = try? await rtdb.fetchSettings()
         async let about = try? await rtdb.fetchAbout()
+        async let youtubeChannel = try? await rtdb.fetchYoutubeChannel()
 
         var refs: [ImageReference] = []
 
@@ -76,6 +77,10 @@ enum ImageReferenceScanner {
             for entry in about.personalTimeline where RepoFileCleanup.isInternalPath(entry.logo) {
                 refs.append(ImageReference(path: entry.logo, label: "Personal Timeline — \(entry.title.isEmpty ? "Logo" : entry.title)"))
             }
+        }
+
+        if let youtubeChannel = await youtubeChannel, RepoFileCleanup.isInternalPath(youtubeChannel.avatarImage) {
+            refs.append(ImageReference(path: youtubeChannel.avatarImage, label: "YouTube Channel — Avatar"))
         }
 
         // One thumbnail per unique file, not one per place it's used —

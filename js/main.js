@@ -1,8 +1,8 @@
-import { getSettings, getAbout, getProjects, getPersonalYoutube, getPersonalBlog, getPageSections } from './data-service.js';
+import { getSettings, getAbout, getProjects, getPersonalYoutube, getYoutubeChannel, getPersonalBlog, getPageSections } from './data-service.js';
 import { renderHero, renderContactAndFooter, applyNavItems } from './render-home.js';
 import { renderAbout } from './render-about.js';
 import { renderProjects } from './render-projects.js';
-import { renderYoutubeCarousel, renderBlogGrid, setBlogAuthor } from './render-personal.js';
+import { renderYoutubeCarousel, renderYoutubeChannel, renderBlogGrid, setBlogAuthor } from './render-personal.js';
 import { mountPageSections } from './render-sections.js';
 import { initContactForm } from './contact-form.js';
 import { initModeSwitch } from './mode-switch.js';
@@ -21,12 +21,13 @@ async function boot() {
     getAbout(),
     getProjects(),
     getPersonalYoutube(),
+    getYoutubeChannel(),
     getPersonalBlog(),
     getPageSections(),
   ]);
   const preloaderDone = initPreloader(dataPromise);
 
-  const [settings, about, projects, youtubeVideos, blogPosts, pageSections] = await dataPromise;
+  const [settings, about, projects, youtubeVideos, youtubeChannel, blogPosts, pageSections] = await dataPromise;
 
   // Sections must exist in the DOM before mode-switch/nav try to select
   // them. `about` is passed through so a personal/professional bio with no
@@ -42,6 +43,7 @@ async function boot() {
   renderAbout(about);
   renderProjects(projects);
   renderYoutubeCarousel(youtubeVideos);
+  renderYoutubeChannel(youtubeChannel);
   setBlogAuthor({ name: settings.hero?.name, avatar: settings.hero?.profileImage });
   renderBlogGrid(blogPosts);
 

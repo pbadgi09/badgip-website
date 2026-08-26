@@ -37,6 +37,29 @@ const MAX_BLOG_POSTS = 5;
 
 // ---------- YouTube carousel ----------
 
+// Only shows if a channel URL is actually set — leaving it blank in the
+// app hides this entirely rather than showing a broken/empty card.
+export function renderYoutubeChannel(channel) {
+  const link = document.getElementById('youtubeChannel');
+  if (!link) return;
+  if (!channel || !channel.url) {
+    link.hidden = true;
+    return;
+  }
+  link.href = channel.url;
+  document.getElementById('youtubeChannelName').textContent = channel.name || '';
+
+  const avatar = document.getElementById('youtubeChannelAvatar');
+  if (channel.avatarImage) {
+    avatar.src = imageUrl(channel.avatarImage);
+    avatar.hidden = false;
+    avatar.addEventListener('error', () => { avatar.hidden = true; }, { once: true });
+  } else {
+    avatar.hidden = true;
+  }
+  link.hidden = false;
+}
+
 export function renderYoutubeCarousel(allVideos) {
   const videos = allVideos.slice(0, MAX_YOUTUBE_VIDEOS);
   const carousel = document.getElementById('youtubeCarousel');

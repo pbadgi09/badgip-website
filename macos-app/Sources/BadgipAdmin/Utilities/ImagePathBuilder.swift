@@ -78,6 +78,16 @@ enum ImagePathBuilder {
         "site/profile-\(filename)"
     }
 
+    /// The YouTube channel card's avatar: "assets/site/youtube-avatar-<filename>"
+    /// repo side, "site/youtube-avatar-<filename>" stored.
+    static func youtubeChannelAvatarRepoPath(filename: String) -> String {
+        "assets/site/youtube-avatar-\(filename)"
+    }
+
+    static func youtubeChannelAvatarStoredPath(filename: String) -> String {
+        "site/youtube-avatar-\(filename)"
+    }
+
     /// A contact info row or contact social link's icon, when uploaded
     /// rather than typed as an emoji/URL: "assets/site/contact-icons/<itemId>/<filename>"
     /// repo side, "site/contact-icons/<itemId>/<filename>" stored.

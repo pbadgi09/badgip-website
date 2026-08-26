@@ -100,6 +100,16 @@ final class RTDBService: ObservableObject {
         db.updateChildValues(updates)
     }
 
+    func fetchYoutubeChannel() async throws -> YoutubeChannel {
+        let snapshot = try await db.child("youtubeChannel").getData()
+        guard let value = snapshot.value as? [String: Any] else { return YoutubeChannel() }
+        return YoutubeChannel.from(value)
+    }
+
+    func saveYoutubeChannel(_ channel: YoutubeChannel) {
+        db.child("youtubeChannel").setValue(channel.asDictionary)
+    }
+
     // MARK: - Personal Blog
 
     func fetchBlogPosts() async throws -> [BlogPost] {

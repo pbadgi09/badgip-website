@@ -107,6 +107,16 @@ export async function getPersonalYoutube() {
   }
 }
 
+export async function getYoutubeChannel() {
+  try {
+    const snapshot = await get(ref(db, 'youtubeChannel'));
+    return snapshot.val() || { name: '', url: '', avatarImage: '' };
+  } catch (err) {
+    console.error('Failed to fetch YouTube channel:', err);
+    return { name: '', url: '', avatarImage: '' };
+  }
+}
+
 export async function getPersonalBlog() {
   try {
     const snapshot = await get(ref(db, 'personalBlog'));
