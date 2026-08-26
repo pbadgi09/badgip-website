@@ -44,6 +44,20 @@ enum ImagePathBuilder {
         return "blog/\(safeSlug)/\(filename)"
     }
 
+    /// A blog post can have multiple image-type sections — namespaced by
+    /// section id (not just slug) so two sections that happen to upload a
+    /// same-named file (e.g. two different "IMG_0001.jpg" photos) don't
+    /// silently overwrite each other in the repo.
+    static func blogSectionImageRepoPath(slug: String, sectionId: String, filename: String) -> String {
+        let safeSlug = slug.isEmpty ? "untitled" : slug
+        return "assets/blog/\(safeSlug)/sections/\(sectionId)/\(filename)"
+    }
+
+    static func blogSectionImageStoredPath(slug: String, sectionId: String, filename: String) -> String {
+        let safeSlug = slug.isEmpty ? "untitled" : slug
+        return "blog/\(safeSlug)/sections/\(sectionId)/\(filename)"
+    }
+
     /// The contact section's single background photo:
     /// "assets/site/contact-bg-<filename>" repo side, "site/contact-bg-<filename>" stored.
     static func contactBackgroundRepoPath(filename: String) -> String {
@@ -62,6 +76,19 @@ enum ImagePathBuilder {
 
     static func heroProfileStoredPath(filename: String) -> String {
         "site/profile-\(filename)"
+    }
+
+    /// A contact info row or contact social link's icon, when uploaded
+    /// rather than typed as an emoji/URL: "assets/site/contact-icons/<itemId>/<filename>"
+    /// repo side, "site/contact-icons/<itemId>/<filename>" stored.
+    static func contactIconRepoPath(itemId: String, filename: String) -> String {
+        let safeId = itemId.isEmpty ? "untitled" : itemId
+        return "assets/site/contact-icons/\(safeId)/\(filename)"
+    }
+
+    static func contactIconStoredPath(itemId: String, filename: String) -> String {
+        let safeId = itemId.isEmpty ? "untitled" : itemId
+        return "site/contact-icons/\(safeId)/\(filename)"
     }
 
     /// A professional-timeline entry's optional company logo:

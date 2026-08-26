@@ -133,6 +133,136 @@ struct LinkField: View {
     }
 }
 
+/// An icon field that supports emoji, a pasted URL, OR a real upload — the
+/// text field stays (an emoji is a completely valid, common choice here),
+/// but a picker button next to it removes the need to hand-type a repo
+/// path for the upload case. Shared by CustomSectionEditView's item icons
+/// and SiteSettingsView's contact info/social icons so the same easy
+/// upload-or-type behavior is consistent everywhere an icon is edited.
+struct IconPickerField: View {
+    @Binding var icon: String
+    var placeholder: String = "Icon (emoji, URL, or upload \u{2192})"
+    var maxDimension: CGFloat = 800
+    var repoPath: (String) -> String
+    var storedPath: (String) -> String
+    var commitMessage: (String) -> String
+    /// Fires with the old path when an upload replaces an existing one —
+    /// same deferred-deletion contract as SingleImageUploadView's
+    /// onReplaced: the caller decides whether/when to actually delete it
+    /// (typically queuing it until its own save() commits), since this
+    /// field is used inside deliberate-Save screens.
+    var onReplaced: ((String) -> Void)? = nil
+
+    @State private var isUploading = false
+    @State private var uploadError: String?
+    @State private var isPickingFile = false
+
+    private let githubService = GitHubService()
+
+    private var isImagePath: Bool { RepoFileCleanup.isInternalImagePath(icon) || isExternalImageURL }
+
+    private var isExternalImageURL: Bool {
+        let lowered = icon.lowercased()
+        guard lowered.hasPrefix("http://") || lowered.hasPrefix("https://") else { return false }
+        return [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"].contains { lowered.hasSuffix($0) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                iconPreview
+                TextField(placeholder, text: $icon).textFieldStyle(.badgip)
+                Button {
+                    isPickingFile = true
+                } label: {
+                    if isUploading {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
+                .buttonStyle(.badgipIcon)
+                .disabled(isUploading)
+            }
+            if let uploadError {
+                Text(uploadError).font(.caption2).foregroundStyle(.red)
+            }
+        }
+        .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.image]) { result in
+            handlePicked(result)
+        }
+    }
+
+    @ViewBuilder
+    private var iconPreview: some View {
+        Group {
+            if icon.isEmpty {
+                RoundedRectangle(cornerRadius: 6).fill(Color.badgipSurfaceHover)
+            } else if isImagePath, let url = resolvedURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fit).padding(3)
+                    case .failure:
+                        Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary)
+                    default:
+                        ProgressView().controlSize(.small)
+                    }
+                }
+            } else {
+                Text(icon).font(.title3)
+            }
+        }
+        .frame(width: 32, height: 32)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Color.badgipSurfaceHover))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var resolvedURL: URL? {
+        if isExternalImageURL { return URL(string: icon) }
+        return JsDelivrService.composeURL(forStoredPath: icon)
+    }
+
+    private func handlePicked(_ result: Result<URL, Error>) {
+        switch result {
+        case .failure(let error):
+            uploadError = error.localizedDescription
+        case .success(let url):
+            Task { await upload(from: url) }
+        }
+    }
+
+    private func upload(from url: URL) async {
+        isUploading = true
+        uploadError = nil
+        defer { isUploading = false }
+
+        guard url.startAccessingSecurityScopedResource() else {
+            uploadError = "Couldn't access the selected file."
+            return
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+
+        do {
+            let rawData = try Data(contentsOf: url)
+            let data = ImageCompressor.compress(rawData, maxDimension: maxDimension)
+            let filename = url.lastPathComponent
+            let repo = repoPath(filename)
+            let stored = storedPath(filename)
+            let previousIcon = icon
+
+            try await githubService.uploadFile(path: repo, data: data, commitMessage: commitMessage(filename))
+            await JsDelivrService.purge(repoPath: repo)
+            icon = stored
+            if previousIcon != stored, RepoFileCleanup.isInternalImagePath(previousIcon) {
+                onReplaced?(previousIcon)
+            }
+        } catch {
+            uploadError = error.localizedDescription
+        }
+    }
+}
+
 /// Standard editor-sheet chrome: title, Cancel/Save actions, a divider, and
 /// a scrolling body — every "edit this thing" sheet in the app uses this so
 /// they all size and scroll the same way instead of growing past the

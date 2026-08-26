@@ -209,11 +209,19 @@ struct SiteSettingsView: View {
     private var contactInfoItemsEditor: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach($settings.contactInfoItems) { $item in
-                HStack {
-                    TextField("Icon (emoji or URL)", text: $item.icon).frame(width: 160).textFieldStyle(.badgip)
+                HStack(alignment: .top) {
+                    IconPickerField(
+                        icon: $item.icon,
+                        repoPath: { ImagePathBuilder.contactIconRepoPath(itemId: item.id, filename: $0) },
+                        storedPath: { ImagePathBuilder.contactIconStoredPath(itemId: item.id, filename: $0) },
+                        commitMessage: { "Set contact info icon: \($0)" },
+                        onReplaced: { pendingImageDeletions.append($0) }
+                    )
+                    .frame(width: 220)
                     TextField("Label (e.g. \"42 Berlin St\" or an email)", text: $item.label).textFieldStyle(.badgip)
                     Button {
                         settings.contactInfoItems.removeAll { $0.id == item.id }
+                        if RepoFileCleanup.isInternalImagePath(item.icon) { pendingImageDeletions.append(item.icon) }
                     } label: {
                         Image(systemName: "trash")
                     }
@@ -233,11 +241,19 @@ struct SiteSettingsView: View {
     private var contactSocialLinksEditor: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach($settings.contactSocialLinks) { $link in
-                HStack {
-                    TextField("Icon (emoji or URL)", text: $link.icon).frame(width: 160).textFieldStyle(.badgip)
+                HStack(alignment: .top) {
+                    IconPickerField(
+                        icon: $link.icon,
+                        repoPath: { ImagePathBuilder.contactIconRepoPath(itemId: link.id, filename: $0) },
+                        storedPath: { ImagePathBuilder.contactIconStoredPath(itemId: link.id, filename: $0) },
+                        commitMessage: { "Set contact social icon: \($0)" },
+                        onReplaced: { pendingImageDeletions.append($0) }
+                    )
+                    .frame(width: 220)
                     TextField("URL", text: $link.url).textFieldStyle(.badgip)
                     Button {
                         settings.contactSocialLinks.removeAll { $0.id == link.id }
+                        if RepoFileCleanup.isInternalImagePath(link.icon) { pendingImageDeletions.append(link.icon) }
                     } label: {
                         Image(systemName: "trash")
                     }

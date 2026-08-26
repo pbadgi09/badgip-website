@@ -193,6 +193,11 @@ private struct BlogEditView: View {
     @State private var original: BlogPost
     @State private var isSaving = false
     @State private var errorMessage: String?
+    // This sheet only persists on Save (Cancel discards) — a replaced or
+    // removed image's old file must not be deleted until save() actually
+    // commits, or discarding the edit would leave RTDB pointing at a file
+    // that's already gone. Same pattern as ProjectEditView/AboutEditorView.
+    @State private var pendingImageDeletions: [String] = []
 
     init(post: BlogPost, onSave: @escaping (BlogPost) -> Void) {
         _post = State(initialValue: post)
@@ -213,10 +218,20 @@ private struct BlogEditView: View {
         ) {
             EditorCard(title: "Basics") {
                 LabeledField(label: "Slug", text: $post.slug)
-                LabeledField(label: "Cover Image (URL or repo path)", text: $post.coverImage)
-                Text("16:9 (a wide, short crop) works best — it becomes the hero image behind the title.")
+                Text("Cover image — 16:9 (a wide, short crop) works best; it becomes the hero image behind the title.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                SingleImageUploadView(
+                    path: $post.coverImage,
+                    buttonLabel: "Set Cover Image",
+                    thumbnailWidth: 96,
+                    thumbnailHeight: 54,
+                    thumbnailCornerRadius: 6,
+                    repoPath: { ImagePathBuilder.blogImageRepoPath(slug: post.slug, filename: $0) },
+                    storedPath: { ImagePathBuilder.blogImageStoredPath(slug: post.slug, filename: $0) },
+                    commitMessage: { "Set cover image for blog post \(post.slug): \($0)" },
+                    onReplaced: { pendingImageDeletions.append($0) }
+                )
                 Picker("Status", selection: $post.status) {
                     Text("Draft").tag("draft")
                     Text("Published").tag("published")
@@ -245,74 +260,31 @@ private struct BlogEditView: View {
     @ViewBuilder
     private var sectionsEditor: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach($post.sections) { $section in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: sectionIcon(section.type))
-                            .foregroundStyle(Color.badgipAccent)
-                            .frame(width: 18)
-                        Picker("Type", selection: $section.type) {
-                            Text("Title").tag("title")
-                            Text("Subtitle").tag("subtitle")
-                            Text("Text").tag("text")
-                            Text("Image").tag("image")
-                            Text("Code").tag("code")
-                            Text("Map").tag("map")
+            // Same nested-List sizing approach used elsewhere in the app
+            // (About's timeline, Custom Sections' items) for drag-to-reorder
+            // inside EditorSheet's own ScrollView on macOS 12 — but section
+            // rows vary a lot in height by type (a Code/Image section is
+            // much taller than a Title section), so the frame height is a
+            // per-type estimate summed across all rows rather than a flat
+            // multiplier. Slightly generous on purpose: a little extra
+            // whitespace at the bottom is harmless, clipping isn't.
+            List {
+                ForEach($post.sections) { $section in
+                    sectionRow(section: $section, onDelete: {
+                        post.sections.removeAll { $0.id == section.id }
+                        if RepoFileCleanup.isInternalPath(section.value), section.type == "image" {
+                            pendingImageDeletions.append(section.value)
                         }
-                        .pickerStyle(.menu)
-                        .labelsHidden()
-                        .frame(width: 160)
-                        Spacer()
-                        Button {
-                            post.sections.removeAll { $0.id == section.id }
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .buttonStyle(.badgipIcon(tint: .red))
-                    }
-
-                    // Standalone title/subtitle sections ARE the caption, so
-                    // the optional per-section caption fields only make
-                    // sense for the other content types.
-                    if !["title", "subtitle"].contains(section.type) {
-                        HStack {
-                            LabeledField(label: "Caption title (optional)", text: $section.title)
-                            LabeledField(label: "Caption subtitle (optional)", text: $section.subtitle)
-                        }
-                    }
-
-                    if section.type == "text" {
-                        LabeledField(label: "Text", text: $section.value, multiline: true)
-                    } else if section.type == "image" {
-                        LabeledField(label: "Image URL or repo path", text: $section.value)
-                        Text("16:9 (a wide, short crop) works best here.")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    } else if section.type == "code" {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Code").font(.caption).foregroundStyle(.secondary)
-                            TextEditor(text: $section.value)
-                                .font(.system(.body, design: .monospaced))
-                                .frame(minHeight: 90)
-                                .padding(6)
-                                .background(RoundedRectangle(cornerRadius: 6).fill(Color.badgipSurface))
-                                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.badgipBorder))
-                        }
-                    } else if section.type == "map" {
-                        LabeledField(label: "Location (e.g. \"Cupertino, CA\")", text: $section.value)
-                    } else {
-                        LabeledField(label: section.type == "title" ? "Title" : "Subtitle", text: $section.value)
-                    }
-
-                    HStack {
-                        OptionalColorField(label: "Accent", hex: $section.accentColor, fallback: "#000000")
-                        OptionalColorField(label: "Text color", hex: $section.textColor, fallback: "#0a0a0a")
-                    }
+                    })
+                    .listRowInsets(EdgeInsets())
                 }
-                .padding(12)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color.badgipSurface))
-                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.badgipBorder))
+                .onMove { source, destination in
+                    post.sections.move(fromOffsets: source, toOffset: destination)
+                }
             }
+            .listStyle(.plain)
+            .frame(height: post.sections.reduce(CGFloat(8)) { $0 + estimatedRowHeight($1.type) })
+
             Button {
                 post.sections.append(BlogSection(type: "text", value: ""))
             } label: {
@@ -320,6 +292,90 @@ private struct BlogEditView: View {
             }
             .buttonStyle(.badgipSecondary)
         }
+    }
+
+    private func estimatedRowHeight(_ type: String) -> CGFloat {
+        ["title", "subtitle"].contains(type) ? 190 : 310
+    }
+
+    @ViewBuilder
+    private func sectionRow(section: Binding<BlogSection>, onDelete: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: sectionIcon(section.wrappedValue.type))
+                    .foregroundStyle(Color.badgipAccent)
+                    .frame(width: 18)
+                Picker("Type", selection: section.type) {
+                    Text("Title").tag("title")
+                    Text("Subtitle").tag("subtitle")
+                    Text("Text").tag("text")
+                    Text("Image").tag("image")
+                    Text("Code").tag("code")
+                    Text("Map").tag("map")
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .frame(width: 160)
+                Spacer()
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.badgipIcon(tint: .red))
+                Image(systemName: "line.3.horizontal")
+                    .foregroundStyle(.tertiary)
+            }
+
+            // Standalone title/subtitle sections ARE the caption, so
+            // the optional per-section caption fields only make
+            // sense for the other content types.
+            if !["title", "subtitle"].contains(section.wrappedValue.type) {
+                HStack {
+                    LabeledField(label: "Caption title (optional)", text: section.title)
+                    LabeledField(label: "Caption subtitle (optional)", text: section.subtitle)
+                }
+            }
+
+            if section.wrappedValue.type == "text" {
+                LabeledField(label: "Text", text: section.value, multiline: true)
+            } else if section.wrappedValue.type == "image" {
+                Text("Image — 16:9 (a wide, short crop) works best here.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                SingleImageUploadView(
+                    path: section.value,
+                    buttonLabel: "Set Image",
+                    thumbnailWidth: 80,
+                    thumbnailHeight: 45,
+                    thumbnailCornerRadius: 6,
+                    repoPath: { ImagePathBuilder.blogSectionImageRepoPath(slug: post.slug, sectionId: section.wrappedValue.id, filename: $0) },
+                    storedPath: { ImagePathBuilder.blogSectionImageStoredPath(slug: post.slug, sectionId: section.wrappedValue.id, filename: $0) },
+                    commitMessage: { "Set section image for blog post \(post.slug): \($0)" },
+                    onReplaced: { pendingImageDeletions.append($0) }
+                )
+            } else if section.wrappedValue.type == "code" {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Code").font(.caption).foregroundStyle(.secondary)
+                    TextEditor(text: section.value)
+                        .font(.system(.body, design: .monospaced))
+                        .frame(minHeight: 90)
+                        .padding(6)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.badgipSurface))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.badgipBorder))
+                }
+            } else if section.wrappedValue.type == "map" {
+                LabeledField(label: "Location (e.g. \"Cupertino, CA\")", text: section.value)
+            } else {
+                LabeledField(label: section.wrappedValue.type == "title" ? "Title" : "Subtitle", text: section.value)
+            }
+
+            HStack {
+                OptionalColorField(label: "Accent", hex: section.accentColor, fallback: "#000000")
+                OptionalColorField(label: "Text color", hex: section.textColor, fallback: "#0a0a0a")
+            }
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.badgipSurface))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.badgipBorder))
     }
 
     private func sectionIcon(_ type: String) -> String {
@@ -340,6 +396,8 @@ private struct BlogEditView: View {
             post = try rtdb.saveBlogPost(post)
             original = post
             onSave(post)
+            RepoFileCleanup.deleteStoredImages(pendingImageDeletions, commitMessage: "Remove replaced/deleted image for blog post \(post.slug)")
+            pendingImageDeletions = []
         } catch {
             errorMessage = error.localizedDescription
         }
