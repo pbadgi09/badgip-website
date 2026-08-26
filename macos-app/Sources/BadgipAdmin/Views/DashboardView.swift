@@ -9,6 +9,7 @@ enum DashboardSection: String, CaseIterable, Identifiable {
     case gallery = "Gallery"
     case settings = "Settings"
     case messages = "Messages"
+    case server = "Server"
     case advanced = "Advanced"
 
     var id: String { rawValue }
@@ -23,6 +24,7 @@ enum DashboardSection: String, CaseIterable, Identifiable {
         case .gallery: return "photo.on.rectangle.angled"
         case .settings: return "gearshape"
         case .messages: return "envelope"
+        case .server: return "server.rack"
         case .advanced: return "wrench.and.screwdriver"
         }
     }
@@ -130,6 +132,7 @@ struct DashboardView: View {
         case .gallery: GalleryView()
         case .settings: SiteSettingsView()
         case .messages: MessagesInboxView()
+        case .server: ServerView()
         case .advanced: DeployControlsView()
         }
     }

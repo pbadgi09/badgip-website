@@ -6,6 +6,7 @@ struct BadgipAdminApp: App {
     @StateObject private var authService = FirebaseAuthService()
     @StateObject private var rtdbService = RTDBService()
     @StateObject private var unsavedChangesGuard = UnsavedChangesGuard()
+    @StateObject private var localServerService = LocalServerService()
 
     init() {
         Self.configureFirebase()
@@ -23,6 +24,7 @@ struct BadgipAdminApp: App {
             .environmentObject(authService)
             .environmentObject(rtdbService)
             .environmentObject(unsavedChangesGuard)
+            .environmentObject(localServerService)
             .frame(minWidth: 960, minHeight: 640)
             .tint(.badgipAccent)
             // .tint() alone doesn't reach AppKit-bridged controls like the

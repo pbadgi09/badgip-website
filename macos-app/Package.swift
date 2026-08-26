@@ -15,6 +15,9 @@ let package = Package(
         // lowest version firebase-ios-sdk 10.29.0 allows) has no explicit
         // platform floor and resolves cleanly.
         .package(url: "https://github.com/firebase/nanopb.git", exact: "2.30909.0"),
+        // Lightweight embedded HTTP server backing the "Server" tab's local
+        // companion web server — pure Swift, no transitive dependencies.
+        .package(url: "https://github.com/httpswift/swifter.git", from: "1.5.0"),
     ],
     targets: [
         .executableTarget(
@@ -25,6 +28,7 @@ let package = Package(
                 // and FirebaseDatabase, and `import FirebaseCore` still resolves.
                 .product(name: "FirebaseAuth", package: "firebase-ios-sdk"),
                 .product(name: "FirebaseDatabase", package: "firebase-ios-sdk"),
+                .product(name: "Swifter", package: "swifter"),
             ],
             path: "Sources/BadgipAdmin",
             exclude: [
