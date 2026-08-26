@@ -62,6 +62,77 @@ struct LabeledField: View {
     }
 }
 
+/// The site's small set of reliable, always-present anchors — matches
+/// index.html's fixed section ids (see js/smooth-scroll.js's
+/// resolveScrollTarget, which also handles About's real id being
+/// mode-suffixed at runtime). Anything else — an external URL, mailto:, a
+/// specific custom section — goes through .custom's free-text field.
+private enum BuiltInLink: String, CaseIterable, Identifiable {
+    case home = "#home"
+    case about = "#about"
+    case projects = "#projects"
+    case contact = "#contact"
+    case custom = ""
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .home: return "Home"
+        case .about: return "About"
+        case .projects: return "Projects"
+        case .contact: return "Contact"
+        case .custom: return "Custom…"
+        }
+    }
+}
+
+/// A CTA/link field styled as a dropdown of the site's known-good anchors
+/// instead of free text — avoids a typo'd "#projcets" silently producing a
+/// dead button. Falls back to a plain text field (via the "Custom…" choice)
+/// for anything not in that fixed set, so nothing is actually more
+/// restrictive than before, just harder to get wrong for the common case.
+struct LinkField: View {
+    let label: String
+    @Binding var text: String
+
+    private var selectedOption: BuiltInLink { BuiltInLink(rawValue: text) ?? .custom }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            Picker(
+                "",
+                selection: Binding(
+                    get: { selectedOption },
+                    set: { newOption in
+                        // Only stomp the current text when actually leaving
+                        // a built-in value for .custom — otherwise picking
+                        // .custom while already on a custom string would
+                        // wipe out what's already there.
+                        if newOption != .custom {
+                            text = newOption.rawValue
+                        } else if selectedOption != .custom {
+                            text = ""
+                        }
+                    }
+                )
+            ) {
+                ForEach(BuiltInLink.allCases) { option in
+                    Text(option.label).tag(option)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+
+            if selectedOption == .custom {
+                TextField("https://\u{2026} or #section or mailto:\u{2026}", text: $text)
+                    .textFieldStyle(.badgip)
+            }
+        }
+    }
+}
+
 /// Standard editor-sheet chrome: title, Cancel/Save actions, a divider, and
 /// a scrolling body — every "edit this thing" sheet in the app uses this so
 /// they all size and scroll the same way instead of growing past the

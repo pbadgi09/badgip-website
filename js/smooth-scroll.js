@@ -1,3 +1,19 @@
+// Most anchors (#home, #projects, #contact) are fixed ids and resolve via
+// an exact match. #about doesn't: the About section's real id is
+// mode-suffixed (about-professional/about-personal, see render-sections.js
+// — needed so both can coexist in the DOM) so a literal "#about" href never
+// matches anything on its own. Falling back to a prefix match lets any
+// #about link (hero CTAs, hand-typed settings) resolve to whichever mode's
+// About section is actually mounted, without needing every link to know
+// the current mode.
+function resolveScrollTarget(hash) {
+  const exact = document.querySelector(hash);
+  if (exact) return exact;
+  const id = hash.slice(1);
+  if (!id) return null;
+  return document.querySelector(`[id^="${id}-"]`);
+}
+
 export function initSmoothScroll() {
   if (!window.Lenis || !window.gsap || !window.ScrollTrigger) return null;
 
@@ -34,7 +50,7 @@ export function initSmoothScroll() {
   document.querySelectorAll('a[href^="#"]').forEach((link) => {
     link.addEventListener('click', (e) => {
       const id = link.getAttribute('href');
-      const target = document.querySelector(id);
+      const target = resolveScrollTarget(id);
       if (target) {
         e.preventDefault();
         const navOffset = nav ? nav.offsetHeight + 16 : 20;

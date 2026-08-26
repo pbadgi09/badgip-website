@@ -62,9 +62,9 @@ struct SiteSettingsView: View {
                             LabeledField(label: "Role", text: $settings.role)
                             LabeledField(label: "Description", text: $settings.description)
                             LabeledField(label: "Primary CTA text", text: $settings.ctaPrimaryText)
-                            LabeledField(label: "Primary CTA link", text: $settings.ctaPrimaryHref)
+                            LinkField(label: "Primary CTA link", text: $settings.ctaPrimaryHref)
                             LabeledField(label: "Secondary CTA text", text: $settings.ctaSecondaryText)
-                            LabeledField(label: "Secondary CTA link", text: $settings.ctaSecondaryHref)
+                            LinkField(label: "Secondary CTA link", text: $settings.ctaSecondaryHref)
                         }
 
                         EditorCard(title: "Hero — profile picture (optional)") {

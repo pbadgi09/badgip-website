@@ -10,15 +10,25 @@ struct DeployControlsView: View {
 
     private let githubService = GitHubService()
 
+    @State private var showRecoveryTools = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Deploy").font(.title.weight(.bold))
-
-                EditorCard(title: "GitHub Personal Access Token") {
-                    Text(hasSavedPAT ? "A token is saved in Keychain." : "No token saved yet.")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Advanced").font(.title.weight(.bold))
+                    Text("Save already publishes everything — content is live via Firebase the instant you save, and image uploads deploy automatically. The tools below are for the GitHub connection itself and rare manual recovery.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+
+                EditorCard(title: "GitHub Personal Access Token") {
+                    Text("Required for uploading/replacing/deleting images and files — every screen with an image picker uses this.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(hasSavedPAT ? "A token is saved in Keychain." : "No token saved yet.")
+                        .font(.caption)
+                        .foregroundStyle(hasSavedPAT ? Color.secondary : Color.orange)
                     HStack {
                         SecureField("Fine-grained PAT (repo-scoped, Contents + Actions: Read and write)", text: $patInput)
                             .textFieldStyle(.badgip)
@@ -41,32 +51,42 @@ struct DeployControlsView: View {
                     }
                 }
 
-                EditorCard(title: "Redeploy") {
-                    Text("Triggers the GitHub Actions Pages workflow. Only needed after a code change — content edits are already live via Firebase.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button {
-                        Task { await triggerRedeploy() }
-                    } label: {
-                        Label("Trigger GitHub Pages Rebuild", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    .buttonStyle(.badgipPrimary)
-                    .disabled(isWorking)
-                }
+                EditorCard(title: "Recovery tools") {
+                    DisclosureGroup("Rarely needed — expand only if something's actually stuck", isExpanded: $showRecoveryTools) {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Redeploy").font(.subheadline.weight(.semibold))
+                                Text("Manually retries the GitHub Pages build. Every save/upload already triggers this automatically — only useful if an automatic run failed.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Button {
+                                    Task { await triggerRedeploy() }
+                                } label: {
+                                    Label("Retry GitHub Pages Build", systemImage: "arrow.triangle.2.circlepath")
+                                }
+                                .buttonStyle(.badgipSecondary)
+                                .disabled(isWorking)
+                            }
 
-                EditorCard(title: "Purge jsDelivr Cache") {
-                    Text("Image uploads purge automatically. Use this for a manual purge, e.g. after replacing a file outside the app.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    HStack {
-                        TextField("assets/projects/my-app/cover.jpg", text: $purgePath)
-                            .textFieldStyle(.badgip)
-                        Button("Purge") {
-                            Task { await purgeManually() }
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Purge image cache").font(.subheadline.weight(.semibold))
+                                Text("Image uploads already purge their own cache automatically. Only useful after replacing a file some other way, outside this app.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                HStack {
+                                    TextField("assets/projects/my-app/cover.jpg", text: $purgePath)
+                                        .textFieldStyle(.badgip)
+                                    Button("Purge") {
+                                        Task { await purgeManually() }
+                                    }
+                                    .buttonStyle(.badgipSecondary)
+                                    .disabled(purgePath.isEmpty || isWorking)
+                                }
+                            }
                         }
-                        .buttonStyle(.badgipSecondary)
-                        .disabled(purgePath.isEmpty || isWorking)
+                        .padding(.top, 10)
                     }
+                    .font(.caption)
                 }
 
                 if let statusMessage {
