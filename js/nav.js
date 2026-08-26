@@ -5,6 +5,11 @@ export function initNav() {
   const toggle = document.getElementById('navToggle');
   const navList = document.getElementById('navList');
 
+  const closeMobileNav = () => {
+    nav.dataset.open = 'false';
+    toggle.setAttribute('aria-expanded', 'false');
+  };
+
   toggle.addEventListener('click', () => {
     const isOpen = nav.dataset.open === 'true';
     nav.dataset.open = String(!isOpen);
@@ -12,10 +17,17 @@ export function initNav() {
   });
 
   navList.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => {
-      nav.dataset.open = 'false';
-      toggle.setAttribute('aria-expanded', 'false');
-    });
+    link.addEventListener('click', closeMobileNav);
+  });
+
+  // The overlay had no keyboard escape hatch before this — once open via
+  // the hamburger, Escape did nothing, so a keyboard user had to tab all
+  // the way through every link to get back out.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && nav.dataset.open === 'true') {
+      closeMobileNav();
+      toggle.focus();
+    }
   });
 
   const sections = getMountedSectionIds()

@@ -90,6 +90,7 @@ export function openFullscreen({ id, sourceEl, innerHTML, accentColor, textColor
     panel.style.overflowY = 'auto';
     fadeTargets.forEach((el) => (el.style.opacity = '1'));
     window.addEventListener('resize', resizeHandler);
+    closeBtn?.focus();
     return;
   }
 
@@ -111,6 +112,10 @@ export function openFullscreen({ id, sourceEl, innerHTML, accentColor, textColor
     onComplete: () => {
       panel.style.overflowY = 'auto';
       window.addEventListener('resize', resizeHandler);
+      // Without this, a keyboard/screen-reader user's focus is left
+      // wherever it was (likely on the now-covered source card) instead of
+      // moving into the panel that just took over the screen.
+      closeBtn?.focus();
     },
   });
   tl.to(panel, {
@@ -135,6 +140,7 @@ export function closeFullscreen() {
   if (!window.gsap) {
     panel.remove();
     unlockBodyScroll();
+    sourceEl.focus?.();
     onClosed?.();
     return;
   }
@@ -157,6 +163,9 @@ export function closeFullscreen() {
       if (index !== -1) closingPanels.splice(index, 1);
       panel.remove();
       unlockBodyScroll();
+      // Returns keyboard/screen-reader focus to whatever card opened this
+      // panel, instead of leaving it lost on the now-removed close button.
+      sourceEl.focus?.();
       onClosed?.();
     },
   });

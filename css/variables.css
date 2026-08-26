@@ -14,7 +14,10 @@
   --color-bg-elevated-2: color-mix(in srgb, var(--color-bg) 92%, var(--color-text));
   --color-border-strong: color-mix(in srgb, var(--color-border) 65%, var(--color-text) 35%);
   --color-text-dim: color-mix(in srgb, var(--color-text) 70%, var(--color-bg) 30%);
-  --color-text-faint: color-mix(in srgb, var(--color-text) 50%, var(--color-bg) 50%);
+  /* 60/40 (not the visually-tidier 50/50) so small text using this token —
+     nav step numbers, blog date labels, the footer copyright line — clears
+     WCAG AA's 4.5:1 contrast minimum (50/50 only reached ~3.7:1). */
+  --color-text-faint: color-mix(in srgb, var(--color-text) 60%, var(--color-bg) 40%);
   --color-accent-dim: color-mix(in srgb, var(--color-accent) 70%, black);
   --color-accent-glow: color-mix(in srgb, var(--color-accent-dim) 25%, transparent);
 
