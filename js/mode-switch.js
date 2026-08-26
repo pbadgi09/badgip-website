@@ -44,6 +44,8 @@ function initAutoHideNearContact() {
   observer.observe(contact);
 }
 
+let pendingRefreshTimer = null;
+
 function applyMode(mode, { animate }) {
   document.body.dataset.mode = mode;
 
@@ -60,6 +62,13 @@ function applyMode(mode, { animate }) {
   document.querySelectorAll('#dynamicSections > [data-mode], #navList > li[data-mode], #contact[data-mode]').forEach((el) => {
     const matches = el.dataset.mode === mode;
     if (animate && window.gsap && !reducedMotion) {
+      // Toggling the mode again before a previous transition finished left
+      // a real bug: an in-flight "hide" tween's onComplete (fired ~250ms
+      // later) would still set `hidden = true` on an element a newer,
+      // faster toggle had already decided should be visible again — killing
+      // any tween still running on this element before starting a fresh one
+      // means only the most recent call's transition ever completes.
+      window.gsap.killTweensOf(el);
       if (matches) {
         el.hidden = false;
         window.gsap.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });
@@ -89,10 +98,18 @@ function applyMode(mode, { animate }) {
     window.ScrollTrigger?.refresh();
   };
   if (animate && window.gsap && !reducedMotion) {
-    // Wait past the longest of the fade transitions above so refresh reads
-    // final, settled layout instead of a mid-transition snapshot.
-    setTimeout(refreshScroll, 320);
+    // Debounced: rapid re-toggling would otherwise stack up one of these
+    // per click, each reading a still-mid-transition layout.
+    if (pendingRefreshTimer) clearTimeout(pendingRefreshTimer);
+    pendingRefreshTimer = setTimeout(() => {
+      pendingRefreshTimer = null;
+      refreshScroll();
+    }, 320);
   } else {
+    if (pendingRefreshTimer) {
+      clearTimeout(pendingRefreshTimer);
+      pendingRefreshTimer = null;
+    }
     refreshScroll();
   }
 }
