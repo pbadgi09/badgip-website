@@ -13,12 +13,6 @@ const DEFAULT_SETTINGS = {
     ctaSecondaryHref: '#contact',
     profileImage: '',
   },
-  social: {
-    github: 'https://github.com/pbadgi09',
-    linkedin: '',
-    twitter: '',
-    email: 'badgip@yahoo.com',
-  },
   contact: {
     heading: 'Get in touch',
     subheading: 'Any questions or remarks? Just write a message.',

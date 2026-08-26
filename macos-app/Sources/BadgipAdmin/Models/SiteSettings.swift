@@ -82,12 +82,6 @@ struct SiteSettings: Codable, Equatable {
     // nav
     var navItems: [NavItem] = []
 
-    // social (footer links)
-    var github: String = ""
-    var linkedin: String = ""
-    var twitter: String = ""
-    var email: String = ""
-
     // theme — kept in sync with the defaults in css/variables.css and
     // js/data-service.js's DEFAULT_SETTINGS.theme.
     var themeLight = ThemePalette(background: "#ffffff", text: "#0a0a0a", accent: "#3effa3", border: "#e2e2e2")
@@ -121,7 +115,6 @@ struct SiteSettings: Codable, Equatable {
                 "profileImage": profileImage,
             ],
             "nav": ["items": navItems.map { $0.asDictionary }],
-            "social": ["github": github, "linkedin": linkedin, "twitter": twitter, "email": email],
             "theme": ["light": themeLight.asDictionary, "dark": themeDark.asDictionary],
             "meta": ["title": metaTitle, "description": metaDescription, "ogImage": ogImage],
             "contact": [
@@ -152,12 +145,6 @@ struct SiteSettings: Codable, Equatable {
         }
         if let nav = dict["nav"] as? [String: Any], let items = nav["items"] as? [[String: Any]] {
             settings.navItems = items.map { NavItem.from($0) }
-        }
-        if let social = dict["social"] as? [String: Any] {
-            settings.github = social["github"] as? String ?? ""
-            settings.linkedin = social["linkedin"] as? String ?? ""
-            settings.twitter = social["twitter"] as? String ?? ""
-            settings.email = social["email"] as? String ?? ""
         }
         if let theme = dict["theme"] as? [String: Any] {
             if let light = theme["light"] as? [String: Any] { settings.themeLight = ThemePalette.from(light) }

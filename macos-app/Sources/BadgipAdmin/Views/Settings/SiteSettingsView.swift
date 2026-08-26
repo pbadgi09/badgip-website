@@ -81,22 +81,19 @@ struct SiteSettingsView: View {
                             )
                         }
 
-                        EditorCard(title: "Social") {
-                            Text("These render as real brand icons in the site footer. Contact — social icons (below) is separate and supports any platform via a custom icon/URL.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            LabeledField(label: "GitHub URL", text: $settings.github)
-                            LabeledField(label: "LinkedIn URL", text: $settings.linkedin)
-                            LabeledField(label: "Twitter/X URL", text: $settings.twitter)
-                            LabeledField(label: "Email", text: $settings.email)
-                        }
-
                         EditorCard(title: "Navigation") {
                             Text("About and Projects get their nav labels from Sections — this only covers Home and Contact, the two fixed anchors.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             navItemField(href: "#home", defaultLabel: "Home", defaultNumber: "00")
                             navItemField(href: "#contact", defaultLabel: "Contact", defaultNumber: "—")
+                        }
+
+                        EditorCard(title: "Footer Icons") {
+                            Text("Shown at the bottom of every page. Add as many as you want — each is a custom icon (emoji, uploaded image, or URL) plus a link.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            footerIconsEditor
                         }
 
                         EditorCard(title: "Theme — Light") {
@@ -166,10 +163,6 @@ struct SiteSettingsView: View {
 
                             EditorCard(title: "Contact — info rows (address, phone, email, ...)") {
                                 contactInfoItemsEditor
-                            }
-
-                            EditorCard(title: "Contact — social icons") {
-                                contactSocialLinksEditor
                             }
                         }
                     }
@@ -244,7 +237,7 @@ struct SiteSettingsView: View {
     }
 
     @ViewBuilder
-    private var contactSocialLinksEditor: some View {
+    private var footerIconsEditor: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach($settings.contactSocialLinks) { $link in
                 HStack(alignment: .top) {
