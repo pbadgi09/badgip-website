@@ -1,22 +1,27 @@
 import { updateSectionNumbers } from './render-sections.js';
 
-const STORAGE_KEY = 'badgip.mode';
-
 export function initModeSwitch() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  const initialMode = stored === 'personal' ? 'personal' : 'professional';
-  applyMode(initialMode, { animate: false });
+  applyMode('professional', { animate: false });
 
   const buttons = document.querySelectorAll('[data-mode-btn]');
   buttons.forEach((btn) => {
     btn.addEventListener('click', () => {
-      const mode = btn.dataset.modeBtn;
-      applyMode(mode, { animate: true });
-      localStorage.setItem(STORAGE_KEY, mode);
+      applyMode(btn.dataset.modeBtn, { animate: true });
     });
   });
 
   initAutoHideNearContact();
+
+  // Some browsers restore the exact prior DOM/JS state from the back-
+  // forward cache on navigation (e.g. hitting Back) instead of re-running
+  // this script from scratch — without this, the site could come back
+  // showing whatever mode was active when the tab was left, instead of
+  // always starting on Professional.
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      applyMode('professional', { animate: false });
+    }
+  });
 }
 
 // The mode switch is a fixed, viewport-relative pill — without this it would
@@ -73,4 +78,21 @@ function applyMode(mode, { animate }) {
       el.hidden = !matches;
     }
   });
+
+  // Hiding/showing whole sections changes total page height, which leaves
+  // Lenis's cached scroll range and GSAP ScrollTrigger's cached trigger
+  // positions stale until refreshed — without this, switching modes could
+  // leave the page scrollable past where content actually ends, or make
+  // scroll-reveal/timeline animations fire at the wrong scroll position.
+  const refreshScroll = () => {
+    window.__lenis?.resize();
+    window.ScrollTrigger?.refresh();
+  };
+  if (animate && window.gsap && !reducedMotion) {
+    // Wait past the longest of the fade transitions above so refresh reads
+    // final, settled layout instead of a mid-transition snapshot.
+    setTimeout(refreshScroll, 320);
+  } else {
+    refreshScroll();
+  }
 }

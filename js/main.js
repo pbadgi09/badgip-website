@@ -27,8 +27,10 @@ async function boot() {
     getPageSections(),
   ]);
 
-  // Sections must exist in the DOM before mode-switch/nav try to select them.
-  mountPageSections(pageSections);
+  // Sections must exist in the DOM before mode-switch/nav try to select
+  // them. `about` is passed through so a personal/professional bio with no
+  // explicitly-configured page section still gets somewhere to render.
+  mountPageSections(pageSections, about);
   initModeSwitch();
   initNav();
 

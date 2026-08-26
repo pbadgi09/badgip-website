@@ -67,7 +67,65 @@ function buildCustomSection(entry) {
   return section;
 }
 
-export function mountPageSections(pageSections) {
+// The About template's own ids (id="about", "aboutBioProfessional",
+// "timelineProfessional", "timelineProgress") are only unique as long as at
+// most one About section is ever mounted. Once both a professional and a
+// personal About page section exist, cloning the same template for each
+// would produce duplicate DOM ids — getElementById would then always
+// resolve to whichever was mounted first, silently dropping the other
+// mode's content. Namespace them by mode so both can coexist.
+function mountEntry(entry, mode, container, navContactItem) {
+  let sectionEl;
+  let label;
+
+  if (entry.kind === 'custom') {
+    sectionEl = buildCustomSection(entry);
+    label = entry.title || 'Section';
+  } else {
+    const template = document.getElementById(TEMPLATE_IDS[entry.kind]);
+    if (!template) return;
+    sectionEl = template.content.firstElementChild.cloneNode(true);
+    label = SECTION_LABELS[entry.kind];
+  }
+
+  if (entry.kind === 'about') {
+    sectionEl.id = `about-${mode}`;
+    const bioEl = sectionEl.querySelector('#aboutBioProfessional');
+    if (bioEl) bioEl.id = `aboutBio-${mode}`;
+    const timelineListEl = sectionEl.querySelector('#timelineProfessional');
+    if (timelineListEl) timelineListEl.id = `timeline-${mode}`;
+    const progressEl = sectionEl.querySelector('#timelineProgress');
+    if (progressEl) progressEl.id = `timelineProgress-${mode}`;
+  }
+
+  sectionEl.dataset.mode = mode;
+  sectionEl.hidden = true;
+  container.appendChild(sectionEl);
+
+  // Every section still gets a page position/number regardless of nav
+  // visibility — only whether it gets a <li> in the floating nav pill
+  // is conditional. Lets someone keep a section on the page (in its own
+  // scroll order) while leaving it out of the compact nav list.
+  const showInNav = entry.showInNav !== false;
+  let navNumEl = null;
+
+  if (showInNav) {
+    const navLi = document.createElement('li');
+    navLi.dataset.mode = mode;
+    navLi.dataset.dynamicNav = 'true';
+    navLi.hidden = true;
+    navLi.innerHTML = `<a href="#${sectionEl.id}" class="site-nav__link mono" data-nav-link="${sectionEl.id}"><span class="num"></span>${escapeHtml(label)}</a>`;
+    navContactItem.insertAdjacentElement('beforebegin', navLi);
+    navNumEl = navLi.querySelector('.num');
+  }
+
+  mountedByMode[mode].push({
+    sectionNumEl: sectionEl.querySelector('.section-number'),
+    navNumEl,
+  });
+}
+
+export function mountPageSections(pageSections, about) {
   const container = document.getElementById('dynamicSections');
   const navContactItem = document.getElementById('navContactItem');
   container.innerHTML = '';
@@ -82,65 +140,25 @@ export function mountPageSections(pageSections) {
 
   ['professional', 'personal'].forEach((mode) => {
     const sorted = [...grouped[mode]].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    sorted.forEach((entry) => mountEntry(entry, mode, container, navContactItem));
 
-    sorted.forEach((entry) => {
-      let sectionEl;
-      let label;
-
-      if (entry.kind === 'custom') {
-        sectionEl = buildCustomSection(entry);
-        label = entry.title || 'Section';
-      } else {
-        const template = document.getElementById(TEMPLATE_IDS[entry.kind]);
-        if (!template) return;
-        sectionEl = template.content.firstElementChild.cloneNode(true);
-        label = SECTION_LABELS[entry.kind];
-      }
-
-      // The About template's own ids (id="about", "aboutBioProfessional",
-      // "timelineProfessional", "timelineProgress") are only unique as long
-      // as at most one About section is ever mounted. Once both a
-      // professional and a personal About page section exist, cloning the
-      // same template for each would produce duplicate DOM ids — getElementById
-      // would then always resolve to whichever was mounted first, silently
-      // dropping the other mode's content. Namespace them by mode so both
-      // can coexist.
-      if (entry.kind === 'about') {
-        sectionEl.id = `about-${mode}`;
-        const bioEl = sectionEl.querySelector('#aboutBioProfessional');
-        if (bioEl) bioEl.id = `aboutBio-${mode}`;
-        const timelineListEl = sectionEl.querySelector('#timelineProfessional');
-        if (timelineListEl) timelineListEl.id = `timeline-${mode}`;
-        const progressEl = sectionEl.querySelector('#timelineProgress');
-        if (progressEl) progressEl.id = `timelineProgress-${mode}`;
-      }
-
-      sectionEl.dataset.mode = mode;
-      sectionEl.hidden = true;
-      container.appendChild(sectionEl);
-
-      // Every section still gets a page position/number regardless of nav
-      // visibility — only whether it gets a <li> in the floating nav pill
-      // is conditional. Lets someone keep a section on the page (in its own
-      // scroll order) while leaving it out of the compact nav list.
-      const showInNav = entry.showInNav !== false;
-      let navNumEl = null;
-
-      if (showInNav) {
-        const navLi = document.createElement('li');
-        navLi.dataset.mode = mode;
-        navLi.dataset.dynamicNav = 'true';
-        navLi.hidden = true;
-        navLi.innerHTML = `<a href="#${sectionEl.id}" class="site-nav__link mono" data-nav-link="${sectionEl.id}"><span class="num"></span>${escapeHtml(label)}</a>`;
-        navContactItem.insertAdjacentElement('beforebegin', navLi);
-        navNumEl = navLi.querySelector('.num');
-      }
-
-      mountedByMode[mode].push({
-        sectionNumEl: sectionEl.querySelector('.section-number'),
-        navNumEl,
-      });
-    });
+    // The About section's bio/timeline content lives on a separate `about`
+    // RTDB object, decoupled from whether an "About" page section has been
+    // explicitly added for this mode via the Sections tab. Requiring that
+    // extra manual step before a saved bio shows up anywhere is an easy
+    // trap to fall into — so if there's real content for this mode and no
+    // About section was mounted above, mount one automatically as a
+    // fallback. (It won't show up in the Sections tab to reorder/manage
+    // since it isn't a real saved pageSection — adding one there for real
+    // takes over from this fallback.)
+    const hasAboutSection = sorted.some((e) => e.kind === 'about');
+    const hasAboutContent =
+      mode === 'professional'
+        ? Boolean(about?.professionalBio) || (about?.professionalTimeline?.length ?? 0) > 0
+        : Boolean(about?.personalBio) || (about?.personalTimeline?.length ?? 0) > 0;
+    if (!hasAboutSection && hasAboutContent) {
+      mountEntry({ kind: 'about', mode, showInNav: true }, mode, container, navContactItem);
+    }
   });
 }
 
