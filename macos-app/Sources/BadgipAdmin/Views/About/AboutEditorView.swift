@@ -1,4 +1,14 @@
 import SwiftUI
+import AppKit
+
+// Mirrors KeywordPill's actual layout below (10pt horizontal padding each
+// side, 14pt color circle, 6pt HStack spacing x2, an ~15pt-wide delete
+// glyph+padding) — used only to decide FlowLayout's row-wrap points, so it
+// doesn't need to be exact, just close to the real rendered width.
+private func estimatedPillWidth(_ keyword: String) -> CGFloat {
+    let textWidth = (keyword as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 13)]).width
+    return 20 + 14 + 6 + textWidth + 6 + 15
+}
 
 struct AboutEditorView: View {
     @EnvironmentObject private var rtdb: RTDBService
@@ -111,7 +121,7 @@ struct AboutEditorView: View {
             Text(label).font(.caption).foregroundStyle(.secondary)
 
             if !keywords.wrappedValue.isEmpty {
-                FlowLayout(data: keywords.wrappedValue, spacing: 8) { item in
+                FlowLayout(data: keywords.wrappedValue, spacing: 8, itemWidth: { estimatedPillWidth($0.keyword) }) { item in
                     KeywordPill(
                         keyword: item,
                         onColorChange: { newColor in
