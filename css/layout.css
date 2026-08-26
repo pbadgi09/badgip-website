@@ -1441,7 +1441,8 @@
   transform: translateY(-2px);
 }
 
-.site-footer__social-link img {
+.site-footer__social-link img,
+.site-footer__social-link svg {
   width: 55%;
   height: 55%;
   object-fit: contain;

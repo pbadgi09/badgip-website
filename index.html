@@ -8,6 +8,11 @@
   <meta property="og:title" content="Pranav Badgi — Portfolio" />
   <meta property="og:description" content="Portfolio of Pranav Badgi — projects, work, and contact." />
   <meta property="og:type" content="website" />
+  <!-- Kept in sync with settings.meta.ogImage by the macOS admin app, which
+       commits a direct edit to this tag on upload (social-media crawlers
+       don't run JS, so a Firebase-only save wouldn't show up in previews —
+       this static site has no build step to template it in otherwise). -->
+  <meta property="og:image" content="https://www.itspranavbadgi.com/apple-touch-icon.png" />
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -67,8 +72,8 @@
       <span class="bar-3"></span>
     </button>
     <ul class="site-nav__list" id="navList">
-      <li><a href="#home" class="site-nav__link mono" data-nav-link="home"><span class="num">00</span>Home</a></li>
-      <li id="navContactItem" data-mode="professional"><a href="#contact" class="site-nav__link mono" data-nav-link="contact"><span class="num">—</span>Contact</a></li>
+      <li><a href="#home" class="site-nav__link mono" data-nav-link="home"><span class="num">00</span><span class="label">Home</span></a></li>
+      <li id="navContactItem" data-mode="professional"><a href="#contact" class="site-nav__link mono" data-nav-link="contact"><span class="num">—</span><span class="label">Contact</span></a></li>
     </ul>
   </nav>
 

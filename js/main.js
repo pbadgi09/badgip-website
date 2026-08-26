@@ -1,5 +1,5 @@
 import { getSettings, getAbout, getProjects, getPersonalYoutube, getPersonalBlog, getPageSections } from './data-service.js';
-import { renderHero, renderContactAndFooter } from './render-home.js';
+import { renderHero, renderContactAndFooter, applyNavItems } from './render-home.js';
 import { renderAbout } from './render-about.js';
 import { renderProjects } from './render-projects.js';
 import { renderYoutubeCarousel, renderBlogGrid, setBlogAuthor } from './render-personal.js';
@@ -37,6 +37,7 @@ async function boot() {
   initNav();
 
   renderHero(settings);
+  applyNavItems(settings);
   renderContactAndFooter(settings);
   renderAbout(about);
   renderProjects(projects);
