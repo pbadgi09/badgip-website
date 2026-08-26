@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -14,6 +15,13 @@ struct ImageUploadView: View {
     @State private var uploadError: String?
     @State private var pickerTarget: PickerTarget?
     @State private var existingPickerTarget: PickerTarget?
+    // jsDelivr can take a while to pick up a brand-new repo path (a new
+    // project's asset folder has never been fetched before, unlike an
+    // existing directory just gaining a file) — fetching a freshly
+    // uploaded image straight from the CDN right after upload often 404s.
+    // Keyed by storedPath so a just-uploaded image renders instantly from
+    // the bytes we already have in memory instead of racing the CDN.
+    @State private var localPreviews: [String: Data] = [:]
 
     private enum PickerTarget {
         case cover
@@ -130,6 +138,8 @@ struct ImageUploadView: View {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(Color.badgipSurfaceHover)
                     .overlay(Image(systemName: "photo").foregroundStyle(.secondary))
+            } else if let data = localPreviews[path], let nsImage = NSImage(data: data) {
+                Image(nsImage: nsImage).resizable().aspectRatio(contentMode: .fill)
             } else if let url = JsDelivrService.composeURL(forStoredPath: path) {
                 AsyncImage(url: url) { phase in
                     switch phase {
@@ -184,6 +194,7 @@ struct ImageUploadView: View {
                 commitMessage: "Add image for project \(slug): \(filename)"
             )
             await JsDelivrService.purge(repoPath: repoPath)
+            localPreviews[storedPath] = data
 
             switch target {
             case .cover:
