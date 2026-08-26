@@ -239,30 +239,49 @@ struct SiteSettingsView: View {
     @ViewBuilder
     private var footerIconsEditor: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ForEach($settings.contactSocialLinks) { $link in
-                HStack(alignment: .top) {
-                    IconPickerField(
-                        icon: $link.icon,
-                        repoPath: { ImagePathBuilder.contactIconRepoPath(itemId: link.id, filename: $0) },
-                        storedPath: { ImagePathBuilder.contactIconStoredPath(itemId: link.id, filename: $0) },
-                        commitMessage: { "Set contact social icon: \($0)" },
-                        onReplaced: { pendingImageDeletions.append($0) }
-                    )
-                    .frame(width: 220)
-                    TextField("URL", text: $link.url).textFieldStyle(.badgip)
-                    Button {
-                        // Capture before removing — same crash-causing
-                        // pattern as AboutEditorView (confirmed via a real
-                        // crash log): `link` reads through a live Binding.
-                        let icon = link.icon
-                        settings.contactSocialLinks.removeAll { $0.id == link.id }
-                        if RepoFileCleanup.isInternalImagePath(icon) { pendingImageDeletions.append(icon) }
-                    } label: {
-                        Image(systemName: "trash")
+            // A plain List (rather than the VStack/ForEach this used to be)
+            // so rows get native drag-to-reorder via .onMove — but this view
+            // already lives inside SiteSettingsView's own outer ScrollView,
+            // and macOS 12 (this app's deployment target) has no
+            // .scrollDisabled to suppress the nested List's own scroll
+            // region, so it's sized to fit its rows exactly instead of
+            // nesting two independent scroll areas. Same pattern as
+            // AboutEditorView's timelineEditor.
+            List {
+                ForEach($settings.contactSocialLinks) { $link in
+                    HStack(alignment: .top) {
+                        IconPickerField(
+                            icon: $link.icon,
+                            repoPath: { ImagePathBuilder.contactIconRepoPath(itemId: link.id, filename: $0) },
+                            storedPath: { ImagePathBuilder.contactIconStoredPath(itemId: link.id, filename: $0) },
+                            commitMessage: { "Set contact social icon: \($0)" },
+                            onReplaced: { pendingImageDeletions.append($0) }
+                        )
+                        .frame(width: 220)
+                        TextField("URL", text: $link.url).textFieldStyle(.badgip)
+                        Button {
+                            // Capture before removing — same crash-causing
+                            // pattern as AboutEditorView (confirmed via a real
+                            // crash log): `link` reads through a live Binding.
+                            let icon = link.icon
+                            settings.contactSocialLinks.removeAll { $0.id == link.id }
+                            if RepoFileCleanup.isInternalImagePath(icon) { pendingImageDeletions.append(icon) }
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.badgipIcon(tint: .red))
+                        Image(systemName: "line.3.horizontal")
+                            .foregroundStyle(.tertiary)
                     }
-                    .buttonStyle(.badgipIcon(tint: .red))
+                    .listRowInsets(EdgeInsets())
+                }
+                .onMove { source, destination in
+                    settings.contactSocialLinks.move(fromOffsets: source, toOffset: destination)
                 }
             }
+            .listStyle(.plain)
+            .frame(height: CGFloat(settings.contactSocialLinks.count) * 48 + 8)
+
             Button {
                 settings.contactSocialLinks.append(ContactSocialLink())
             } label: {
