@@ -500,26 +500,27 @@
 }
 
 .timeline-item {
-  flex: 0 0 min(170px, 46vw);
-  display: flex;
-  flex-direction: column;
+  flex: 0 0 min(190px, 50vw);
   scroll-snap-align: start;
 }
 
-/* Both are always rendered, one empty — that's what keeps every item's
-   dot vertically centered on the shared line: the flex row stretches
-   every .timeline-item to the tallest one, and since above/below split
-   that extra height equally (flex: 1 1 0 each), the fixed-height dot-row
-   between them lands at the same offset regardless of which side (or
-   neither) has real content in a given item. */
+/* Both are always rendered, one empty — and both get a fixed height
+   (not flex-stretch-derived) so every item's dot lands at the exact
+   same offset from the item's top regardless of which side has real
+   content, or how tall it is. Deliberately not relying on cross-axis
+   flex stretch here (a stretched flex item's absolutely-positioned
+   descendants — the dot-row line below — render inconsistently across
+   browsers); a hard height plus default overflow:visible is simpler
+   and fully deterministic instead. */
 .timeline-item__above,
 .timeline-item__below {
-  flex: 1 1 0;
+  height: 170px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-4);
+  box-sizing: border-box;
 }
 
 .timeline-item__above {
@@ -530,9 +531,12 @@
   justify-content: flex-start;
 }
 
+/* No horizontal padding here (unlike above/below) — a plain block
+   element is 100% of .timeline-item's width by default, so adjacent
+   items' dot-rows sit flush edge to edge with zero gap, reading as one
+   continuous line. */
 .timeline-item__dot-row {
   position: relative;
-  flex: 0 0 auto;
   height: 20px;
   display: flex;
   align-items: center;
