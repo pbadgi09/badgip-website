@@ -6,6 +6,7 @@ import { renderYoutubeCarousel, renderBlogGrid, setBlogAuthor } from './render-p
 import { mountPageSections } from './render-sections.js';
 import { initContactForm } from './contact-form.js';
 import { initModeSwitch } from './mode-switch.js';
+import { initThemeToggle, applySettingsTheme } from './theme.js';
 import { initNav } from './nav.js';
 import { initSmoothScroll } from './smooth-scroll.js';
 import { initPreloader, initHeroEntrance, initScrollReveals, initTimelineScroll } from './animations.js';
@@ -32,6 +33,7 @@ async function boot() {
   // explicitly-configured page section still gets somewhere to render.
   mountPageSections(pageSections, about);
   initModeSwitch();
+  initThemeToggle();
   initNav();
 
   renderHero(settings);
@@ -42,9 +44,7 @@ async function boot() {
   setBlogAuthor({ name: settings.hero?.name, avatar: settings.hero?.profileImage });
   renderBlogGrid(blogPosts);
 
-  if (settings.theme?.accentColor) {
-    document.documentElement.style.setProperty('--color-accent', settings.theme.accentColor);
-  }
+  applySettingsTheme(settings);
 
   await preloaderDone;
 

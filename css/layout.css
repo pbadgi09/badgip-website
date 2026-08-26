@@ -57,13 +57,18 @@
   font-size: var(--fs-md);
   color: var(--color-text);
   z-index: 2;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.site-nav__logo:hover {
+  color: var(--color-accent-dim);
 }
 
 .site-nav__list {
   display: flex;
   gap: var(--space-2);
   list-style: none;
-  background: rgba(255, 255, 255, 0.75);
+  background: var(--color-surface-glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-border);
@@ -98,7 +103,7 @@
 .site-nav__link:hover,
 .site-nav__link.is-active {
   color: var(--color-text);
-  background: rgba(0, 0, 0, 0.05);
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
 }
 
 .site-nav__link:hover .num,
@@ -134,7 +139,7 @@
   align-items: center;
   gap: 2px;
   padding: 4px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--color-surface-glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-border);
@@ -216,7 +221,7 @@
   height: min(60vw, 700px);
   top: -15%;
   right: -10%;
-  background: radial-gradient(circle, rgba(62, 255, 163, 0.22), transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 70%);
   animation: heroGlowFloat 14s ease-in-out infinite;
 }
 
@@ -225,7 +230,7 @@
   height: min(40vw, 500px);
   bottom: -10%;
   left: -5%;
-  background: radial-gradient(circle, rgba(62, 255, 163, 0.1), transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 70%);
   animation: heroGlowFloat 18s ease-in-out infinite reverse;
 }
 
@@ -541,7 +546,7 @@
   background: rgba(10, 10, 10, 0.5);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(62, 255, 163, 0.4);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
   color: var(--color-accent-dim);
 }
 
@@ -643,7 +648,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--color-surface-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--color-border);
@@ -1011,7 +1016,7 @@
   inset: 0;
   width: 100%;
   border: none;
-  background: rgba(10, 10, 10, 0.04);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
   backdrop-filter: blur(1px);
   color: var(--color-text-dim);
   font-size: 0.75rem;
@@ -1022,7 +1027,7 @@
 }
 
 .blog-section__map-overlay:hover {
-  background: rgba(10, 10, 10, 0.08);
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
 }
 
 /* ---------- Custom sections ---------- */
@@ -1318,7 +1323,7 @@
 .form-field textarea:focus {
   outline: none;
   border-color: var(--color-accent-dim);
-  background: rgba(62, 255, 163, 0.04);
+  background: color-mix(in srgb, var(--color-accent) 4%, transparent);
   box-shadow: 0 0 0 3px var(--color-accent-glow);
 }
 
@@ -1401,7 +1406,7 @@
     justify-content: center;
     align-items: flex-start;
     padding: var(--space-24) var(--page-margin-x);
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--color-surface-glass-strong);
     backdrop-filter: blur(20px);
     border: none;
     border-radius: 0;
@@ -1483,7 +1488,10 @@
   .hero__cta .btn {
     flex: 1;
     justify-content: center;
-    padding: var(--space-3) var(--space-4);
+    /* Matches .mode-switch__btn exactly so the two pill controls the user
+       sees stacked on mobile (hero CTAs, mode-switch tabs) read as the same
+       size language instead of the CTAs looking oversized next to it. */
+    padding: var(--space-2) var(--space-6);
     font-size: var(--fs-sm);
     white-space: nowrap;
   }

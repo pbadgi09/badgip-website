@@ -16,7 +16,22 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/styles.css" />
-  <script>document.documentElement.classList.remove('no-js');</script>
+  <script>
+    document.documentElement.classList.remove('no-js');
+    // Applied synchronously, before first paint, so the page never flashes
+    // the wrong theme for a returning visitor — by the time css/styles.css
+    // finishes loading, data-theme is already set and the dark overrides
+    // in variables.css are already in effect if applicable.
+    (function () {
+      var stored = localStorage.getItem('badgip.theme');
+      var theme = stored === 'light' || stored === 'dark'
+        ? stored
+        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', theme === 'dark' ? '#0a0a0c' : '#ffffff');
+    })();
+  </script>
 </head>
 <body>
   <div class="preloader" id="preloader" aria-hidden="true">
@@ -24,7 +39,7 @@
   </div>
 
   <nav class="site-nav" id="siteNav" data-open="false">
-    <a href="#home" class="site-nav__logo mono">PB</a>
+    <button type="button" class="site-nav__logo mono" id="themeToggle" aria-label="Switch between light and dark theme">PB</button>
     <button class="site-nav__toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
       <span class="bar-1"></span>
       <span class="bar-2"></span>

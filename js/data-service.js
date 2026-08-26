@@ -29,9 +29,8 @@ const DEFAULT_SETTINGS = {
     socialLinks: [{ icon: '💻', url: 'https://github.com/pbadgi09' }],
   },
   theme: {
-    accentColor: '#3effa3',
-    backgroundColor: '#ffffff',
-    textColor: '#0a0a0a',
+    light: { background: '#ffffff', text: '#0a0a0a', accent: '#3effa3', border: '#e2e2e2' },
+    dark: { background: '#0a0a0c', text: '#f5f5f5', accent: '#3effa3', border: '#2a2a30' },
   },
   meta: {
     title: 'Pranav Badgi — Portfolio',

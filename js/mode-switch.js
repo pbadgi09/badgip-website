@@ -59,6 +59,25 @@ function applyMode(mode, { animate }) {
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // A user-triggered switch always jumps back to the top of the page —
+  // without this, switching modes while scrolled into content that only
+  // exists in one mode could fade things in/out entirely outside the
+  // current viewport, reading as "nothing happened." Reuses the same
+  // Lenis instance nav-link clicks already scroll with, so it's the same
+  // smooth motion as the rest of the site; falls back to a native smooth
+  // scroll when Lenis isn't active yet (reduced motion, or before
+  // smooth-scroll has initialized this early in boot).
+  if (animate) {
+    // window.__lenis only ever exists when reduced-motion is off (Lenis
+    // itself declines to initialize otherwise), so the native fallback
+    // below already covers the reduced-motion case correctly.
+    if (window.__lenis) {
+      window.__lenis.scrollTo(0);
+    } else {
+      window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+  }
+
   document.querySelectorAll('#dynamicSections > [data-mode], #navList > li[data-mode], #contact[data-mode]').forEach((el) => {
     const matches = el.dataset.mode === mode;
     if (animate && window.gsap && !reducedMotion) {
@@ -71,12 +90,12 @@ function applyMode(mode, { animate }) {
       window.gsap.killTweensOf(el);
       if (matches) {
         el.hidden = false;
-        window.gsap.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });
+        window.gsap.fromTo(el, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' });
       } else {
         window.gsap.to(el, {
           opacity: 0,
-          y: -12,
-          duration: 0.25,
+          y: -8,
+          duration: 0.15,
           ease: 'power2.in',
           onComplete: () => {
             el.hidden = true;
@@ -104,7 +123,7 @@ function applyMode(mode, { animate }) {
     pendingRefreshTimer = setTimeout(() => {
       pendingRefreshTimer = null;
       refreshScroll();
-    }, 320);
+    }, 200);
   } else {
     if (pendingRefreshTimer) {
       clearTimeout(pendingRefreshTimer);
