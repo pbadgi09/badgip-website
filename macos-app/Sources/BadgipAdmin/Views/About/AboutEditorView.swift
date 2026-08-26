@@ -51,10 +51,14 @@ struct AboutEditorView: View {
                         EditorCard(title: "Professional Bio") {
                             TextEditor(text: $about.professionalBio)
                                 .frame(minHeight: 90)
+                            fontSizeControl(label: "Bio font size", size: $about.professionalBioFontSize)
+                            highlightsEditor(label: "Highlighted Keywords", keywords: $about.professionalHighlights)
                         }
                         EditorCard(title: "Personal Bio") {
                             TextEditor(text: $about.personalBio)
                                 .frame(minHeight: 90)
+                            fontSizeControl(label: "Bio font size", size: $about.personalBioFontSize)
+                            highlightsEditor(label: "Highlighted Keywords", keywords: $about.personalHighlights)
                         }
                         EditorCard(title: "Professional Timeline") {
                             timelineEditor(entries: $about.professionalTimeline)
@@ -68,6 +72,61 @@ struct AboutEditorView: View {
             }
         }
         .task { await load() }
+    }
+
+    @ViewBuilder
+    private func fontSizeControl(label: String, size: Binding<Int>) -> some View {
+        HStack(spacing: 10) {
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            Stepper(
+                size.wrappedValue > 0 ? "\(size.wrappedValue)px" : "Default",
+                value: size,
+                in: 0...96,
+                step: 2
+            )
+            .frame(width: 140)
+            if size.wrappedValue > 0 {
+                Button("Reset") { size.wrappedValue = 0 }
+                    .buttonStyle(.badgipSecondary)
+                    .controlSize(.small)
+            }
+        }
+        .padding(.top, 4)
+    }
+
+    @ViewBuilder
+    private func highlightsEditor(label: String, keywords: Binding<[HighlightKeyword]>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            ForEach(keywords) { $item in
+                HStack {
+                    TextField("Keyword", text: $item.keyword).textFieldStyle(.badgip)
+                    ColorPicker(
+                        "",
+                        selection: Binding(
+                            get: { Color(hex: item.color) ?? .badgipAccent },
+                            set: { newColor in
+                                if let converted = newColor.hexString { item.color = converted }
+                            }
+                        )
+                    )
+                    .labelsHidden()
+                    Button {
+                        keywords.wrappedValue.removeAll { $0.id == item.id }
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.badgipIcon(tint: .red))
+                }
+            }
+            Button {
+                keywords.wrappedValue.append(HighlightKeyword())
+            } label: {
+                Label("Add Keyword", systemImage: "plus")
+            }
+            .buttonStyle(.badgipSecondary)
+        }
+        .padding(.top, 4)
     }
 
     @ViewBuilder

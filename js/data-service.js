@@ -44,6 +44,10 @@ const DEFAULT_ABOUT = {
   personalBio: '',
   professionalTimeline: [],
   personalTimeline: [],
+  professionalBioFontSize: 0,
+  personalBioFontSize: 0,
+  professionalHighlights: [],
+  personalHighlights: [],
 };
 
 function deepMerge(base, override) {
