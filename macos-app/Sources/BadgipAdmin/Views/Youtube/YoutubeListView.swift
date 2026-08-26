@@ -112,7 +112,7 @@ private struct YoutubeRow: View {
     @State private var isHovering = false
 
     private var videoId: String? {
-        guard let regex = try? NSRegularExpression(pattern: "(?:youtu\\.be/|v=|embed/)([a-zA-Z0-9_-]{11})") else { return nil }
+        guard let regex = try? NSRegularExpression(pattern: "(?:youtu\\.be/|v=|embed/|shorts/)([a-zA-Z0-9_-]{11})") else { return nil }
         let range = NSRange(video.url.startIndex..., in: video.url)
         guard let match = regex.firstMatch(in: video.url, range: range), let group = Range(match.range(at: 1), in: video.url) else {
             return nil

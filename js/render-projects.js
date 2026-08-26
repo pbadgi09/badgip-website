@@ -12,7 +12,7 @@ function imageUrl(path) {
 
 function youtubeEmbedId(url) {
   if (!url) return null;
-  const match = url.match(/(?:youtu\.be\/|v=|embed\/)([a-zA-Z0-9_-]{11})/);
+  const match = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
   return match ? match[1] : null;
 }
 
