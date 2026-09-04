@@ -144,7 +144,7 @@ final class WhmsycodeGitHubService {
 
     func saveManifest(_ entries: [WhmsycodeManifestEntry], commitMessage: String) async throws {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(entries)
         try await uploadFile(path: "apps/manifest.json", data: data, commitMessage: commitMessage)
     }
@@ -159,8 +159,74 @@ final class WhmsycodeGitHubService {
 
     func saveAppContent(_ content: WhmsycodeAppContent, slug: String, commitMessage: String) async throws {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(content)
         try await uploadFile(path: "\(slug)/content.json", data: data, commitMessage: commitMessage)
+    }
+
+    func fetchSiteSettings() async throws -> WhmsycodeSiteSettings {
+        let text = try await fetchFileContent(path: "site.json")
+        guard let data = text.data(using: .utf8) else {
+            throw WhmsycodeGitHubServiceError.requestFailed("Empty site.json")
+        }
+        return try JSONDecoder().decode(WhmsycodeSiteSettings.self, from: data)
+    }
+
+    func saveSiteSettings(_ settings: WhmsycodeSiteSettings, commitMessage: String) async throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let data = try encoder.encode(settings)
+        try await uploadFile(path: "site.json", data: data, commitMessage: commitMessage)
+    }
+
+    // MARK: - og:image meta tag patching
+
+    /// Social-media crawlers read `<meta property="og:image">` straight from
+    /// the static HTML and never run `content.js` — so unlike every other
+    /// field, a changed OG image has to be patched directly into the page's
+    /// HTML source, not just written into content.json/site.json.
+    func updateOgImageMetaTag(path: String, absoluteImageURL: String, commitMessage: String) async throws {
+        let html = try await fetchFileContent(path: path)
+        guard let regex = try? NSRegularExpression(pattern: #"<meta property="og:image" content="[^"]*">"#) else {
+            throw WhmsycodeGitHubServiceError.requestFailed("Invalid og:image regex")
+        }
+        let fullRange = NSRange(html.startIndex..., in: html)
+        guard let match = regex.firstMatch(in: html, range: fullRange), let matchRange = Range(match.range, in: html) else {
+            throw WhmsycodeGitHubServiceError.requestFailed("Couldn't find an og:image meta tag in \(path)")
+        }
+        let replacement = "<meta property=\"og:image\" content=\"\(absoluteImageURL)\">"
+        let updatedHTML = html.replacingCharacters(in: matchRange, with: replacement)
+        try await uploadFile(path: path, data: Data(updatedHTML.utf8), commitMessage: commitMessage)
+    }
+
+    // MARK: - sitemap.xml maintenance
+
+    /// Adds a `<url>` entry for a newly created app page — sitemap.xml is a
+    /// static file the site never regenerates on its own. No-ops if an
+    /// entry for this slug is already present.
+    func addSitemapEntry(slug: String) async throws {
+        var xml = try await fetchFileContent(path: "sitemap.xml")
+        let loc = "https://whmsycode.com/\(slug)"
+        guard !xml.contains("<loc>\(loc)</loc>") else { return }
+        guard let range = xml.range(of: "</urlset>") else {
+            throw WhmsycodeGitHubServiceError.requestFailed("Couldn't find </urlset> in sitemap.xml")
+        }
+        xml.insert(contentsOf: "  <url>\n    <loc>\(loc)</loc>\n  </url>\n", at: range.lowerBound)
+        try await uploadFile(path: "sitemap.xml", data: Data(xml.utf8), commitMessage: "Add \(slug) to sitemap.xml")
+    }
+
+    /// Removes a deleted app's `<url>` entry. Silently does nothing if no
+    /// matching entry is found (already removed, hand-edited sitemap, etc.)
+    /// — a missing sitemap entry is a discoverability nit, not something
+    /// that should ever block the rest of a delete.
+    func removeSitemapEntry(slug: String) async throws {
+        var xml = try await fetchFileContent(path: "sitemap.xml")
+        let loc = "https://whmsycode.com/\(slug)"
+        let pattern = #"\s*<url>\s*<loc>\#(NSRegularExpression.escapedPattern(for: loc))</loc>\s*</url>"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return }
+        let fullRange = NSRange(xml.startIndex..., in: xml)
+        guard let match = regex.firstMatch(in: xml, range: fullRange), let matchRange = Range(match.range, in: xml) else { return }
+        xml.removeSubrange(matchRange)
+        try await uploadFile(path: "sitemap.xml", data: Data(xml.utf8), commitMessage: "Remove \(slug) from sitemap.xml")
     }
 }

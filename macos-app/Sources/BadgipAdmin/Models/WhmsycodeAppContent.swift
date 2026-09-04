@@ -14,6 +14,7 @@ struct WhmsycodeAppContent: Codable, Equatable {
     var googlePlayUrl: String = ""
     var heroImage: String = ""
     var sixteenNineImage: String = ""
+    var ogImage: String = ""
     var features: [WhmsycodeFeature] = []
     var supportEmail: String = ""
     var terms: WhmsycodeLegalDocument = WhmsycodeLegalDocument()

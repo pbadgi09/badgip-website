@@ -70,6 +70,17 @@ struct WhmsycodeNewAppView: View {
         isCreating = true
         errorMessage = nil
         do {
+            // Without this check, a slug that collides with an existing app
+            // (or a typo that happens to match one) would silently overwrite
+            // its index.html/content.json/images with a blank scaffold —
+            // this has to happen before any uploadFile call, not after.
+            let existingManifest = try await service.fetchManifest()
+            guard !existingManifest.contains(where: { $0.slug == slug }) else {
+                errorMessage = "An app with slug \"\(slug)\" already exists — choose a different slug."
+                isCreating = false
+                return
+            }
+
             let content = WhmsycodeAppContent(
                 title: title,
                 eyebrow: title,
@@ -103,10 +114,17 @@ struct WhmsycodeNewAppView: View {
                 commitMessage: "Scaffold privacy.html for \(slug)"
             )
 
-            var manifest = try await service.fetchManifest()
+            var manifest = existingManifest
             let entry = WhmsycodeManifestEntry(slug: slug, title: title, tagline: tagline, icon: String(title.prefix(2)).uppercased())
             manifest.append(entry)
             try await service.saveManifest(manifest, commitMessage: "Add \(title) to apps manifest")
+
+            // Best-effort: sitemap.xml is an SEO nicety, not something a
+            // hiccup here should block app creation over (unlike the
+            // og:image meta-tag patch in WhmsycodeAppEditorView, which
+            // affects what a shared link actually shows and does surface
+            // its own errors).
+            try? await service.addSitemapEntry(slug: slug)
 
             onCreate(entry)
         } catch {
@@ -136,7 +154,7 @@ struct WhmsycodeNewAppView: View {
           <div class="page-card">
             <header class="container">
               <nav class="nav">
-                <a class="nav-brand" href="/">WHMSYCODE</a>
+                <a class="nav-brand" href="/"><span data-nav-brand>WHMSYCODE</span></a>
                 <div class="nav-links">
                   <a href="/#apps">Apps</a>
                   <a class="btn-primary" id="nav-download" href="#">Download</a>
@@ -177,7 +195,7 @@ struct WhmsycodeNewAppView: View {
             </main>
             <footer class="footer container">
               <div class="footer-inner">
-                <p class="footer-copy">&copy; 2026 WHMSYCODE. All rights reserved.</p>
+                <p class="footer-copy" data-footer-copyright>&copy; 2026 WHMSYCODE. All rights reserved.</p>
                 <div class="footer-links">
                   <a href="terms.html">Terms of Use</a>
                   <a href="privacy.html">Privacy Policy</a>
@@ -212,7 +230,7 @@ struct WhmsycodeNewAppView: View {
           <div class="page-card">
             <header class="container">
               <nav class="nav">
-                <a class="nav-brand" href="/">WHMSYCODE</a>
+                <a class="nav-brand" href="/"><span data-nav-brand>WHMSYCODE</span></a>
                 <div class="nav-links">
                   <a href="index.html">\(title)</a>
                   <a class="btn-primary" href="/#apps">Apps</a>
@@ -224,11 +242,11 @@ struct WhmsycodeNewAppView: View {
               <p class="updated" id="legal-updated">Last updated: —</p>
               <div id="legal-sections"></div>
               <h2>Contact</h2>
-              <p>Questions? Contact us at <a href="mailto:hello@whmsycode.com" data-support-email>hello@whmsycode.com</a>.</p>
+              <p>Questions? Contact us at <a href="mailto:hello@whmsycode.com" data-support-email data-support-email-text>hello@whmsycode.com</a>.</p>
             </main>
             <footer class="footer container">
               <div class="footer-inner">
-                <p class="footer-copy">&copy; 2026 WHMSYCODE. All rights reserved.</p>
+                <p class="footer-copy" data-footer-copyright>&copy; 2026 WHMSYCODE. All rights reserved.</p>
                 <div class="footer-links">
                   <a href="terms.html">Terms of Use</a>
                   <a href="privacy.html">Privacy Policy</a>

@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct WhmsycodeAppEditorView: View {
     let slug: String
@@ -52,8 +51,34 @@ struct WhmsycodeAppEditorView: View {
                     }
 
                     EditorCard(title: "Images") {
-                        WhmsycodeImageField(label: "Hero mockup (vertical phone photo)", storedPath: $content.heroImage, service: service, slug: slug)
-                        WhmsycodeImageField(label: "16:9 screenshot", storedPath: $content.sixteenNineImage, service: service, slug: slug)
+                        WhmsycodeImageField(
+                            label: "Hero mockup (vertical phone photo)",
+                            storedPath: $content.heroImage,
+                            service: service,
+                            repoPath: { "\(slug)/img/\($0)" },
+                            storedPathBuilder: { "img/\($0)" }
+                        )
+                        WhmsycodeImageField(
+                            label: "16:9 screenshot",
+                            storedPath: $content.sixteenNineImage,
+                            service: service,
+                            repoPath: { "\(slug)/img/\($0)" },
+                            storedPathBuilder: { "img/\($0)" }
+                        )
+                        WhmsycodeImageField(
+                            label: "Social preview (og:image) — patches this page's meta tag directly",
+                            storedPath: $content.ogImage,
+                            service: service,
+                            repoPath: { "\(slug)/img/\($0)" },
+                            storedPathBuilder: { "img/\($0)" },
+                            onUploaded: { stored in
+                                try await service.updateOgImageMetaTag(
+                                    path: "\(slug)/index.html",
+                                    absoluteImageURL: "https://whmsycode.com/\(slug)/\(stored)",
+                                    commitMessage: "Update og:image for \(slug)"
+                                )
+                            }
+                        )
                     }
 
                     EditorCard(title: "Features") {
@@ -205,71 +230,3 @@ private struct LegalSectionRowEditor: View {
     }
 }
 
-/// Uploads an image straight to the whmsycode.com-website repo via the
-/// Contents API (same no-local-git mechanism as badgip's own image
-/// uploads), storing the page-relative path ("img/<filename>") in
-/// content.json — the full repo path ("<slug>/img/<filename>") is only
-/// needed for the upload call itself.
-private struct WhmsycodeImageField: View {
-    let label: String
-    @Binding var storedPath: String
-    let service: WhmsycodeGitHubService
-    let slug: String
-
-    @State private var isUploading = false
-    @State private var uploadError: String?
-    @State private var isPickingFile = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(.caption).foregroundStyle(.secondary)
-            HStack {
-                TextField("img/filename", text: $storedPath).textFieldStyle(.badgip)
-                if isUploading {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Button("Upload…") { isPickingFile = true }
-                        .buttonStyle(.badgipSecondary)
-                }
-            }
-            if let uploadError {
-                Text(uploadError).font(.caption2).foregroundStyle(.red)
-            }
-        }
-        .fileImporter(isPresented: $isPickingFile, allowedContentTypes: [.image]) { result in
-            handlePicked(result)
-        }
-    }
-
-    private func handlePicked(_ result: Result<URL, Error>) {
-        switch result {
-        case .failure(let error):
-            uploadError = error.localizedDescription
-        case .success(let url):
-            Task { await upload(from: url) }
-        }
-    }
-
-    private func upload(from url: URL) async {
-        isUploading = true
-        uploadError = nil
-        defer { isUploading = false }
-
-        guard url.startAccessingSecurityScopedResource() else {
-            uploadError = "Couldn't access the selected file."
-            return
-        }
-        defer { url.stopAccessingSecurityScopedResource() }
-
-        do {
-            let rawData = try Data(contentsOf: url)
-            let data = ImageCompressor.compress(rawData)
-            let filename = url.lastPathComponent
-            let repoPath = "\(slug)/img/\(filename)"
-            try await service.uploadFile(path: repoPath, data: data, commitMessage: "Update image for \(slug): \(filename)")
-            storedPath = "img/\(filename)"
-        } catch {
-            uploadError = error.localizedDescription
-        }
-    }
-}
