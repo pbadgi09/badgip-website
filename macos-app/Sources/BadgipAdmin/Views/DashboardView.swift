@@ -11,6 +11,7 @@ enum DashboardSection: String, CaseIterable, Identifiable {
     case messages = "Messages"
     case server = "Server"
     case advanced = "Advanced"
+    case whmsycode = "WHMSYCODE"
 
     var id: String { rawValue }
 
@@ -26,6 +27,7 @@ enum DashboardSection: String, CaseIterable, Identifiable {
         case .messages: return "envelope"
         case .server: return "server.rack"
         case .advanced: return "wrench.and.screwdriver"
+        case .whmsycode: return "globe"
         }
     }
 }
@@ -134,6 +136,7 @@ struct DashboardView: View {
         case .messages: MessagesInboxView()
         case .server: ServerView()
         case .advanced: DeployControlsView()
+        case .whmsycode: WhmsycodeAppListView()
         }
     }
 }

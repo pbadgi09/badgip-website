@@ -44,4 +44,5 @@ enum KeychainService {
 
 enum KeychainKey {
     static let githubPAT = "githubPAT"
+    static let whmsycodeGitHubPAT = "whmsycodeGitHubPAT"
 }
