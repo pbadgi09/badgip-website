@@ -303,21 +303,30 @@ private struct WhmsycodeAppsTabView: View {
     /// but a real failure deleting any known file stops the whole operation
     /// before the manifest entry is removed — so a partial failure never
     /// looks like a completed delete.
+    ///
+    /// Images are deleted *before* content.json, not after: content.json is
+    /// the only place the image paths are recorded, so if a retry is needed
+    /// after a partial failure, it can still look them up as long as
+    /// content.json hasn't been deleted yet. Deleting content.json first (as
+    /// an earlier version did) meant a failure partway through the image
+    /// deletes left them permanently orphaned — a retry could no longer
+    /// discover their paths at all.
     private func delete(_ app: WhmsycodeManifestEntry) async {
         actionError = nil
         do {
             let content = try? await service.fetchAppContent(slug: app.slug)
-            var filesToDelete = [
-                "\(app.slug)/index.html",
-                "\(app.slug)/terms.html",
-                "\(app.slug)/privacy.html",
-                "\(app.slug)/content.json",
-            ]
+            var filesToDelete: [String] = []
             if let content {
                 for path in [content.heroImage, content.sixteenNineImage, content.ogImage] where !path.isEmpty {
                     filesToDelete.append("\(app.slug)/\(path)")
                 }
             }
+            filesToDelete.append(contentsOf: [
+                "\(app.slug)/index.html",
+                "\(app.slug)/terms.html",
+                "\(app.slug)/privacy.html",
+                "\(app.slug)/content.json",
+            ])
             for path in filesToDelete {
                 try await service.deleteFile(path: path, commitMessage: "Delete \(app.slug): \(path)")
             }

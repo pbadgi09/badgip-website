@@ -35,6 +35,15 @@ final class WhmsycodeGitHubService {
         request.setValue("Bearer \(pat)", forHTTPHeaderField: "Authorization")
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+        // A GET and a DELETE/PUT to the Contents API hit the exact same URL
+        // (only the method differs), and URLSession.shared's default cache
+        // is keyed loosely enough that a GET immediately following a
+        // write to the same path can come back serving that write's own
+        // cached response instead of a fresh network hit — observed in
+        // practice as a delete-retry's sha-fetch GET for an already-deleted
+        // file returning that file's own prior delete-commit body instead
+        // of a 404. Every one of these calls needs to be genuinely fresh.
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         return request
     }
 
