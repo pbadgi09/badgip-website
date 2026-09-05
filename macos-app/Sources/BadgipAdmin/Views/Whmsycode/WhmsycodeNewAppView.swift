@@ -133,12 +133,11 @@ struct WhmsycodeNewAppView: View {
         isCreating = false
     }
 
-    // Minimal generic shell — copy the real hero/nav/footer markup from an
-    // existing app page (e.g. editor-compressor/index.html) into this
-    // template once the website's layout stabilizes further. Kept
-    // deliberately plain here so a new app is immediately functional
-    // (loads styles.css + content.js and has every id renderApp() expects)
-    // without duplicating the site's full template in Swift source.
+    // Matches the site's current hero/nav/footer/animation conventions
+    // (squiggle accent, scroll-reveal classes) as of this writing — if the
+    // live template's markup conventions evolve further, this should be
+    // updated to match so a newly created app doesn't look stale next to
+    // hand-built pages.
     private static func pageShellHTML(title: String) -> String {
         """
         <!DOCTYPE html>
@@ -178,19 +177,22 @@ struct WhmsycodeNewAppView: View {
                   </div>
                 </div>
                 <div class="hero-media hero-media--phone">
+                  <svg class="squiggle" width="140" height="70" viewBox="0 0 140 70" style="left:-40px; bottom:-20px;" aria-hidden="true">
+                    <path d="M2 40 Q 30 5, 55 35 T 110 30 T 136 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="1 9"/>
+                  </svg>
                   <div class="hero-phone">
                     <img id="hero-phone-img" src="" alt="\(title) app mockup">
                   </div>
                 </div>
               </section>
-              <section class="container section-media">
+              <section class="container section-media reveal">
                 <div class="hero-media-frame">
                   <img id="hero-16x9-img" src="" alt="\(title) screenshot">
                 </div>
               </section>
               <section class="container section">
-                <h2 class="section-heading">What it does</h2>
-                <div class="app-grid" id="features-grid"></div>
+                <h2 class="section-heading reveal">What it does</h2>
+                <div class="app-grid" id="features-grid" data-reveal-stagger></div>
               </section>
             </main>
             <footer class="footer container">
@@ -207,7 +209,8 @@ struct WhmsycodeNewAppView: View {
           </div>
           <script type="module">
             import { renderApp } from "/assets/js/content.js";
-            renderApp();
+            import { initScrollReveal } from "/assets/js/animations.js";
+            renderApp().then(initScrollReveal);
           </script>
         </body>
         </html>
@@ -240,7 +243,7 @@ struct WhmsycodeNewAppView: View {
             <main class="container content-page">
               <h1>\(heading)</h1>
               <p class="updated" id="legal-updated">Last updated: —</p>
-              <div id="legal-sections"></div>
+              <div id="legal-sections" class="reveal"></div>
               <h2>Contact</h2>
               <p>Questions? Contact us at <a href="mailto:hello@whmsycode.com" data-support-email data-support-email-text>hello@whmsycode.com</a>.</p>
             </main>
@@ -257,7 +260,8 @@ struct WhmsycodeNewAppView: View {
           </div>
           <script type="module">
             import { renderLegal } from "/assets/js/content.js";
-            renderLegal("\(kind)");
+            import { initScrollReveal } from "/assets/js/animations.js";
+            renderLegal("\(kind)").then(initScrollReveal);
           </script>
         </body>
         </html>
