@@ -12,7 +12,11 @@ struct WhmsycodeExistingImagePicker: View {
     var onPick: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var entries: [WhmsycodeTreeEntry] = []
+    // Grouped by folder — several apps commonly have identically-named
+    // files (icon.png, hero.jpg), so a flat grid with just a bare filename
+    // underneath each thumbnail would make two different images
+    // indistinguishable at a glance.
+    @State private var groups: [(folder: String, entries: [WhmsycodeTreeEntry])] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
 
@@ -37,41 +41,50 @@ struct WhmsycodeExistingImagePicker: View {
                 }
                 .padding(24)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if entries.isEmpty {
+            } else if groups.isEmpty {
                 Text("No images in the repo yet — upload one first.")
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(entries, id: \.path) { entry in
-                            Button {
-                                onPick("/\(entry.path)")
-                                dismiss()
-                            } label: {
-                                VStack(spacing: 4) {
-                                    AsyncImage(url: rawURL(for: entry.path)) { phase in
-                                        switch phase {
-                                        case .success(let image):
-                                            image.resizable().aspectRatio(contentMode: .fit)
-                                        case .failure:
-                                            Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary)
-                                        default:
-                                            ProgressView().controlSize(.small)
-                                        }
-                                    }
-                                    .frame(width: 84, height: 84)
-                                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.badgipSurfaceHover))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    VStack(alignment: .leading, spacing: 20) {
+                        ForEach(groups, id: \.folder) { group in
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(group.folder)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                LazyVGrid(columns: columns, spacing: 16) {
+                                    ForEach(group.entries, id: \.path) { entry in
+                                        Button {
+                                            onPick("/\(entry.path)")
+                                            dismiss()
+                                        } label: {
+                                            VStack(spacing: 4) {
+                                                AsyncImage(url: rawURL(for: entry.path)) { phase in
+                                                    switch phase {
+                                                    case .success(let image):
+                                                        image.resizable().aspectRatio(contentMode: .fit)
+                                                    case .failure:
+                                                        Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary)
+                                                    default:
+                                                        ProgressView().controlSize(.small)
+                                                    }
+                                                }
+                                                .frame(width: 84, height: 84)
+                                                .background(RoundedRectangle(cornerRadius: 8).fill(Color.badgipSurfaceHover))
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                                    Text((entry.path as NSString).lastPathComponent)
-                                        .font(.caption2)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                        .foregroundStyle(.secondary)
+                                                Text((entry.path as NSString).lastPathComponent)
+                                                    .font(.caption2)
+                                                    .lineLimit(1)
+                                                    .truncationMode(.middle)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
                                 }
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                     .padding(20)
@@ -90,7 +103,14 @@ struct WhmsycodeExistingImagePicker: View {
         isLoading = true
         errorMessage = nil
         do {
-            entries = try await service.fetchTree().filter { $0.isImage }
+            let images = try await service.fetchTree().filter { $0.isImage }
+            let grouped = Dictionary(grouping: images) { entry -> String in
+                let components = entry.path.split(separator: "/")
+                return components.count > 1 ? components.dropLast().joined(separator: "/") : "(root)"
+            }
+            groups = grouped
+                .map { (folder: $0.key, entries: $0.value.sorted { $0.path < $1.path }) }
+                .sorted { $0.folder < $1.folder }
         } catch {
             errorMessage = error.localizedDescription
         }

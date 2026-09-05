@@ -14,6 +14,10 @@ struct WhmsycodeGalleryView: View {
     @State private var loadError: String?
     @State private var actionError: String?
     @State private var pendingDelete: GalleryEntry?
+    /// Sources the usage scan couldn't read (a transient fetch failure) —
+    /// surfaced as a warning, since anything it references would otherwise
+    /// be silently, and wrongly, flagged Unused.
+    @State private var incompleteSources: [String] = []
 
     private let columns = [GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 12)]
 
@@ -39,6 +43,13 @@ struct WhmsycodeGalleryView: View {
                 Text(actionError)
                     .font(.caption)
                     .foregroundStyle(.red)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 8)
+            }
+            if !incompleteSources.isEmpty {
+                Text("Couldn't check usage in: \(incompleteSources.joined(separator: ", ")) — Used/Unused below may be wrong until this succeeds. Try Refresh.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
                     .padding(.horizontal, 24)
                     .padding(.bottom, 8)
             }
@@ -103,10 +114,12 @@ struct WhmsycodeGalleryView: View {
     private func load() async {
         isLoading = true
         loadError = nil
+        incompleteSources = []
         do {
             let tree = try await service.fetchTree()
             let imagePaths = tree.filter { $0.isImage }
-            let usage = try await buildUsageMap()
+            let (usage, failed) = await buildUsageMap()
+            incompleteSources = failed
 
             let entries = imagePaths.map { entry in
                 GalleryEntry(path: entry.path, size: entry.size, usedBy: usage[entry.path] ?? [])
@@ -130,36 +143,53 @@ struct WhmsycodeGalleryView: View {
     /// file that references it (site.json fields are already repo-root-
     /// relative even without a leading slash; content.json fields are
     /// relative to that app's own folder).
-    private func buildUsageMap() async throws -> [String: [String]] {
+    private func buildUsageMap() async -> (usage: [String: [String]], failedSources: [String]) {
         var usage: [String: [String]] = [:]
+        var failed: [String] = []
         func record(_ raw: String, basePrefix: String, label: String) {
             guard !raw.isEmpty else { return }
             let normalized = raw.hasPrefix("/") ? String(raw.dropFirst()) : basePrefix + raw
             usage[normalized, default: []].append(label)
         }
 
-        if let site = try? await service.fetchSiteSettings() {
+        // Not tracked in any JSON field — every page's <link rel="apple-
+        // touch-icon"> hardcodes this exact path, so the scanner would
+        // otherwise wrongly flag it Unused and risk it getting deleted.
+        usage["assets/img/apple-touch-icon.png"] = ["every page's <link rel=apple-touch-icon>"]
+
+        do {
+            let site = try await service.fetchSiteSettings()
             record(site.heroImage, basePrefix: "", label: "site.json (homepage hero)")
             record(site.favicon, basePrefix: "", label: "site.json (favicon)")
             record(site.ogImage, basePrefix: "", label: "site.json (default og:image)")
             for (index, item) in site.whyUs.enumerated() {
                 record(item.icon, basePrefix: "", label: "Homepage Why card \(index + 1)")
             }
+        } catch {
+            failed.append("site.json")
         }
 
-        let manifest = (try? await service.fetchManifest()) ?? []
-        for app in manifest {
-            guard let content = try? await service.fetchAppContent(slug: app.slug) else { continue }
-            let prefix = "\(app.slug)/"
-            record(content.heroImage, basePrefix: prefix, label: "\(app.slug) content.json (heroImage)")
-            record(content.sixteenNineImage, basePrefix: prefix, label: "\(app.slug) content.json (sixteenNineImage)")
-            record(content.ogImage, basePrefix: prefix, label: "\(app.slug) content.json (ogImage)")
-            for (index, feature) in content.features.enumerated() {
-                record(feature.icon, basePrefix: prefix, label: "\(app.slug) feature \(index + 1)")
+        do {
+            let manifest = try await service.fetchManifest()
+            for app in manifest {
+                do {
+                    let content = try await service.fetchAppContent(slug: app.slug)
+                    let prefix = "\(app.slug)/"
+                    record(content.heroImage, basePrefix: prefix, label: "\(app.slug) content.json (heroImage)")
+                    record(content.sixteenNineImage, basePrefix: prefix, label: "\(app.slug) content.json (sixteenNineImage)")
+                    record(content.ogImage, basePrefix: prefix, label: "\(app.slug) content.json (ogImage)")
+                    for (index, feature) in content.features.enumerated() {
+                        record(feature.icon, basePrefix: prefix, label: "\(app.slug) feature \(index + 1)")
+                    }
+                } catch {
+                    failed.append("\(app.slug)/content.json")
+                }
             }
+        } catch {
+            failed.append("apps/manifest.json")
         }
 
-        return usage
+        return (usage, failed)
     }
 
     private func delete(_ entry: GalleryEntry) async {

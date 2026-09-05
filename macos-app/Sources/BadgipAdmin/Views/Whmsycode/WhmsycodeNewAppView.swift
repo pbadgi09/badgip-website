@@ -191,7 +191,7 @@ struct WhmsycodeNewAppView: View {
                   <img id="hero-16x9-img" src="" alt="\(title) screenshot">
                 </div>
               </section>
-              <section class="container section">
+              <section class="container section" id="features-section">
                 <h2 class="section-heading reveal">What it does</h2>
                 <div class="app-grid" id="features-grid" data-reveal-stagger></div>
               </section>

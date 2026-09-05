@@ -39,6 +39,12 @@ struct WhmsycodeImageField: View {
     @State private var uploadError: String?
     @State private var isPickingFile = false
     @State private var isChoosingExisting = false
+    // AsyncImage treats an unchanged URL as already-loaded and won't
+    // re-fetch — a real problem for fixed-path fields (favicon, default OG
+    // image), where uploading a *new* file lands at the exact same URL as
+    // before. Bumped after every successful upload/pick so the preview's
+    // URL always changes, forcing a fresh request.
+    @State private var previewCacheBuster = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -98,7 +104,7 @@ struct WhmsycodeImageField: View {
 
     private func rawURL(for path: String) -> URL? {
         let trimmed = path.hasPrefix("/") ? String(path.dropFirst()) : path
-        return URL(string: "https://raw.githubusercontent.com/\(WhmsycodeGitHubService.owner)/\(WhmsycodeGitHubService.repo)/\(WhmsycodeGitHubService.branch)/\(trimmed)")
+        return URL(string: "https://raw.githubusercontent.com/\(WhmsycodeGitHubService.owner)/\(WhmsycodeGitHubService.repo)/\(WhmsycodeGitHubService.branch)/\(trimmed)?v=\(previewCacheBuster)")
     }
 
     private func handlePicked(_ result: Result<URL, Error>) {
@@ -129,6 +135,7 @@ struct WhmsycodeImageField: View {
             let stored = storedPathBuilder(filename)
             try await service.uploadFile(path: repo, data: data, commitMessage: "Update image: \(repo)")
             storedPath = stored
+            previewCacheBuster += 1
             if let onUploaded {
                 try await onUploaded(stored)
             }
@@ -138,7 +145,9 @@ struct WhmsycodeImageField: View {
     }
 
     private func usePicked(_ path: String) async {
+        isUploading = true
         uploadError = nil
+        defer { isUploading = false }
         do {
             let finalPath: String
             if copyContentInsteadOfReference {
@@ -154,6 +163,7 @@ struct WhmsycodeImageField: View {
                 finalPath = path
             }
             storedPath = finalPath
+            previewCacheBuster += 1
             if let onUploaded {
                 try await onUploaded(finalPath)
             }
