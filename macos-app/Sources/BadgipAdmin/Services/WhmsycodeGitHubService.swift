@@ -55,6 +55,40 @@ final class WhmsycodeGitHubService {
         return URL(string: "https://api.github.com/repos/\(Self.owner)/\(Self.repo)/contents/\(encodedPath)")
     }
 
+    /// Full recursive file listing for the repo (Git Trees API) — used by the
+    /// existing-image picker and the Gallery, neither of which is a "look up
+    /// one known path" operation like everything else in this class.
+    func fetchTree() async throws -> [WhmsycodeTreeEntry] {
+        guard let url = URL(string: "https://api.github.com/repos/\(Self.owner)/\(Self.repo)/git/trees/\(Self.branch)?recursive=1") else {
+            throw WhmsycodeGitHubServiceError.requestFailed("Couldn't build the git trees URL")
+        }
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: url))
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw WhmsycodeGitHubServiceError.requestFailed("Couldn't fetch repo tree: \(message)")
+        }
+        struct TreeResponse: Decodable { let tree: [WhmsycodeTreeEntry] }
+        return try JSONDecoder().decode(TreeResponse.self, from: data).tree
+    }
+
+    /// Same fetch as fetchFileContent, but returns raw bytes instead of
+    /// decoding as UTF-8 text — needed for binary files (images), where
+    /// fetchFileContent's text decode would simply fail.
+    func fetchFileData(path: String) async throws -> Data {
+        guard let contentsURL = contentsURL(for: path) else {
+            throw WhmsycodeGitHubServiceError.requestFailed("Couldn't build a valid GitHub URL for path: \(path)")
+        }
+        let (data, response) = try await URLSession.shared.data(for: authorizedRequest(url: contentsURL))
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let base64Content = (json["content"] as? String)?.replacingOccurrences(of: "\n", with: ""),
+              let decoded = Data(base64Encoded: base64Content) else {
+            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw WhmsycodeGitHubServiceError.requestFailed("Couldn't fetch content for path \(path): \(message)")
+        }
+        return decoded
+    }
+
     /// Reads a text file's current content straight from the repo (main branch).
     func fetchFileContent(path: String) async throws -> String {
         guard let contentsURL = contentsURL(for: path) else {

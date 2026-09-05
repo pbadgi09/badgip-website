@@ -56,25 +56,25 @@ struct WhmsycodeAppEditorView: View {
                             storedPath: $content.heroImage,
                             service: service,
                             repoPath: { "\(slug)/img/\($0)" },
-                            storedPathBuilder: { "img/\($0)" }
+                            storedPathBuilder: { "/\(slug)/img/\($0)" }
                         )
                         WhmsycodeImageField(
                             label: "16:9 screenshot",
                             storedPath: $content.sixteenNineImage,
                             service: service,
                             repoPath: { "\(slug)/img/\($0)" },
-                            storedPathBuilder: { "img/\($0)" }
+                            storedPathBuilder: { "/\(slug)/img/\($0)" }
                         )
                         WhmsycodeImageField(
                             label: "Social preview (og:image) — patches this page's meta tag directly",
                             storedPath: $content.ogImage,
                             service: service,
                             repoPath: { "\(slug)/img/\($0)" },
-                            storedPathBuilder: { "img/\($0)" },
+                            storedPathBuilder: { "/\(slug)/img/\($0)" },
                             onUploaded: { stored in
                                 try await service.updateOgImageMetaTag(
                                     path: "\(slug)/index.html",
-                                    absoluteImageURL: "https://whmsycode.com/\(slug)/\(stored)",
+                                    absoluteImageURL: "https://whmsycode.com\(stored)",
                                     commitMessage: "Update og:image for \(slug)"
                                 )
                             }
@@ -83,7 +83,12 @@ struct WhmsycodeAppEditorView: View {
 
                     EditorCard(title: "Features") {
                         ForEach($content.features) { $feature in
-                            WhmsycodeFeatureRowEditor(feature: $feature) {
+                            WhmsycodeFeatureRowEditor(
+                                feature: $feature,
+                                service: service,
+                                repoPath: { "\(slug)/img/\($0)" },
+                                storedPathBuilder: { "/\(slug)/img/\($0)" }
+                            ) {
                                 content.features.removeAll { $0.id == feature.id }
                             }
                         }

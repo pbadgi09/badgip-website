@@ -4,6 +4,7 @@ private enum WhmsycodeTab: String, CaseIterable, Identifiable {
     case apps = "Apps"
     case homepage = "Homepage"
     case siteSettings = "Site Settings"
+    case gallery = "Gallery"
     var id: String { rawValue }
 }
 
@@ -44,6 +45,7 @@ struct WhmsycodeAppListView: View {
         case .apps: return false
         case .homepage: return homepageHasChanges
         case .siteSettings: return siteSettingsHasChanges
+        case .gallery: return false
         }
     }
 
@@ -107,7 +109,7 @@ struct WhmsycodeAppListView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(maxWidth: 420, alignment: .leading)
+            .frame(maxWidth: 520, alignment: .leading)
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
 
@@ -119,6 +121,8 @@ struct WhmsycodeAppListView: View {
                     WhmsycodeHomepageEditorView(service: service, savedToast: savedToast, hasUnsavedChanges: $homepageHasChanges)
                 case .siteSettings:
                     WhmsycodeSiteSettingsEditorView(service: service, savedToast: savedToast, hasUnsavedChanges: $siteSettingsHasChanges)
+                case .gallery:
+                    WhmsycodeGalleryView(service: service)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

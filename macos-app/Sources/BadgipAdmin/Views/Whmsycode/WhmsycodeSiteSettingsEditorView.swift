@@ -61,7 +61,8 @@ struct WhmsycodeSiteSettingsEditorView: View {
                                 service: service,
                                 maxDimension: 512,
                                 repoPath: { _ in "assets/img/favicon.png" },
-                                storedPathBuilder: { _ in "assets/img/favicon.png" }
+                                storedPathBuilder: { _ in "/assets/img/favicon.png" },
+                                copyContentInsteadOfReference: true
                             )
                         }
 
@@ -74,11 +75,12 @@ struct WhmsycodeSiteSettingsEditorView: View {
                                 storedPath: $settings.ogImage,
                                 service: service,
                                 repoPath: { _ in "assets/img/og-default.png" },
-                                storedPathBuilder: { _ in "assets/img/og-default.png" },
+                                storedPathBuilder: { _ in "/assets/img/og-default.png" },
+                                copyContentInsteadOfReference: true,
                                 onUploaded: { stored in
                                     try await service.updateOgImageMetaTag(
                                         path: "index.html",
-                                        absoluteImageURL: "https://whmsycode.com/\(stored)",
+                                        absoluteImageURL: "https://whmsycode.com\(stored)",
                                         commitMessage: "Update default og:image"
                                     )
                                 }

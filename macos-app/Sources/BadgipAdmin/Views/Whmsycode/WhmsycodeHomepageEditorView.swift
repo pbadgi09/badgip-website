@@ -57,13 +57,18 @@ struct WhmsycodeHomepageEditorView: View {
                                 storedPath: $settings.heroImage,
                                 service: service,
                                 repoPath: { "assets/img/homepage-\($0)" },
-                                storedPathBuilder: { "assets/img/homepage-\($0)" }
+                                storedPathBuilder: { "/assets/img/homepage-\($0)" }
                             )
                         }
 
                         EditorCard(title: "Why WHMSYCODE") {
                             ForEach($settings.whyUs) { $item in
-                                WhmsycodeFeatureRowEditor(feature: $item) {
+                                WhmsycodeFeatureRowEditor(
+                                    feature: $item,
+                                    service: service,
+                                    repoPath: { "assets/img/whyus-\($0)" },
+                                    storedPathBuilder: { "/assets/img/whyus-\($0)" }
+                                ) {
                                     settings.whyUs.removeAll { $0.id == item.id }
                                 }
                             }
