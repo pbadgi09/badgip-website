@@ -61,6 +61,20 @@ struct WhmsycodeHomepageEditorView: View {
                             )
                         }
 
+                        EditorCard(title: "Why WHMSYCODE") {
+                            ForEach($settings.whyUs) { $item in
+                                WhmsycodeFeatureRowEditor(feature: $item) {
+                                    settings.whyUs.removeAll { $0.id == item.id }
+                                }
+                            }
+                            Button {
+                                settings.whyUs.append(WhmsycodeFeature())
+                            } label: {
+                                Label("Add card", systemImage: "plus")
+                            }
+                            .buttonStyle(.badgipSecondary)
+                        }
+
                         if let errorMessage {
                             Text(errorMessage).foregroundStyle(.red).font(.caption)
                         }

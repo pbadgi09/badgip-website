@@ -83,7 +83,7 @@ struct WhmsycodeAppEditorView: View {
 
                     EditorCard(title: "Features") {
                         ForEach($content.features) { $feature in
-                            FeatureRowEditor(feature: $feature) {
+                            WhmsycodeFeatureRowEditor(feature: $feature) {
                                 content.features.removeAll { $0.id == feature.id }
                             }
                         }
@@ -184,28 +184,6 @@ struct WhmsycodeAppEditorView: View {
             errorMessage = error.localizedDescription
         }
         isSaving = false
-    }
-}
-
-private struct FeatureRowEditor: View {
-    @Binding var feature: WhmsycodeFeature
-    var onDelete: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                LabeledField(label: "Icon (trim, compress, device, shield, spark)", text: $feature.icon)
-                Button {
-                    onDelete()
-                } label: {
-                    Image(systemName: "trash")
-                }
-                .buttonStyle(.badgipIcon(tint: .red))
-            }
-            LabeledField(label: "Title", text: $feature.title)
-            LabeledField(label: "Description", text: $feature.description, multiline: true)
-            Divider()
-        }
     }
 }
 
