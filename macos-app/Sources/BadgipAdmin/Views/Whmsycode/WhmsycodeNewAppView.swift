@@ -146,13 +146,14 @@ struct WhmsycodeNewAppView: View {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <title>\(title) | WHMSYCODE</title>
+          <meta name="theme-color" content="#0a0a0c">
           <link rel="icon" type="image/png" href="/assets/img/favicon.png">
           <link rel="stylesheet" href="/assets/css/styles.css">
         </head>
         <body data-page="app">
           <div class="page-card">
-            <header class="container">
-              <nav class="nav">
+            <header class="site-header">
+              <nav class="nav container">
                 <a class="nav-brand" href="/"><span data-nav-brand>WHMSYCODE</span></a>
                 <div class="nav-links">
                   <a href="/#apps">Apps</a>
@@ -226,13 +227,14 @@ struct WhmsycodeNewAppView: View {
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <title>\(heading) — \(title) | WHMSYCODE</title>
           <meta name="robots" content="noindex">
+          <meta name="theme-color" content="#0a0a0c">
           <link rel="icon" type="image/png" href="/assets/img/favicon.png">
           <link rel="stylesheet" href="/assets/css/styles.css">
         </head>
         <body>
           <div class="page-card">
-            <header class="container">
-              <nav class="nav">
+            <header class="site-header">
+              <nav class="nav container">
                 <a class="nav-brand" href="/"><span data-nav-brand>WHMSYCODE</span></a>
                 <div class="nav-links">
                   <a href="index.html">\(title)</a>

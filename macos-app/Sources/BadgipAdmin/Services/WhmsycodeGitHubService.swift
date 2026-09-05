@@ -220,7 +220,14 @@ final class WhmsycodeGitHubService {
         guard let range = xml.range(of: "</urlset>") else {
             throw WhmsycodeGitHubServiceError.requestFailed("Couldn't find </urlset> in sitemap.xml")
         }
-        xml.insert(contentsOf: "  <url>\n    <loc>\(loc)</loc>\n  </url>\n", at: range.lowerBound)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        let today = formatter.string(from: Date())
+        // 0.8, not 1.0 — the homepage keeps the top priority; app pages are
+        // secondary content underneath it.
+        let entry = "  <url>\n    <loc>\(loc)</loc>\n    <lastmod>\(today)</lastmod>\n    <priority>0.8</priority>\n  </url>\n"
+        xml.insert(contentsOf: entry, at: range.lowerBound)
         try await uploadFile(path: "sitemap.xml", data: Data(xml.utf8), commitMessage: "Add \(slug) to sitemap.xml")
     }
 
