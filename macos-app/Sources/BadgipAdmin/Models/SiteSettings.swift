@@ -78,6 +78,13 @@ struct SiteSettings: Codable, Equatable {
     var ctaSecondaryText: String = "Get In Touch"
     var ctaSecondaryHref: String = "#contact"
     var profileImage: String = ""
+    // New hero (see js/render-home.js): a configurable CTA list (reuses the
+    // project CTA shape) plus keyword highlighting + an optional font-size
+    // override on the subtitle (the `description`). Empty ctas → the website
+    // falls back to the legacy ctaPrimary/ctaSecondary pair.
+    var ctas: [ProjectCTA] = []
+    var subtitleHighlights: [HighlightKeyword] = []
+    var subtitleFontSize: Int = 0
 
     // nav
     var navItems: [NavItem] = []
@@ -113,6 +120,9 @@ struct SiteSettings: Codable, Equatable {
                 "ctaSecondaryText": ctaSecondaryText,
                 "ctaSecondaryHref": ctaSecondaryHref,
                 "profileImage": profileImage,
+                "ctas": ctas.map { $0.asDictionary },
+                "subtitleHighlights": subtitleHighlights.map { $0.asDictionary },
+                "subtitleFontSize": subtitleFontSize,
             ],
             "nav": ["items": navItems.map { $0.asDictionary }],
             "theme": ["light": themeLight.asDictionary, "dark": themeDark.asDictionary],
@@ -142,6 +152,13 @@ struct SiteSettings: Codable, Equatable {
             settings.ctaSecondaryText = hero["ctaSecondaryText"] as? String ?? settings.ctaSecondaryText
             settings.ctaSecondaryHref = hero["ctaSecondaryHref"] as? String ?? settings.ctaSecondaryHref
             settings.profileImage = hero["profileImage"] as? String ?? ""
+            if let items = hero["ctas"] as? [[String: Any]] {
+                settings.ctas = items.map { ProjectCTA.from($0) }
+            }
+            if let items = hero["subtitleHighlights"] as? [[String: Any]] {
+                settings.subtitleHighlights = items.map { HighlightKeyword.from($0) }
+            }
+            settings.subtitleFontSize = hero["subtitleFontSize"] as? Int ?? 0
         }
         if let nav = dict["nav"] as? [String: Any], let items = nav["items"] as? [[String: Any]] {
             settings.navItems = items.map { NavItem.from($0) }

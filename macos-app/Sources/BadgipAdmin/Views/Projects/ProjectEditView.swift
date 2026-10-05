@@ -54,7 +54,7 @@ struct ProjectEditView: View {
                 LabeledField(label: "YouTube URL (optional)", text: $project.youtubeUrl)
             }
 
-            EditorCard(title: "Look (optional — overrides the site default for this project's detail view)") {
+            EditorCard(title: "Look (optional — overrides the site default for this project's detail view)", collapsible: true, initiallyExpanded: false) {
                 OptionalColorField(label: "Accent color", hex: $project.accentColor, fallback: "#3effa3")
                 OptionalColorField(label: "Text color", hex: $project.textColor, fallback: "#0a0a0a")
                 titleFontSizeControl
@@ -64,6 +64,31 @@ struct ProjectEditView: View {
                 LabeledField(label: "Live URL", text: $project.liveUrl)
                 LabeledField(label: "Live Site button label (optional, defaults to \"Live Site\")", text: $project.liveButtonLabel)
                 LabeledField(label: "Repo URL", text: $project.repoUrl)
+            }
+
+            EditorCard(title: "Detail layout — left column", collapsible: true, initiallyExpanded: false) {
+                Text("Powers the new two-column detail view. Leave a field blank to fall back to the matching Basics field (title / summary / description).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                LabeledField(label: "Hero title (multiline allowed)", text: $project.heroTitle, multiline: true)
+                LabeledField(label: "Subtitle", text: $project.subtitle)
+                LabeledField(label: "Caption", text: $project.caption, multiline: true)
+                Divider()
+                Text("Call-to-action buttons")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                CTAListEditor(ctas: $project.ctas)
+            }
+
+            EditorCard(title: "Detail layout — mosaic tiles", collapsible: true, initiallyExpanded: false) {
+                Text("The right-column Pinterest-style grid. Reorder with the up/down arrows. Tiles with no explicit content fall back from the project's cover/gallery, video, and tags. Turn on \"Full-width\" to make a tile span both columns.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TileListEditor(
+                    tiles: $project.tiles,
+                    slug: project.slug,
+                    onImageRemoved: { pendingImageDeletions.append($0) }
+                )
             }
 
             EditorCard(title: "Publishing") {
@@ -126,5 +151,167 @@ struct ProjectEditView: View {
             errorMessage = error.localizedDescription
         }
         isSaving = false
+    }
+}
+
+// MARK: - Detail-layout editors
+
+/// Reorderable stack of mosaic tiles. Uses explicit move-up/down controls
+/// (rather than a nested List) so variable-height tile editors lay out
+/// cleanly inside the editor sheet's own scroll view on macOS 12.
+private struct TileListEditor: View {
+    @Binding var tiles: [ProjectTile]
+    let slug: String
+    var onImageRemoved: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach($tiles) { $tile in
+                TileRowEditor(
+                    tile: $tile,
+                    slug: slug,
+                    canMoveUp: (tiles.firstIndex { $0.id == tile.id } ?? 0) > 0,
+                    canMoveDown: (tiles.firstIndex { $0.id == tile.id } ?? 0) < tiles.count - 1,
+                    onMoveUp: { move(id: tile.id, by: -1) },
+                    onMoveDown: { move(id: tile.id, by: 1) },
+                    onDelete: { tiles.removeAll { $0.id == tile.id } },
+                    onImageRemoved: onImageRemoved
+                )
+            }
+            Menu("Add Tile") {
+                Button("Text") { tiles.append(ProjectTile(type: "text")) }
+                Button("Image") { tiles.append(ProjectTile(type: "image")) }
+                Button("Text + Image") { tiles.append(ProjectTile(type: "both")) }
+                Button("Project image carousel") { tiles.append(ProjectTile(type: "carousel")) }
+                Button("YouTube video") { tiles.append(ProjectTile(type: "video")) }
+                Button("Tags") { tiles.append(ProjectTile(type: "tags")) }
+            }
+            .buttonStyle(.badgipSecondary)
+            .controlSize(.small)
+            .fixedSize()
+        }
+    }
+
+    private func move(id: String, by offset: Int) {
+        guard let i = tiles.firstIndex(where: { $0.id == id }) else { return }
+        let j = i + offset
+        guard j >= 0, j < tiles.count else { return }
+        tiles.swapAt(i, j)
+    }
+}
+
+private struct TileRowEditor: View {
+    @Binding var tile: ProjectTile
+    let slug: String
+    let canMoveUp: Bool
+    let canMoveDown: Bool
+    var onMoveUp: () -> Void
+    var onMoveDown: () -> Void
+    var onDelete: () -> Void
+    var onImageRemoved: (String) -> Void
+
+    private var isTextBearing: Bool { tile.type == "text" || tile.type == "both" }
+    private var isImageBearing: Bool { tile.type == "image" || tile.type == "both" }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Picker("", selection: $tile.type) {
+                    Text("Text").tag("text")
+                    Text("Image").tag("image")
+                    Text("Text + Image").tag("both")
+                    Text("Project carousel").tag("carousel")
+                    Text("YouTube video").tag("video")
+                    Text("Tags").tag("tags")
+                }
+                .labelsHidden()
+                .frame(width: 170)
+                Spacer()
+                Button(action: onMoveUp) { Image(systemName: "chevron.up") }
+                    .buttonStyle(.plain).disabled(!canMoveUp)
+                Button(action: onMoveDown) { Image(systemName: "chevron.down") }
+                    .buttonStyle(.plain).disabled(!canMoveDown)
+                Button(action: onDelete) { Image(systemName: "trash") }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+            }
+
+            content
+
+            Toggle("Full-width (spans both columns)", isOn: $tile.fullWidth)
+            LabeledField(label: "Link URL (optional — makes the tile clickable)", text: $tile.href)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.badgipSurface))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.badgipBorder))
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch tile.type {
+        case "carousel":
+            Text("Swipeable carousel of project images (dots shown automatically).")
+                .font(.caption).foregroundStyle(.secondary)
+            ImageArrayField(
+                paths: $tile.images,
+                repoPath: { ImagePathBuilder.repoPath(slug: slug, filename: $0) },
+                storedPath: { ImagePathBuilder.storedPath(slug: slug, filename: $0) },
+                commitMessage: { "Add carousel image for project \(slug): \($0)" },
+                onImageRemoved: onImageRemoved
+            )
+        case "video":
+            LabeledField(label: "YouTube URL", text: $tile.videoUrl)
+        case "tags":
+            Text("Renders this project's tag chips (edit tags under Basics).")
+                .font(.caption).foregroundStyle(.secondary)
+        default:
+            if isImageBearing {
+                SingleImageUploadView(
+                    path: $tile.image,
+                    buttonLabel: "Set Tile Image",
+                    repoPath: { ImagePathBuilder.repoPath(slug: slug, filename: $0) },
+                    storedPath: { ImagePathBuilder.storedPath(slug: slug, filename: $0) },
+                    commitMessage: { "Add tile image for project \(slug): \($0)" },
+                    onReplaced: { onImageRemoved($0) }
+                )
+                Picker("Image fit", selection: $tile.imageFit) {
+                    Text("Cover (crop to fill)").tag("cover")
+                    Text("Contain (show whole image)").tag("contain")
+                }
+                .frame(maxWidth: 300)
+            }
+            if isTextBearing {
+                LabeledField(label: "Text", text: $tile.text, multiline: true)
+                OptionalColorField(label: "Text color", hex: $tile.textColor, fallback: "#f5f5f5")
+                tileFontSizeControl
+                Picker("Text align", selection: $tile.textAlign) {
+                    Text("Left").tag("left")
+                    Text("Center").tag("center")
+                    Text("Right").tag("right")
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 240)
+                HighlightsEditor(label: "Highlighted keywords", keywords: $tile.highlights)
+            }
+            OptionalColorField(label: "Background", hex: $tile.bgColor, fallback: "#11141a")
+        }
+    }
+
+    @ViewBuilder
+    private var tileFontSizeControl: some View {
+        HStack(spacing: 10) {
+            Text("Text font size").font(.caption).foregroundStyle(.secondary)
+            Stepper(
+                tile.fontSize > 0 ? "\(tile.fontSize)px" : "Default",
+                value: $tile.fontSize,
+                in: 0...96,
+                step: 2
+            )
+            .frame(width: 140)
+            if tile.fontSize > 0 {
+                Button("Reset") { tile.fontSize = 0 }
+                    .buttonStyle(.badgipSecondary)
+                    .controlSize(.small)
+            }
+        }
     }
 }

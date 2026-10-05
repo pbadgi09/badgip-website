@@ -8,8 +8,8 @@ import SwiftUI
 struct WhmsycodeHomepageEditorView: View {
     let service: WhmsycodeGitHubService
     @ObservedObject var savedToast: SavedToastController
-    /// Reported up to WhmsycodeAppListView so switching sub-tabs can warn
-    /// before silently discarding an in-progress edit here.
+    /// Reported up to the dashboard's unsaved-changes guard so switching
+    /// section or site can warn before silently discarding an edit here.
     @Binding var hasUnsavedChanges: Bool
     // Also feeds the app-wide guard (same one About/Settings use) so
     // leaving WHMSYCODE entirely via the main sidebar — not just switching

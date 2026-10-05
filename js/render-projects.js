@@ -1,5 +1,6 @@
 import { jsDelivrBase } from './config.js';
-import { openFullscreen, isFullscreenOpen } from './fullscreen-panel.js';
+import { openFullscreen, closeFullscreen, isFullscreenOpen } from './fullscreen-panel.js';
+import { escapeHtml, escapeHtmlMultiline, highlightKeywords } from './highlight.js';
 
 function imageUrl(path) {
   if (!path) return '';
@@ -16,14 +17,15 @@ function youtubeEmbedId(url) {
   return match ? match[1] : null;
 }
 
-function escapeHtml(str) {
-  if (str == null) return '';
-  const div = document.createElement('div');
-  div.textContent = String(str);
-  return div.innerHTML;
-}
-
 const INITIAL_PROJECT_COUNT = 6;
+
+// Deep-linking: every published project is registered by both id and slug so
+// a `#project/<slug>` hash can reopen it on load or Back/Forward. Cards are
+// registered too (when built) so the FLIP animation has a real source rect;
+// projects behind "Show More" fall back to a synthetic centered source.
+const projectRegistry = new Map();
+const cardRegistry = new Map();
+let currentDetailProject = null;
 
 function buildProjectCard(project) {
   const card = document.createElement('article');
@@ -47,6 +49,7 @@ function buildProjectCard(project) {
       </div>
     </div>
   `;
+  cardRegistry.set(project.id, card);
   const open = () => openProjectDetail(project, card);
   card.addEventListener('click', open);
   card.addEventListener('keydown', (e) => {
@@ -77,6 +80,15 @@ function buildProjectCard(project) {
 export function renderProjects(projects) {
   const grid = document.getElementById('projectsGrid');
   grid.innerHTML = '';
+
+  // Register every project for deep-linking regardless of whether its card
+  // is in the initial batch or hidden behind "Show More".
+  projectRegistry.clear();
+  cardRegistry.clear();
+  projects.forEach((p) => {
+    projectRegistry.set(p.id, p);
+    if (p.slug) projectRegistry.set(p.slug, p);
+  });
 
   if (projects.length === 0) {
     grid.innerHTML = '<p class="mono" style="color: var(--color-text-dim)">No projects published yet.</p>';
@@ -131,108 +143,274 @@ export function renderProjects(projects) {
   });
 }
 
+// ---- Tile rendering (right-column mosaic) --------------------------------
+
+// Inline style string shared by generic tiles: background, text color, and
+// text alignment all come straight from the per-tile config in the app.
+function tileStyle(tile) {
+  const decls = [];
+  if (tile.bgColor) decls.push(`background-color: ${tile.bgColor}`);
+  if (tile.textColor) decls.push(`color: ${tile.textColor}`);
+  if (tile.textAlign) decls.push(`text-align: ${tile.textAlign}`);
+  return decls.length ? ` style="${decls.join('; ')}"` : '';
+}
+
+function tileTextHtml(tile, project) {
+  if (!tile.text) return '';
+  const styleDecls = [];
+  if (tile.fontSize) styleDecls.push(`font-size: ${tile.fontSize}px`);
+  const style = styleDecls.length ? ` style="${styleDecls.join('; ')}"` : '';
+  const html = highlightKeywords(escapeHtmlMultiline(tile.text), tile.highlights);
+  return `<div class="project-detail__tile-text"${style}>${html}</div>`;
+}
+
+function tileImageHtml(src, project, fit) {
+  if (!src) return '';
+  const fitClass = fit === 'contain' ? ' project-detail__tile-img--contain' : '';
+  return `<img class="project-detail__tile-img${fitClass}" src="${imageUrl(src)}" alt="${escapeHtml(project.heroTitle || project.title)}" loading="lazy" onerror="this.remove()" />`;
+}
+
+function tileInnerHtml(tile, project) {
+  switch (tile.type) {
+    case 'carousel': {
+      const images = (tile.images || []).filter(Boolean);
+      if (!images.length) return '';
+      const slides = images
+        .map((p) => tileImageHtml(p, project, tile.imageFit || 'cover'))
+        .join('');
+      // Arrows + dots only matter with more than one image. The track itself
+      // is also drag-to-scroll (wired in wireCarousels) so desktop mice can
+      // swipe it, not just trackpads.
+      const multi = images.length > 1;
+      const arrows = multi
+        ? `<button class="project-detail__carousel-arrow project-detail__carousel-arrow--prev" aria-label="Previous image">‹</button>
+           <button class="project-detail__carousel-arrow project-detail__carousel-arrow--next" aria-label="Next image">›</button>`
+        : '';
+      const dots = multi
+        ? `<div class="project-detail__carousel-dots">${images
+            .map((_, i) => `<span class="gallery-dot${i === 0 ? ' is-active' : ''}"></span>`)
+            .join('')}</div>`
+        : '';
+      return `<div class="project-detail__carousel-viewport"><div class="project-detail__carousel">${slides}</div>${arrows}</div>${dots}`;
+    }
+    case 'video': {
+      const embedId = youtubeEmbedId(tile.videoUrl);
+      if (!embedId) return '';
+      return `<div class="project-detail__tile-video"><iframe src="https://www.youtube.com/embed/${embedId}" title="${escapeHtml(project.heroTitle || project.title)} video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    }
+    case 'tags': {
+      const tags = project.tags || [];
+      if (!tags.length) return '';
+      return `<div class="project-detail__tile-tags">${tags
+        .map((t) => `<span class="tag mono">${escapeHtml(t)}</span>`)
+        .join('')}</div>`;
+    }
+    default:
+      // Generic text / image / both tile — render whichever fields are set.
+      return `${tileImageHtml(tile.image, project, tile.imageFit || 'cover')}${tileTextHtml(tile, project)}`;
+  }
+}
+
+function buildTileHtml(tile, project) {
+  const inner = tileInnerHtml(tile, project);
+  if (!inner) return '';
+  const classes = ['project-detail__tile', `project-detail__tile--${tile.type || 'content'}`];
+  if (tile.fullWidth) classes.push('project-detail__tile--full');
+  const body = `<div class="${classes.join(' ')}"${tileStyle(tile)}>${inner}</div>`;
+  // A clickable tile wraps the whole thing in an anchor (external → new tab).
+  if (tile.href) {
+    const external = !tile.href.startsWith('#');
+    const attrs = external ? ' target="_blank" rel="noopener"' : '';
+    return `<a class="project-detail__tile-link" href="${escapeHtml(tile.href)}"${attrs}>${body}</a>`;
+  }
+  return body;
+}
+
+function buildCtaHtml(ctas) {
+  return (ctas || [])
+    .filter((c) => c && (c.text || c.href))
+    .map((c, i) => {
+      const cls = i === 0 ? 'btn btn--primary btn--lg' : 'btn btn--ghost btn--lg';
+      const href = c.href || '#';
+      const external = !href.startsWith('#');
+      const attrs = external ? ' target="_blank" rel="noopener"' : '';
+      return `<a href="${escapeHtml(href)}" class="${cls}"${attrs}>${escapeHtml(c.text || '')}</a>`;
+    })
+    .join('');
+}
+
 function buildFullscreenMarkup(project) {
-  const embedId = youtubeEmbedId(project.youtubeUrl);
-  const galleryPaths = project.gallery || [];
-
-  const chipStyleDecls = [];
-  if (project.accentColor) chipStyleDecls.push(`--chip-bg: ${project.accentColor}`);
-  if (project.titleFontSize) chipStyleDecls.push(`font-size: ${project.titleFontSize}px`);
-  const chipStyle = chipStyleDecls.length ? ` style="${chipStyleDecls.join('; ')}"` : '';
-
-  const heroHtml = project.coverImage
-    ? `<div class="fullscreen-panel__hero">
-        <img src="${imageUrl(project.coverImage)}" alt="${escapeHtml(project.title)}" />
-        <div class="fullscreen-panel__hero-caption"><span class="text-chip"${chipStyle}>${escapeHtml(project.title)}</span></div>
-      </div>`
-    : '';
-
-  const dotsHtml =
-    galleryPaths.length > 1
-      ? `<div class="project-detail-inline__gallery-dots">
-          ${galleryPaths.map((_, i) => `<span class="gallery-dot${i === 0 ? ' is-active' : ''}"></span>`).join('')}
-        </div>`
-      : '';
-
-  const galleryHtml = galleryPaths.length
-    ? `<div class="project-detail-inline__gallery">
-        ${galleryPaths
-          .map(
-            (path) =>
-              `<img src="${imageUrl(path)}" alt="${escapeHtml(project.title)}" loading="lazy" onerror="this.remove()" />`
-          )
-          .join('')}
-      </div>
-      ${dotsHtml}`
-    : '';
-
-  const videoHtml = embedId
-    ? `<div class="project-detail-inline__video"><iframe src="https://www.youtube.com/embed/${embedId}" title="${escapeHtml(project.title)} video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
-    : '';
-
-  const links = [];
-  if (project.liveUrl)
-    links.push(
-      `<a href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noopener" class="btn btn--primary">${escapeHtml(project.liveButtonLabel || 'Live Site')}</a>`
-    );
-  if (project.repoUrl) links.push(`<a href="${escapeHtml(project.repoUrl)}" target="_blank" rel="noopener" class="btn btn--ghost">Source</a>`);
+  const titleFontStyle = project.titleFontSize ? ` style="font-size: ${project.titleFontSize}px"` : '';
+  const ctasHtml = buildCtaHtml(project.ctas);
+  const tilesHtml = (project.tiles || []).map((tile) => buildTileHtml(tile, project)).join('');
 
   return `
-    ${heroHtml}
     <button class="fullscreen-panel__close" aria-label="Close">✕</button>
-    <div class="fullscreen-panel__content">
-      <div class="project-detail-inline__body">
-        <span class="eyebrow">${escapeHtml((project.tags || [])[0] || 'Project')}</span>
-        ${project.coverImage ? '' : `<h2 class="section-title">${escapeHtml(project.title)}</h2>`}
-        <p>${escapeHtml(project.description || project.summary)}</p>
-        ${links.length ? `<div class="project-detail-inline__links">${links.join('')}</div>` : ''}
-      </div>
-      ${galleryHtml}
-      ${videoHtml}
+    <div class="fullscreen-panel__content project-detail">
+      <aside class="project-detail__aside">
+        <h1 class="project-detail__title"${titleFontStyle}>${escapeHtmlMultiline(project.heroTitle || project.title)}</h1>
+        ${project.subtitle ? `<p class="project-detail__subtitle">${escapeHtml(project.subtitle)}</p>` : ''}
+        ${project.caption ? `<p class="project-detail__caption">${escapeHtmlMultiline(project.caption)}</p>` : ''}
+        ${ctasHtml ? `<div class="project-detail__ctas">${ctasHtml}</div>` : ''}
+      </aside>
+      <div class="project-detail__mosaic"><div class="project-detail__mosaic-grid">${tilesHtml}</div></div>
     </div>
   `;
 }
 
-// Highlights the dot nearest the gallery's current scroll position — the
-// active dot's color comes from --color-accent, which openFullscreen
-// already sets per-project, so no per-project styling needed here.
-function wireGalleryDots(panel) {
-  const gallery = panel.querySelector('.project-detail-inline__gallery');
-  const dots = panel.querySelectorAll('.project-detail-inline__gallery-dots .gallery-dot');
-  if (!gallery || !dots.length) return;
-  const images = Array.from(gallery.querySelectorAll('img'));
+// Wires each carousel tile: keeps the dots in sync with scroll position,
+// makes the track drag-to-scroll (so a desktop mouse can swipe, not just a
+// trackpad), and wires the prev/next arrows. The active dot's color comes
+// from --color-accent, which openFullscreen already sets per-project.
+function wireCarousels(panel) {
+  panel.querySelectorAll('.project-detail__tile--carousel').forEach((tile) => {
+    const gallery = tile.querySelector('.project-detail__carousel');
+    if (!gallery) return;
+    const dots = tile.querySelectorAll('.project-detail__carousel-dots .gallery-dot');
+    const images = Array.from(gallery.querySelectorAll('img'));
 
-  let ticking = false;
-  gallery.addEventListener('scroll', () => {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(() => {
-      ticking = false;
-      const center = gallery.scrollLeft + gallery.clientWidth / 2;
-      let closest = 0;
-      let closestDistance = Infinity;
-      images.forEach((img, i) => {
-        const distance = Math.abs(img.offsetLeft + img.offsetWidth / 2 - center);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closest = i;
-        }
+    // Dot sync.
+    if (dots.length) {
+      let ticking = false;
+      gallery.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          const center = gallery.scrollLeft + gallery.clientWidth / 2;
+          let closest = 0;
+          let closestDistance = Infinity;
+          images.forEach((img, i) => {
+            const distance = Math.abs(img.offsetLeft + img.offsetWidth / 2 - center);
+            if (distance < closestDistance) {
+              closestDistance = distance;
+              closest = i;
+            }
+          });
+          dots.forEach((dot, i) => dot.classList.toggle('is-active', i === closest));
+        });
       });
-      dots.forEach((dot, i) => dot.classList.toggle('is-active', i === closest));
+    }
+
+    // Prev/next arrows scroll by a full slide.
+    const viewport = tile.querySelector('.project-detail__carousel-viewport');
+    viewport?.querySelector('.project-detail__carousel-arrow--prev')?.addEventListener('click', () => {
+      gallery.scrollBy({ left: -gallery.clientWidth, behavior: 'smooth' });
     });
+    viewport?.querySelector('.project-detail__carousel-arrow--next')?.addEventListener('click', () => {
+      gallery.scrollBy({ left: gallery.clientWidth, behavior: 'smooth' });
+    });
+
+    // Drag-to-scroll (pointer events). scroll-snap is suspended mid-drag via
+    // .is-dragging so the track follows the cursor freely, then snaps on
+    // release. A past-threshold drag cancels the click so dragging across a
+    // linked carousel tile doesn't also follow its href.
+    let isDown = false;
+    let startX = 0;
+    let startScroll = 0;
+    let moved = false;
+    gallery.addEventListener('pointerdown', (e) => {
+      isDown = true;
+      moved = false;
+      startX = e.clientX;
+      startScroll = gallery.scrollLeft;
+      gallery.classList.add('is-dragging');
+      try { gallery.setPointerCapture(e.pointerId); } catch {}
+    });
+    gallery.addEventListener('pointermove', (e) => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) moved = true;
+      gallery.scrollLeft = startScroll - dx;
+    });
+    const endDrag = (e) => {
+      if (!isDown) return;
+      isDown = false;
+      gallery.classList.remove('is-dragging');
+      try { gallery.releasePointerCapture(e.pointerId); } catch {}
+    };
+    gallery.addEventListener('pointerup', endDrag);
+    gallery.addEventListener('pointercancel', endDrag);
+    gallery.addEventListener(
+      'click',
+      (e) => {
+        if (moved) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      },
+      true
+    );
   });
 }
 
-function openProjectDetail(project, card) {
+function openProjectDetail(project, sourceEl, { syntheticSource } = {}) {
   if (isFullscreenOpen()) return;
+  currentDetailProject = project;
+
   openFullscreen({
     id: `project:${project.id}`,
-    sourceEl: card,
+    sourceEl,
     innerHTML: buildFullscreenMarkup(project),
     accentColor: project.accentColor,
     textColor: project.textColor,
+    onClosed: () => {
+      currentDetailProject = null;
+      syntheticSource?.remove();
+      // Strip the project hash on close without firing hashchange (pushState
+      // is silent) so we don't recursively re-enter handleProjectHash.
+      if (location.hash.startsWith('#project/')) {
+        history.pushState(null, '', location.pathname + location.search);
+      }
+    },
   });
-  // Only exists once openFullscreen has inserted the markup — wire right after.
+
+  // Set the shareable hash AFTER openFullscreen so the hashchange it fires
+  // sees the panel already open (and is a no-op) rather than racing it.
+  const slug = project.slug || project.id;
+  const targetHash = `#project/${encodeURIComponent(slug)}`;
+  if (location.hash !== targetHash) {
+    location.hash = targetHash;
+  }
+
   const panel = document.querySelector('.fullscreen-panel');
-  if (panel) wireGalleryDots(panel);
+  if (panel) wireCarousels(panel);
+}
+
+// Opens a project from a slug/id (deep link). Uses its card as the FLIP
+// source when present; otherwise a 1×1 element at the viewport center so the
+// expand still animates from somewhere sensible.
+function openProjectByKey(key) {
+  const project = projectRegistry.get(key);
+  if (!project) return;
+  if (isFullscreenOpen(`project:${project.id}`)) return;
+  const card = cardRegistry.get(project.id);
+  if (card) {
+    openProjectDetail(project, card);
+    return;
+  }
+  const synthetic = document.createElement('div');
+  synthetic.style.cssText =
+    'position:fixed;top:50%;left:50%;width:1px;height:1px;pointer-events:none;opacity:0;';
+  document.body.appendChild(synthetic);
+  openProjectDetail(project, synthetic, { syntheticSource: synthetic });
+}
+
+// Single source of truth for hash → panel state, so the browser Back/Forward
+// buttons and shared links both work. Runs on load and on hashchange.
+function handleProjectHash() {
+  const match = location.hash.match(/^#project\/(.+)$/);
+  if (match) {
+    openProjectByKey(decodeURIComponent(match[1]));
+  } else if (currentDetailProject) {
+    closeFullscreen();
+  }
+}
+
+window.addEventListener('hashchange', handleProjectHash);
+
+// Called from main.js after the first renderProjects so a page loaded
+// directly on a #project/<slug> URL opens that project.
+export function openProjectFromHash() {
+  handleProjectHash();
 }

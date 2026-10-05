@@ -1,146 +1,57 @@
 import SwiftUI
 
-private enum WhmsycodeTab: String, CaseIterable, Identifiable {
-    case apps = "Apps"
-    case homepage = "Homepage"
-    case siteSettings = "Site Settings"
-    case gallery = "Gallery"
-    var id: String { rawValue }
-}
-
-/// Root of the WHMSYCODE sidebar section. Everything about whmsycode.com
-/// lives under this one section (per the user's explicit request to not add
-/// more top-level sidebar tabs) — a sub-tab switcher below the shared
-/// GitHub-access card, rather than badgip's pattern of one sidebar row per
-/// content type.
-struct WhmsycodeAppListView: View {
-    @State private var selectedTab: WhmsycodeTab = .apps
+/// The whmsycode site's GitHub access card — its own sidebar section now that
+/// each whmsycode content type (Apps/Homepage/Site Settings/Gallery) is a
+/// top-level sidebar row rather than a sub-tab under one "WHMSYCODE" item.
+struct WhmsycodeAccessView: View {
+    @ObservedObject var savedToast: SavedToastController
 
     // PAT field intentionally never pre-fills from Keychain — mirrors
-    // DeployControlsView.swift's proven-working pattern exactly. An earlier
-    // version here pre-filled `pat` from KeychainService.read(...), which
-    // left the field showing the real secret as an unbroken row of dots
-    // with no obvious way to select-and-replace it (reported as "unable to
-    // edit"). Starting empty + a separate "token is saved" status line
-    // avoids that entirely.
+    // DeployControlsView.swift's proven-working pattern. Pre-filling the real
+    // secret as an unbroken row of dots made it look un-editable; starting
+    // empty + a separate "token is saved" status line avoids that.
     @State private var patInput = ""
     @State private var hasSavedToken = false
-    @StateObject private var savedToast = SavedToastController()
-
-    // Homepage/Site Settings each report whether they have an unsaved edit
-    // so switching sub-tabs can warn before silently discarding it — same
-    // idea as DashboardView's UnsavedChangesGuard, just scoped to this
-    // sub-tab switcher rather than the app's main sidebar. Apps has no
-    // entry here since every action there (create/edit/delete/reorder)
-    // already persists immediately, with no separate unsaved-draft state.
-    @State private var homepageHasChanges = false
-    @State private var siteSettingsHasChanges = false
-    @State private var pendingTab: WhmsycodeTab?
-    @State private var showDiscardConfirm = false
-
-    private let service = WhmsycodeGitHubService()
-
-    private var hasUnsavedChangesInCurrentTab: Bool {
-        switch selectedTab {
-        case .apps: return false
-        case .homepage: return homepageHasChanges
-        case .siteSettings: return siteSettingsHasChanges
-        case .gallery: return false
-        }
-    }
-
-    private var tabSelection: Binding<WhmsycodeTab> {
-        Binding(
-            get: { selectedTab },
-            set: { newTab in
-                guard newTab != selectedTab else { return }
-                if hasUnsavedChangesInCurrentTab {
-                    pendingTab = newTab
-                    showDiscardConfirm = true
-                } else {
-                    selectedTab = newTab
-                }
-            }
-        )
-    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("WHMSYCODE")
-                .font(.title.weight(.bold))
-                .padding(24)
-                .padding(.bottom, 0)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("GitHub Access")
+                    .font(.title.weight(.bold))
 
-            EditorCard(title: "GitHub access") {
-                Text("A fine-grained personal access token scoped to the whmsycode.com-website repo (Contents: Read/write).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(hasSavedToken ? "A token is saved in Keychain." : "No token saved yet.")
-                    .font(.caption)
-                    .foregroundStyle(hasSavedToken ? Color.secondary : Color.orange)
-                HStack {
-                    SecureField("GitHub personal access token", text: $patInput)
-                        .textFieldStyle(.badgip)
-                    Button("Save") {
-                        KeychainService.save(key: KeychainKey.whmsycodeGitHubPAT, value: patInput)
-                        patInput = ""
-                        hasSavedToken = true
-                        savedToast.flash()
+                EditorCard(title: "GitHub access") {
+                    Text("A fine-grained personal access token scoped to the whmsycode.com-website repo (Contents: Read/write).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(hasSavedToken ? "A token is saved in Keychain." : "No token saved yet.")
+                        .font(.caption)
+                        .foregroundStyle(hasSavedToken ? Color.secondary : Color.orange)
+                    HStack {
+                        SecureField("GitHub personal access token", text: $patInput)
+                            .textFieldStyle(.badgip)
+                        Button("Save") {
+                            KeychainService.save(key: KeychainKey.whmsycodeGitHubPAT, value: patInput)
+                            patInput = ""
+                            hasSavedToken = true
+                            savedToast.flash()
+                        }
+                        .buttonStyle(.badgipSecondary)
+                        .disabled(patInput.isEmpty)
                     }
-                    .buttonStyle(.badgipSecondary)
-                    .disabled(patInput.isEmpty)
-                }
-                if hasSavedToken {
-                    Button("Remove Saved Token", role: .destructive) {
-                        KeychainService.delete(key: KeychainKey.whmsycodeGitHubPAT)
-                        hasSavedToken = false
-                        savedToast.flash()
+                    if hasSavedToken {
+                        Button("Remove Saved Token", role: .destructive) {
+                            KeychainService.delete(key: KeychainKey.whmsycodeGitHubPAT)
+                            hasSavedToken = false
+                            savedToast.flash()
+                        }
+                        .buttonStyle(.badgipSecondary)
                     }
-                    .buttonStyle(.badgipSecondary)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-
-            Picker("", selection: tabSelection) {
-                ForEach(WhmsycodeTab.allCases) { tab in
-                    Text(tab.rawValue).tag(tab)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(maxWidth: 520, alignment: .leading)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-
-            Group {
-                switch selectedTab {
-                case .apps:
-                    WhmsycodeAppsTabView(service: service, savedToast: savedToast)
-                case .homepage:
-                    WhmsycodeHomepageEditorView(service: service, savedToast: savedToast, hasUnsavedChanges: $homepageHasChanges)
-                case .siteSettings:
-                    WhmsycodeSiteSettingsEditorView(service: service, savedToast: savedToast, hasUnsavedChanges: $siteSettingsHasChanges)
-                case .gallery:
-                    WhmsycodeGalleryView(service: service)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(24)
+            .frame(maxWidth: 680, alignment: .leading)
         }
-        .savedToast(savedToast)
-        .alert("Discard unsaved changes?", isPresented: $showDiscardConfirm) {
-            Button("Discard", role: .destructive) {
-                if let pendingTab {
-                    selectedTab = pendingTab
-                    if pendingTab != .homepage { homepageHasChanges = false }
-                    if pendingTab != .siteSettings { siteSettingsHasChanges = false }
-                }
-                pendingTab = nil
-            }
-            Button("Keep Editing", role: .cancel) { pendingTab = nil }
-        } message: {
-            Text("You have unsaved changes on this screen that will be lost.")
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
             hasSavedToken = (KeychainService.read(key: KeychainKey.whmsycodeGitHubPAT)?.isEmpty == false)
         }
@@ -166,7 +77,7 @@ private enum WhmsycodeAppSheet: Identifiable {
     }
 }
 
-private struct WhmsycodeAppsTabView: View {
+struct WhmsycodeAppsTabView: View {
     let service: WhmsycodeGitHubService
     @ObservedObject var savedToast: SavedToastController
 

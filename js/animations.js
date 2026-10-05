@@ -59,11 +59,9 @@ export function initHeroEntrance() {
   if (!document.getElementById('heroAvatar').hidden) {
     tl.to('#heroAvatar', { opacity: 1, y: 0 });
   }
-  tl.to('#heroGreeting', { opacity: 1, y: 0 }, '-=0.6')
-    .to('#heroName', { opacity: 1, y: 0 }, '-=0.6')
-    .to('#heroRole', { opacity: 1, y: 0 }, '-=0.6')
+  tl.to('#heroName', { opacity: 1, y: 0 }, '-=0.6')
     .to('#heroDescription', { opacity: 1, y: 0 }, '-=0.6')
-    .to('.hero__cta', { opacity: 1, y: 0 }, '-=0.5');
+    .to('.hero__cta-row', { opacity: 1, y: 0 }, '-=0.5');
 }
 
 export function initScrollReveals() {

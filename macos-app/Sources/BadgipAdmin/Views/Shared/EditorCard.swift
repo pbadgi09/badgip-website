@@ -6,12 +6,41 @@ import SwiftUI
 /// instead of a mix of plain Form rows and custom cards.
 struct EditorCard<Content: View>: View {
     let title: String
+    var collapsible: Bool = false
     @ViewBuilder var content: () -> Content
+
+    @State private var expanded: Bool
+
+    init(title: String, collapsible: Bool = false, initiallyExpanded: Bool = true, @ViewBuilder content: @escaping () -> Content) {
+        self.title = title
+        self.collapsible = collapsible
+        self.content = content
+        _expanded = State(initialValue: collapsible ? initiallyExpanded : true)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.headline.weight(.semibold))
-            content()
+            if collapsible {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { expanded.toggle() }
+                } label: {
+                    HStack {
+                        Text(title).font(.headline.weight(.semibold))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.callout.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .rotationEffect(.degrees(expanded ? 90 : 0))
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text(title).font(.headline.weight(.semibold))
+            }
+            if expanded {
+                content()
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)

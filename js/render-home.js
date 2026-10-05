@@ -1,4 +1,5 @@
 import { jsDelivrBase } from './config.js';
+import { escapeHtml, escapeHtmlMultiline, highlightKeywords } from './highlight.js';
 
 function resolveUrl(path) {
   if (!path) return '';
@@ -23,11 +24,18 @@ function iconMarkup(icon) {
   return div.innerHTML;
 }
 
-function escapeHtml(str) {
-  if (str == null) return '';
-  const div = document.createElement('div');
-  div.textContent = String(str);
-  return div.innerHTML;
+// Shared by the hero CTA row and (previously) the footer. Social links are a
+// custom icon+url list; emojis, image URLs, and repo asset paths all work.
+function socialLinksHtml(links) {
+  return (links || [])
+    .map(
+      (link) => `
+      <a class="social-link" href="${escapeHtml(link.url || '#')}" target="_blank" rel="noopener" aria-label="Social link">
+        ${iconMarkup(link.icon)}
+      </a>
+    `
+    )
+    .join('');
 }
 
 // The Home/Contact nav items are the only two NOT already driven by the
@@ -49,6 +57,18 @@ export function applyNavItems(settings) {
   }
 }
 
+// Falls back to the legacy ctaPrimary/ctaSecondary pair when no `ctas` list
+// has been saved yet, so existing data keeps showing two buttons until the
+// app re-saves the hero with the new configurable list.
+function heroCtaList(hero) {
+  const list = (hero.ctas || []).filter((c) => c && (c.text || c.href));
+  if (list.length) return list;
+  const legacy = [];
+  if (hero.ctaPrimaryText) legacy.push({ text: hero.ctaPrimaryText, href: hero.ctaPrimaryHref || '#projects' });
+  if (hero.ctaSecondaryText) legacy.push({ text: hero.ctaSecondaryText, href: hero.ctaSecondaryHref || '#contact' });
+  return legacy;
+}
+
 export function renderHero(settings) {
   const { hero } = settings;
 
@@ -62,18 +82,30 @@ export function renderHero(settings) {
     avatar.hidden = true;
   }
 
-  document.getElementById('heroGreeting').textContent = hero.greeting;
-  document.getElementById('heroName').textContent = hero.name;
-  document.getElementById('heroRole').textContent = hero.role;
-  document.getElementById('heroDescription').textContent = hero.description;
+  // Multiline title (manual \n honored) + a subtitle that supports the same
+  // keyword-highlighting + font-size controls as the About bios.
+  document.getElementById('heroName').innerHTML = escapeHtmlMultiline(hero.name);
+  const subtitle = document.getElementById('heroDescription');
+  subtitle.innerHTML = highlightKeywords(escapeHtml(hero.description), hero.subtitleHighlights);
+  if (hero.subtitleFontSize > 0) {
+    subtitle.style.fontSize = `${hero.subtitleFontSize}px`;
+  } else {
+    subtitle.style.removeProperty('font-size');
+  }
 
-  const ctaPrimary = document.getElementById('heroCtaPrimary');
-  document.getElementById('heroCtaPrimaryText').textContent = hero.ctaPrimaryText;
-  ctaPrimary.href = hero.ctaPrimaryHref;
-
-  const ctaSecondary = document.getElementById('heroCtaSecondary');
-  ctaSecondary.textContent = hero.ctaSecondaryText;
-  ctaSecondary.href = hero.ctaSecondaryHref;
+  // Configurable CTA list (first is primary, rest ghost) followed inline by
+  // the social icons — moved here from the footer, same socialLinks data.
+  document.getElementById('heroCtas').innerHTML = heroCtaList(hero)
+    .map((c, i) => {
+      const cls = i === 0 ? 'btn btn--primary btn--lg' : 'btn btn--ghost btn--lg';
+      const href = c.href || '#';
+      const external = !href.startsWith('#');
+      const attrs = external ? ' target="_blank" rel="noopener"' : '';
+      const arrow = i === 0 ? '<span class="btn__arrow" aria-hidden="true">→</span>' : '';
+      return `<a href="${escapeHtml(href)}" class="${cls}"${attrs}>${escapeHtml(c.text || '')}${arrow}</a>`;
+    })
+    .join('');
+  document.getElementById('heroSocials').innerHTML = socialLinksHtml(settings.contact?.socialLinks);
 
   document.title = settings.meta.title;
   const metaDesc = document.querySelector('meta[name="description"]');
@@ -85,19 +117,8 @@ export function renderContactAndFooter(settings) {
   const year = new Date().getFullYear();
   document.getElementById('footerYear').textContent = String(year);
 
-  // Footer icons are a fully custom icon+url list (settings.contact.
-  // socialLinks) — no fixed/built-in platform fields; add as many or as
-  // few as you want from the macOS app's "Footer Icons" settings.
-  const footerSocials = document.getElementById('footerSocials');
-  footerSocials.innerHTML = (contact.socialLinks || [])
-    .map(
-      (link) => `
-      <a class="site-footer__social-link" href="${escapeHtml(link.url || '#')}" target="_blank" rel="noopener" aria-label="Social link">
-        ${iconMarkup(link.icon)}
-      </a>
-    `
-    )
-    .join('');
+  // Social icons now live next to the hero CTAs (see renderHero); the footer
+  // is just the copyright line.
 
   document.getElementById('contactInfoTitle').textContent = contact.infoTitle;
   document.getElementById('contactInfoSubtitle').textContent = contact.infoSubtitle;

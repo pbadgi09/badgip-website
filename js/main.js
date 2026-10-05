@@ -1,7 +1,7 @@
 import { getSettings, getAbout, getProjects, getPersonalYoutube, getYoutubeChannel, getPersonalBlog, getPageSections } from './data-service.js';
 import { renderHero, renderContactAndFooter, applyNavItems } from './render-home.js';
 import { renderAbout } from './render-about.js';
-import { renderProjects } from './render-projects.js';
+import { renderProjects, openProjectFromHash } from './render-projects.js';
 import { renderYoutubeCarousel, renderYoutubeChannel, renderBlogGrid, setBlogAuthor } from './render-personal.js';
 import { mountPageSections } from './render-sections.js';
 import { initContactForm } from './contact-form.js';
@@ -42,6 +42,8 @@ async function boot() {
   renderContactAndFooter(settings);
   renderAbout(about, blogPosts);
   renderProjects(projects);
+  // A page loaded directly on a #project/<slug> URL opens that project.
+  openProjectFromHash();
   renderYoutubeCarousel(youtubeVideos);
   renderYoutubeChannel(youtubeChannel);
   setBlogAuthor({ name: settings.hero?.name, avatar: settings.hero?.profileImage });

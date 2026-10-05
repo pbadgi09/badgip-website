@@ -27,10 +27,17 @@ mkdir -p "$BUNDLE/Contents/MacOS" "$BUNDLE/Contents/Resources"
 cp "$APP_DIR/BadgipAdmin" "$BUNDLE/Contents/MacOS/BadgipAdmin"
 cp "$SCRIPT_DIR/../Sources/BadgipAdmin/Info.plist" "$BUNDLE/Contents/Info.plist"
 
-# Copy the SPM-generated resource bundle (holds GoogleService-Info.plist).
-RESOURCE_BUNDLE=$(find "$APP_DIR" -maxdepth 1 -name "*.bundle" -print -quit || true)
-if [ -n "$RESOURCE_BUNDLE" ]; then
+# Copy every SPM-generated resource bundle (the app's own holds
+# GoogleService-Info.plist; Firebase/GoogleUtilities ship their own too).
+# Newer SwiftPM (Swift 6.x) makes .build/$CONFIG a symlink to
+# .build/out/Products/<Config>/, so the trailing slash + -L follows it.
+found_bundle=0
+while IFS= read -r -d '' RESOURCE_BUNDLE; do
   cp -R "$RESOURCE_BUNDLE" "$BUNDLE/Contents/Resources/"
+  found_bundle=1
+done < <(find -L "$APP_DIR/" -maxdepth 1 -name "*.bundle" -print0)
+if [ "$found_bundle" -eq 0 ]; then
+  echo "WARNING: no *.bundle resource found under $APP_DIR — app will crash at launch" >&2
 fi
 
 echo "Ad-hoc signing"

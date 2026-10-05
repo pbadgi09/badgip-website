@@ -57,14 +57,15 @@ struct SiteSettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         EditorCard(title: "Hero") {
-                            LabeledField(label: "Greeting", text: $settings.greeting)
-                            LabeledField(label: "Name", text: $settings.name)
-                            LabeledField(label: "Role", text: $settings.role)
-                            LabeledField(label: "Description", text: $settings.description)
-                            LabeledField(label: "Primary CTA text", text: $settings.ctaPrimaryText)
-                            LinkField(label: "Primary CTA link", text: $settings.ctaPrimaryHref)
-                            LabeledField(label: "Secondary CTA text", text: $settings.ctaSecondaryText)
-                            LinkField(label: "Secondary CTA link", text: $settings.ctaSecondaryHref)
+                            LabeledField(label: "Title (multiline allowed)", text: $settings.name, multiline: true)
+                            LabeledField(label: "Subtitle", text: $settings.description, multiline: true)
+                            heroSubtitleFontSizeControl
+                            HighlightsEditor(label: "Subtitle highlighted keywords", keywords: $settings.subtitleHighlights)
+                            Divider()
+                            Text("Call-to-action buttons (the first is primary). Links can be #projects, #contact, or any URL. Your social icons (set under \"Social Icons\" below) appear next to these.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            CTAListEditor(ctas: $settings.ctas)
                         }
 
                         EditorCard(title: "Hero — profile picture (optional)") {
@@ -81,7 +82,7 @@ struct SiteSettingsView: View {
                             )
                         }
 
-                        EditorCard(title: "Navigation") {
+                        EditorCard(title: "Navigation", collapsible: true, initiallyExpanded: false) {
                             Text("About and Projects get their nav labels from Sections — this only covers Home and Contact, the two fixed anchors.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -89,28 +90,28 @@ struct SiteSettingsView: View {
                             navItemField(href: "#contact", defaultLabel: "Contact", defaultNumber: "—")
                         }
 
-                        EditorCard(title: "Footer Icons") {
-                            Text("Shown at the bottom of every page. Add as many as you want — each is a custom icon (emoji, uploaded image, or URL) plus a link.")
+                        EditorCard(title: "Social Icons") {
+                            Text("Shown next to the hero CTA buttons. Add as many as you want — each is a custom icon (emoji, uploaded image, or URL) plus a link.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             footerIconsEditor
                         }
 
-                        EditorCard(title: "Theme — Light") {
+                        EditorCard(title: "Theme — Light", collapsible: true, initiallyExpanded: false) {
                             OptionalColorField(label: "Background", hex: $settings.themeLight.background, fallback: "#ffffff")
                             OptionalColorField(label: "Text", hex: $settings.themeLight.text, fallback: "#0a0a0a")
                             OptionalColorField(label: "Accent", hex: $settings.themeLight.accent, fallback: "#3effa3")
                             OptionalColorField(label: "Border", hex: $settings.themeLight.border, fallback: "#e2e2e2")
                         }
 
-                        EditorCard(title: "Theme — Dark") {
+                        EditorCard(title: "Theme — Dark", collapsible: true, initiallyExpanded: false) {
                             OptionalColorField(label: "Background", hex: $settings.themeDark.background, fallback: "#0a0a0c")
                             OptionalColorField(label: "Text", hex: $settings.themeDark.text, fallback: "#f5f5f5")
                             OptionalColorField(label: "Accent", hex: $settings.themeDark.accent, fallback: "#3effa3")
                             OptionalColorField(label: "Border", hex: $settings.themeDark.border, fallback: "#2a2a30")
                         }
 
-                        EditorCard(title: "Meta") {
+                        EditorCard(title: "Meta", collapsible: true, initiallyExpanded: false) {
                             LabeledField(label: "Page title", text: $settings.metaTitle)
                             LabeledField(label: "Meta description", text: $settings.metaDescription)
                             Text("Social preview image (og:image) — shown when the site link is shared on iMessage/Slack/X/etc. A 1200×630 landscape image works best.")
@@ -178,6 +179,27 @@ struct SiteSettingsView: View {
     @ViewBuilder
     private func navItemField(href: String, defaultLabel: String, defaultNumber: String) -> some View {
         LabeledField(label: defaultLabel, text: navLabelBinding(href: href, defaultLabel: defaultLabel, defaultNumber: defaultNumber))
+    }
+
+    // Same "0 = use the site default" convention as the About bio / project
+    // tile font-size controls.
+    @ViewBuilder
+    private var heroSubtitleFontSizeControl: some View {
+        HStack(spacing: 10) {
+            Text("Subtitle font size").font(.caption).foregroundStyle(.secondary)
+            Stepper(
+                settings.subtitleFontSize > 0 ? "\(settings.subtitleFontSize)px" : "Default",
+                value: $settings.subtitleFontSize,
+                in: 0...96,
+                step: 2
+            )
+            .frame(width: 140)
+            if settings.subtitleFontSize > 0 {
+                Button("Reset") { settings.subtitleFontSize = 0 }
+                    .buttonStyle(.badgipSecondary)
+                    .controlSize(.small)
+            }
+        }
     }
 
     // Home/Contact are the only two nav.items entries the website actually

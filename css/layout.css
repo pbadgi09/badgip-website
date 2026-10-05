@@ -315,39 +315,11 @@
   margin-bottom: var(--space-6);
 }
 
-.hero__greeting {
-  margin-bottom: var(--space-6);
-}
-
 .hero__name {
   font-size: var(--fs-3xl);
   max-width: 20ch;
   text-wrap: balance;
   letter-spacing: -0.03em;
-}
-
-.hero__role {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-family: var(--font-mono);
-  color: var(--color-accent-dim);
-  font-size: var(--fs-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-top: var(--space-6);
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-full);
-}
-
-.hero__role::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  box-shadow: 0 0 8px 1px var(--color-accent-glow);
 }
 
 .hero__description {
@@ -358,11 +330,51 @@
   line-height: 1.5;
 }
 
-.hero__cta {
+/* CTA buttons + social icons share one inline row (wraps on mobile). */
+.hero__cta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-top: var(--space-12);
+}
+
+.hero__ctas {
   display: flex;
   gap: var(--space-4);
-  margin-top: var(--space-12);
   flex-wrap: wrap;
+}
+
+.hero__socials {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: var(--color-text-dim);
+  font-size: 1.05rem;
+  border-radius: var(--radius-full);
+  transition: color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+
+.social-link:hover {
+  color: var(--color-accent-dim);
+  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+
+.social-link img,
+.social-link svg {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 
 /* ---------- About / Timeline ---------- */
@@ -892,39 +904,245 @@
   color: var(--color-text-faint);
 }
 
-.project-detail-inline__gallery {
-  display: flex;
-  gap: var(--space-6);
-  overflow-x: auto;
-  justify-content: center;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
+/* ---------- Project detail (two-column + mosaic) ----------
+   On desktop the panel is split: a pinned left column that fills the
+   viewport and never scrolls, and a right masonry mosaic that scrolls on
+   its own — so opening a project never scrolls the page itself. Below the
+   860px breakpoint this collapses to a single stacked, scrollable column. */
+.project-detail {
+  /* Override the base .fullscreen-panel__content wrapper so the two columns
+     fill the whole panel edge-to-edge. */
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 65% 35%;
+  height: 100vh;
 }
 
-.project-detail-inline__gallery::-webkit-scrollbar {
+.project-detail__aside {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+  height: 100vh;
+  /* Scrollable if the left content is very tall, but the scrollbar is
+     hidden so there's no stray track down the middle of the layout. */
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: var(--space-16) clamp(var(--space-8), 4vw, 4.5rem);
+}
+
+.project-detail__aside::-webkit-scrollbar {
   display: none;
 }
 
-.project-detail-inline__gallery img {
-  flex: 0 0 auto;
-  max-height: 420px;
-  width: auto;
-  max-width: 100%;
+.project-detail__title {
+  font-size: clamp(2rem, 3.4vw, 3.25rem);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.project-detail__subtitle {
+  font-size: var(--fs-xl);
+  color: var(--color-text-dim);
+  line-height: 1.3;
+}
+
+.project-detail__caption {
+  color: var(--color-text-faint);
+  line-height: 1.6;
+  max-width: 48ch;
+}
+
+.project-detail__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* Scroll container: fixed to the viewport height, scrolls vertically. The
+   columns live on the inner grid — a multi-column box with a fixed height
+   paginates horizontally (esp. in Safari), so the scroll box must NOT be
+   the column box. */
+.project-detail__mosaic {
+  height: 100vh;
+  overflow-y: auto;
+  padding: var(--space-16) clamp(var(--space-6), 3vw, var(--space-12));
+  scrollbar-width: none;
+}
+
+.project-detail__mosaic::-webkit-scrollbar {
+  display: none;
+}
+
+.project-detail__mosaic-grid {
+  columns: 2;
+  column-gap: var(--space-4);
+}
+
+.project-detail__tile {
+  break-inside: avoid;
+  margin: 0 0 var(--space-4);
   border-radius: var(--radius-lg);
-  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  background: var(--color-bg-elevated-2);
+  border: 1px solid var(--color-border);
+}
+
+/* Full-width "hero" tiles break across both mosaic columns. */
+.project-detail__tile--full {
+  column-span: all;
+}
+
+.project-detail__tile-link {
+  display: block;
+  break-inside: avoid;
+  color: inherit;
+}
+
+.project-detail__tile-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.project-detail__tile-img--contain {
+  object-fit: contain;
+}
+
+/* Short text/tags tiles get a minimum height with vertically-centered
+   content so they don't look cramped next to taller image tiles. */
+.project-detail__tile--text,
+.project-detail__tile--tags {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Text and tags carry their own padding; images sit edge-to-edge, so a
+   both-text-and-image tile reads as a captioned card automatically. */
+.project-detail__tile-text {
+  padding: var(--space-6);
+  line-height: 1.55;
+}
+
+.project-detail__tile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-6);
+}
+
+.project-detail__tile-video {
+  aspect-ratio: 16 / 9;
+}
+
+.project-detail__tile-video iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Swipeable project-image carousel tile — full-bleed slides with dot
+   indicators (the native scrollbar is hidden). */
+.project-detail__tile--carousel {
+  background: transparent;
+  border: none;
+  overflow: visible;
+}
+
+.project-detail__carousel-viewport {
+  position: relative;
+}
+
+.project-detail__carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border-radius: var(--radius-lg);
+  cursor: grab;
+}
+
+.project-detail__carousel.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+}
+
+.project-detail__carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prev/next arrows overlaid on the carousel viewport. */
+.project-detail__carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  color: var(--color-text);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.project-detail__carousel-viewport:hover .project-detail__carousel-arrow {
+  opacity: 1;
+}
+
+.project-detail__carousel-arrow:hover {
+  border-color: var(--color-accent-dim);
+  color: var(--color-accent-dim);
+}
+
+.project-detail__carousel-arrow--prev {
+  left: var(--space-3);
+}
+
+.project-detail__carousel-arrow--next {
+  right: var(--space-3);
+}
+
+/* Touch devices have no hover — always show the arrows there. */
+@media (hover: none) {
+  .project-detail__carousel-arrow {
+    opacity: 1;
+  }
+}
+
+.project-detail__carousel .project-detail__tile-img {
+  flex: 0 0 100%;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   scroll-snap-align: center;
 }
 
-/* Replaces the native scrollbar (hidden above) as the gallery's position
-   indicator — dots instead of a scroll thumb. */
-.project-detail-inline__gallery-dots {
+.project-detail__carousel-dots {
   display: flex;
   justify-content: center;
   gap: var(--space-3);
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
 }
 
-.project-detail-inline__gallery-dots .gallery-dot {
+.gallery-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -932,48 +1150,9 @@
   transition: background var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
 }
 
-.project-detail-inline__gallery-dots .gallery-dot.is-active {
+.gallery-dot.is-active {
   background: var(--color-accent);
   transform: scale(1.3);
-}
-
-.project-detail-inline__video {
-  aspect-ratio: 16 / 9;
-  max-width: 720px;
-  margin: 0 auto;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.project-detail-inline__video iframe {
-  width: 100%;
-  height: 100%;
-}
-
-.project-detail-inline__body {
-  max-width: 640px;
-  margin: var(--space-8) auto 0;
-  text-align: center;
-}
-
-.project-detail-inline__body .section-title {
-  margin-top: var(--space-3);
-  font-size: var(--fs-lg);
-}
-
-.project-detail-inline__body p {
-  margin-top: var(--space-6);
-  color: var(--color-text-dim);
-  line-height: 1.65;
-}
-
-.project-detail-inline__links {
-  display: flex;
-  gap: var(--space-4);
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: var(--space-8);
-  margin-bottom: var(--space-12);
 }
 
 /* ---------- YouTube carousel ---------- */
@@ -1618,37 +1797,6 @@
   color: var(--color-text-faint);
 }
 
-.site-footer__socials {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-4);
-  align-items: center;
-}
-
-.site-footer__social-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  color: var(--color-text-dim);
-  font-size: 0.9rem;
-  transition: color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
-}
-
-.site-footer__social-link:hover {
-  color: var(--color-accent-dim);
-  transform: translateY(-2px);
-}
-
-.site-footer__social-link img,
-.site-footer__social-link svg {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 /* ---------- Responsive ---------- */
 @media (max-width: 860px) {
   .site-nav__list {
@@ -1718,6 +1866,30 @@
     padding: var(--space-10) var(--page-margin-x) var(--space-24);
   }
 
+  /* Project detail collapses to one stacked, scrollable column: left block
+     first, then the mosaic. The panel itself scrolls (overflow-y:auto). */
+  .project-detail {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .project-detail__aside {
+    height: auto;
+    overflow: visible;
+    justify-content: flex-start;
+    padding: var(--space-16) var(--page-margin-x) var(--space-8);
+  }
+
+  .project-detail__mosaic {
+    height: auto;
+    overflow: visible;
+    padding: 0 var(--page-margin-x) var(--space-24);
+  }
+
+  .project-detail__mosaic-grid {
+    columns: 1;
+  }
+
   .fullscreen-panel__close {
     top: var(--space-4);
     right: var(--space-4);
@@ -1734,12 +1906,13 @@
     min-height: 100svh;
   }
 
-  .hero__cta {
+  .hero__ctas {
     width: 100%;
   }
 
-  .hero__cta .btn {
-    flex: 1;
+  .hero__ctas .btn {
+    flex: 1 1 0;
+    min-width: 0;
     justify-content: center;
     /* Matches .mode-switch__btn exactly so the two pill controls the user
        sees stacked on mobile (hero CTAs, mode-switch tabs) read as the same

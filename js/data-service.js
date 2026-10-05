@@ -12,6 +12,13 @@ const DEFAULT_SETTINGS = {
     ctaSecondaryText: 'Get In Touch',
     ctaSecondaryHref: '#contact',
     profileImage: '',
+    // New hero model (see render-home.js): a configurable CTA list plus
+    // keyword highlighting + optional font size on the subtitle. Empty
+    // defaults let the renderer fall back to the legacy ctaPrimary/Secondary
+    // pair so existing data keeps rendering until re-saved from the app.
+    ctas: [],
+    subtitleHighlights: [],
+    subtitleFontSize: 0,
   },
   contact: {
     heading: 'Get in touch',
@@ -78,6 +85,33 @@ export async function getAbout() {
   }
 }
 
+// Non-destructively fills the new detail-layout fields from the legacy ones
+// so projects saved before the redesign still render fully. Nothing here is
+// written back to RTDB — it only shapes the in-memory object the renderer
+// consumes. Once a project is re-saved from the macOS app with real new
+// fields, those take precedence (the `||` short-circuits on non-empty).
+function normalizeProject(p) {
+  const heroTitle = p.heroTitle || p.title || '';
+  const subtitle = p.subtitle || p.summary || '';
+  const caption = p.caption || p.description || '';
+
+  let ctas = Array.isArray(p.ctas) ? p.ctas.filter((c) => c && (c.text || c.href)) : [];
+  if (!ctas.length) {
+    if (p.liveUrl) ctas.push({ text: p.liveButtonLabel || 'Live Site', href: p.liveUrl });
+    if (p.repoUrl) ctas.push({ text: 'Source', href: p.repoUrl });
+  }
+
+  let tiles = Array.isArray(p.tiles) ? p.tiles.filter(Boolean) : [];
+  if (!tiles.length) {
+    const images = [p.coverImage, ...(p.gallery || [])].filter(Boolean);
+    if (images.length) tiles.push({ type: 'carousel', images });
+    if (p.youtubeUrl) tiles.push({ type: 'video', videoUrl: p.youtubeUrl });
+    if ((p.tags || []).length) tiles.push({ type: 'tags' });
+  }
+
+  return { ...p, heroTitle, subtitle, caption, ctas, tiles };
+}
+
 export async function getProjects() {
   try {
     const snapshot = await get(ref(db, 'projects'));
@@ -86,7 +120,8 @@ export async function getProjects() {
     return Object.entries(val)
       .map(([id, project]) => ({ id, ...project }))
       .filter((p) => p.status === 'published')
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map(normalizeProject);
   } catch (err) {
     console.error('Failed to fetch projects:', err);
     return [];
