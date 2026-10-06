@@ -27,6 +27,13 @@ mkdir -p "$BUNDLE/Contents/MacOS" "$BUNDLE/Contents/Resources"
 cp "$APP_DIR/BadgipAdmin" "$BUNDLE/Contents/MacOS/BadgipAdmin"
 cp "$SCRIPT_DIR/../Sources/BadgipAdmin/Info.plist" "$BUNDLE/Contents/Info.plist"
 
+# App icon — kept outside Sources/ (so SwiftPM doesn't treat it as an
+# unhandled resource) and copied straight into Contents/Resources where
+# macOS's CFBundleIconFile lookup finds it.
+if [ -f "$SCRIPT_DIR/../AppIcon.icns" ]; then
+  cp "$SCRIPT_DIR/../AppIcon.icns" "$BUNDLE/Contents/Resources/AppIcon.icns"
+fi
+
 # Copy every SPM-generated resource bundle (the app's own holds
 # GoogleService-Info.plist; Firebase/GoogleUtilities ship their own too).
 # Newer SwiftPM (Swift 6.x) makes .build/$CONFIG a symlink to

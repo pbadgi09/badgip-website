@@ -173,31 +173,28 @@ final class RTDBService: ObservableObject {
         db.updateChildValues(updates)
     }
 
-    // MARK: - Messages (live)
+    // MARK: - Messages (live, app-wide)
 
+    /// Single app-session observer, published so both the Messages inbox and
+    /// the sidebar unread badge / Overview read one source of truth instead
+    /// of each attaching their own listener (which risked double-observers
+    /// and leaks). Started once from DashboardView; lives for the session.
+    @Published private(set) var messages: [ContactMessage] = []
     private var messagesHandle: DatabaseHandle?
 
-    func observeMessages(onChange: @escaping ([ContactMessage]) -> Void) {
-        // Defensive: if a previous observer was never stopped (e.g. a view
-        // re-appearing before its own onDisappear fires), remove it first
-        // so calling this twice can't silently leak a listener that keeps
-        // firing against a stale closure indefinitely.
-        stopObservingMessages()
-        messagesHandle = db.child("messages").observe(.value) { snapshot in
-            guard let value = snapshot.value as? [String: [String: Any]] else {
-                onChange([])
-                return
-            }
-            let messages = value.map { ContactMessage.from(id: $0.key, dict: $0.value) }
-                .sorted { $0.createdAt > $1.createdAt }
-            onChange(messages)
-        }
-    }
+    var unreadCount: Int { messages.filter { !$0.read }.count }
 
-    func stopObservingMessages() {
-        if let handle = messagesHandle {
-            db.child("messages").removeObserver(withHandle: handle)
-            messagesHandle = nil
+    func startObservingMessagesOnce() {
+        guard messagesHandle == nil else { return }
+        messagesHandle = db.child("messages").observe(.value) { [weak self] snapshot in
+            let parsed: [ContactMessage]
+            if let value = snapshot.value as? [String: [String: Any]] {
+                parsed = value.map { ContactMessage.from(id: $0.key, dict: $0.value) }
+                    .sorted { $0.createdAt > $1.createdAt }
+            } else {
+                parsed = []
+            }
+            Task { @MainActor in self?.messages = parsed }
         }
     }
 

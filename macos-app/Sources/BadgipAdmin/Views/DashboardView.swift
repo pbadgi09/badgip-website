@@ -19,7 +19,7 @@ enum AppSite: String, CaseIterable, Identifiable {
 
 enum DashboardSection: String, Identifiable {
     // itspranavbadgi
-    case projects, about, sections, blog, youtube, gallery, settings, messages, server, deploy
+    case overview, projects, about, sections, blog, youtube, gallery, settings, messages, server, deploy
     // whmsycode
     case wApps, wHomepage, wSiteSettings, wGallery, wAccess
 
@@ -27,6 +27,7 @@ enum DashboardSection: String, Identifiable {
 
     var title: String {
         switch self {
+        case .overview: return "Overview"
         case .projects: return "Projects"
         case .about: return "About"
         case .sections: return "Sections"
@@ -47,6 +48,7 @@ enum DashboardSection: String, Identifiable {
 
     var icon: String {
         switch self {
+        case .overview: return "square.grid.2x2.fill"
         case .projects: return "folder"
         case .about: return "person.text.rectangle"
         case .sections: return "square.grid.2x2"
@@ -77,6 +79,7 @@ func sidebarGroups(for site: AppSite) -> [SidebarGroup] {
     switch site {
     case .itspranavbadgi:
         return [
+            SidebarGroup(title: "Home", sections: [.overview]),
             SidebarGroup(title: "Content", sections: [.projects, .about, .sections, .blog]),
             SidebarGroup(title: "Media", sections: [.youtube, .gallery]),
             SidebarGroup(title: "Site", sections: [.settings]),
@@ -99,8 +102,9 @@ func sidebarGroups(for site: AppSite) -> [SidebarGroup] {
 struct DashboardView: View {
     @EnvironmentObject private var authService: FirebaseAuthService
     @EnvironmentObject private var unsavedGuard: UnsavedChangesGuard
-    @State private var site: AppSite = .itspranavbadgi
-    @State private var selection: DashboardSection = .projects
+    @EnvironmentObject private var rtdb: RTDBService
+    @SceneStorage("dashboard.site") private var site: AppSite = .itspranavbadgi
+    @SceneStorage("dashboard.section") private var selection: DashboardSection = .overview
     @State private var pendingAction: (() -> Void)?
     @State private var showDiscardConfirm = false
 
@@ -126,6 +130,20 @@ struct DashboardView: View {
             Button("Keep Editing", role: .cancel) { pendingAction = nil }
         } message: {
             Text("You have unsaved changes on this screen that will be lost.")
+        }
+        .onAppear {
+            rtdb.startObservingMessagesOnce()
+            // A restored @SceneStorage section may belong to the other site
+            // (or be a removed case) — snap to a valid one so destination()
+            // never hits an invalid state.
+            validateSelection()
+        }
+    }
+
+    private func validateSelection() {
+        let valid = sidebarGroups(for: site).flatMap { $0.sections }
+        if !valid.contains(selection) {
+            selection = valid.first ?? .projects
         }
     }
 
@@ -164,7 +182,11 @@ struct DashboardView: View {
                                 .padding(.horizontal, 14)
                                 .padding(.bottom, 2)
                             ForEach(group.sections) { section in
-                                SidebarRow(section: section, isSelected: section == selection) {
+                                SidebarRow(
+                                    section: section,
+                                    isSelected: section == selection,
+                                    badge: section == .messages && rtdb.unreadCount > 0 ? rtdb.unreadCount : nil
+                                ) {
                                     guard section != selection else { return }
                                     requestNavigation { selection = section }
                                 }
@@ -214,6 +236,7 @@ struct DashboardView: View {
     @ViewBuilder
     private func destination(for section: DashboardSection) -> some View {
         switch section {
+        case .overview: OverviewView(onNavigate: { selection = $0 })
         case .projects: ProjectListView()
         case .about: AboutEditorView()
         case .sections: SectionsView()
@@ -279,6 +302,7 @@ private struct SiteSwitcher: View {
 private struct SidebarRow: View {
     let section: DashboardSection
     let isSelected: Bool
+    var badge: Int? = nil
     let onSelect: () -> Void
     @State private var isHovering = false
 
@@ -291,6 +315,14 @@ private struct SidebarRow: View {
                 Text(section.title)
                     .font(.callout.weight(isSelected ? .semibold : .regular))
                 Spacer(minLength: 0)
+                if let badge {
+                    Text("\(badge)")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(isSelected ? Color.black.opacity(0.2) : Color.badgipAccent))
+                        .foregroundStyle(isSelected ? .black : .black)
+                }
             }
             .foregroundStyle(isSelected ? .black : Color.primary)
             .padding(.horizontal, 12)

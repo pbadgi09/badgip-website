@@ -1,6 +1,7 @@
 import { jsDelivrBase } from './config.js';
 import { firstValueOfType, openBlogDetail } from './render-personal.js';
 import { escapeHtml, highlightKeywords } from './highlight.js';
+import { renderRichText } from './markdown.js';
 
 export function renderAbout(about, blogPosts) {
   renderProfessionalTimeline(
@@ -26,7 +27,7 @@ function renderBio(mode, bio, fontSize, highlights) {
   const bioEl = document.getElementById(`aboutBio-${mode}`);
   if (!bioEl) return;
   const text = bio || (mode === 'professional' ? "I'm a developer who cares about building things well." : '');
-  bioEl.innerHTML = highlightKeywords(escapeHtml(text), highlights);
+  bioEl.innerHTML = renderRichText(text, highlights);
   if (fontSize > 0) {
     bioEl.style.fontSize = `${fontSize}px`;
   } else {

@@ -1,6 +1,7 @@
 import { jsDelivrBase } from './config.js';
 import { openFullscreen, closeFullscreen, isFullscreenOpen } from './fullscreen-panel.js';
 import { escapeHtml, escapeHtmlMultiline, highlightKeywords } from './highlight.js';
+import { renderRichText } from './markdown.js';
 
 function imageUrl(path) {
   if (!path) return '';
@@ -263,7 +264,7 @@ function buildFullscreenMarkup(project) {
       <aside class="project-detail__aside">
         <h1 class="project-detail__title"${titleFontStyle}>${escapeHtmlMultiline(project.heroTitle || project.title)}</h1>
         ${project.subtitle ? `<p class="project-detail__subtitle">${escapeHtml(project.subtitle)}</p>` : ''}
-        ${project.caption ? `<p class="project-detail__caption">${escapeHtmlMultiline(project.caption)}</p>` : ''}
+        ${project.caption ? `<p class="project-detail__caption">${renderRichText(project.caption, [])}</p>` : ''}
         ${ctasHtml ? `<div class="project-detail__ctas">${ctasHtml}</div>` : ''}
       </aside>
       <div class="project-detail__mosaic"><div class="project-detail__mosaic-grid">${tilesHtml}</div></div>

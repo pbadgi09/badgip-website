@@ -5,6 +5,7 @@ struct ProjectEditView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State var project: Project
+    var existingSlugs: Set<String> = []
     var onSave: (Project) -> Void
 
     @State private var original: Project
@@ -15,31 +16,92 @@ struct ProjectEditView: View {
     // ImageUploadView's onImageRemoved doc comment.
     @State private var pendingImageDeletions: [String] = []
 
-    init(project: Project, onSave: @escaping (Project) -> Void) {
+    init(project: Project, existingSlugs: Set<String> = [], onSave: @escaping (Project) -> Void) {
         _project = State(initialValue: project)
         _original = State(initialValue: project)
+        self.existingSlugs = existingSlugs
         self.onSave = onSave
     }
 
     private var hasChanges: Bool { project != original }
 
+    // MARK: - Validation
+    private var trimmedSlug: String { project.slug.trimmingCharacters(in: .whitespaces) }
+    private var isPublished: Bool { project.status == "published" }
+    private var slugFormatInvalid: Bool { !trimmedSlug.isEmpty && !SlugUtil.isValid(trimmedSlug) }
+    private var slugDuplicate: Bool { !trimmedSlug.isEmpty && existingSlugs.contains(trimmedSlug) }
+    private var hasCarousel: Bool { project.tiles.contains { $0.type == "carousel" && !$0.images.isEmpty } }
+
+    private var publishBlockers: [String] {
+        guard isPublished else { return [] }
+        var b: [String] = []
+        if project.title.isEmpty { b.append("a title") }
+        if trimmedSlug.isEmpty { b.append("a slug") }
+        if project.coverImage.isEmpty && !hasCarousel { b.append("a cover image or a carousel tile") }
+        return b
+    }
+
+    private var validationErrors: [String] {
+        var e: [String] = []
+        if slugFormatInvalid { e.append("Slug must be lowercase letters, numbers and hyphens only.") }
+        if slugDuplicate { e.append("Another project already uses this slug.") }
+        if !publishBlockers.isEmpty { e.append("To publish, add " + publishBlockers.joined(separator: ", ") + ".") }
+        return e
+    }
+
+    private var slugChangeWarning: String? {
+        guard !project.id.isEmpty, original.status == "published", trimmedSlug != original.slug.trimmingCharacters(in: .whitespaces) else { return nil }
+        return "Changing the slug of a published project breaks existing links to it."
+    }
+
+    private var linkWarnings: [String] {
+        func looksValid(_ href: String) -> Bool {
+            href.hasPrefix("#") || href.hasPrefix("http://") || href.hasPrefix("https://") || href.hasPrefix("mailto:")
+        }
+        return project.ctas
+            .filter { !$0.href.isEmpty && !looksValid($0.href) }
+            .map { "CTA \u{201c}\($0.text.isEmpty ? $0.href : $0.text)\u{201d} has an unusual link — use #section, http(s)://, or mailto:." }
+    }
+
     var body: some View {
         EditorSheet(
             title: project.id.isEmpty ? "New Project" : "Edit Project",
             isSaving: isSaving,
-            canSave: !project.title.isEmpty && hasChanges,
+            canSave: !project.title.isEmpty && hasChanges && validationErrors.isEmpty,
             hasChanges: hasChanges,
             onCancel: { dismiss() },
             onSave: { Task { await save() } }
         ) {
             EditorCard(title: "Basics") {
                 LabeledField(label: "Title", text: $project.title)
+                    .onChange(of: project.title) { newValue in
+                        // Auto-fill the slug from the title until the user
+                        // types their own — never overwrites an existing slug.
+                        if project.slug.isEmpty { project.slug = SlugUtil.normalize(newValue) }
+                    }
                 LabeledField(label: "Slug", text: $project.slug)
+                if slugFormatInvalid || slugDuplicate {
+                    Text(slugDuplicate ? "Another project already uses this slug." : "Use lowercase letters, numbers and hyphens only.")
+                        .font(.caption).foregroundStyle(.red)
+                } else if let slugChangeWarning {
+                    Text(slugChangeWarning).font(.caption).foregroundStyle(.orange)
+                }
                 LabeledField(label: "Summary", text: $project.summary)
                 LabeledField(label: "Tags (comma separated)", text: $tagsText)
                     .onChange(of: tagsText) { newValue in
                         project.tags = newValue.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
                     }
+            }
+
+            if !publishBlockers.isEmpty {
+                Text("To publish, add " + publishBlockers.joined(separator: ", ") + ".")
+                    .font(.caption).foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            ForEach(linkWarnings, id: \.self) { warning in
+                Text(warning).font(.caption).foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             EditorCard(title: "Description") {
@@ -72,7 +134,7 @@ struct ProjectEditView: View {
                     .foregroundStyle(.secondary)
                 LabeledField(label: "Hero title (multiline allowed)", text: $project.heroTitle, multiline: true)
                 LabeledField(label: "Subtitle", text: $project.subtitle)
-                LabeledField(label: "Caption", text: $project.caption, multiline: true)
+                MarkdownField(label: "Caption", text: $project.caption)
                 Divider()
                 Text("Call-to-action buttons")
                     .font(.caption)

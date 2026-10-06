@@ -1,19 +1,28 @@
 import SwiftUI
+import AppKit
 
 struct MessagesInboxView: View {
     @EnvironmentObject private var rtdb: RTDBService
-    @State private var messages: [ContactMessage] = []
     @State private var pendingDelete: ContactMessage?
+    @State private var searchText = ""
     @StateObject private var savedToast = SavedToastController()
+
+    private var filtered: [ContactMessage] {
+        let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return rtdb.messages }
+        return rtdb.messages.filter {
+            $0.name.lowercased().contains(q)
+                || $0.email.lowercased().contains(q)
+                || $0.message.lowercased().contains(q)
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Messages").font(.title.weight(.bold))
-                Spacer()
-                let unread = messages.filter { !$0.read }.count
-                if unread > 0 {
-                    Text("\(unread) unread")
+                if rtdb.unreadCount > 0 {
+                    Text("\(rtdb.unreadCount) unread")
                         .font(.caption.weight(.medium))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -21,22 +30,23 @@ struct MessagesInboxView: View {
                         .foregroundStyle(.badgipAccent)
                         .clipShape(Capsule())
                 }
+                Spacer()
+                if !rtdb.messages.isEmpty {
+                    TextField("Search", text: $searchText)
+                        .textFieldStyle(.badgip)
+                        .frame(width: 220)
+                }
             }
             .padding(24)
 
-            if messages.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "tray")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.tertiary)
-                    Text("No messages yet.")
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if rtdb.messages.isEmpty {
+                emptyState(icon: "tray", text: "No messages yet.")
+            } else if filtered.isEmpty {
+                emptyState(icon: "magnifyingglass", text: "No messages match \u{201c}\(searchText)\u{201d}.")
             } else {
                 ScrollView {
                     LazyVStack(spacing: 10) {
-                        ForEach(messages) { message in
+                        ForEach(filtered) { message in
                             MessageRow(message: message, savedToast: savedToast, onDelete: { pendingDelete = message })
                         }
                     }
@@ -44,14 +54,6 @@ struct MessagesInboxView: View {
                     .padding(.bottom, 24)
                 }
             }
-        }
-        .onAppear {
-            rtdb.observeMessages { updated in
-                messages = updated
-            }
-        }
-        .onDisappear {
-            rtdb.stopObservingMessages()
         }
         .alert(
             "Delete message from \(pendingDelete?.name ?? "")?",
@@ -68,6 +70,15 @@ struct MessagesInboxView: View {
         }
         .savedToast(savedToast)
     }
+
+    @ViewBuilder
+    private func emptyState(icon: String, text: String) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon).font(.system(size: 40)).foregroundStyle(.tertiary)
+            Text(text).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 }
 
 private struct MessageRow: View {
@@ -75,6 +86,7 @@ private struct MessageRow: View {
     let message: ContactMessage
     @ObservedObject var savedToast: SavedToastController
     let onDelete: () -> Void
+    @State private var expanded = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -90,25 +102,42 @@ private struct MessageRow: View {
             if !message.phone.isEmpty {
                 Text(message.phone).font(.caption).foregroundStyle(.secondary)
             }
-            Text(message.message).font(.body).lineLimit(4).padding(.top, 2)
+            Text(message.message)
+                .font(.body)
+                .lineLimit(expanded ? nil : 4)
+                .padding(.top, 2)
             HStack(spacing: 8) {
+                Button("Reply") { reply() }
+                    .buttonStyle(.badgipSecondary)
+                    .controlSize(.small)
                 Button(message.read ? "Mark Unread" : "Mark Read") {
                     rtdb.markMessageRead(id: message.id, read: !message.read)
                     savedToast.flash()
                 }
                 .buttonStyle(.badgipSecondary)
                 .controlSize(.small)
-                Button {
-                    onDelete()
-                } label: {
-                    Image(systemName: "trash")
-                }
-                .buttonStyle(.badgipIcon(tint: .red))
+                Button { onDelete() } label: { Image(systemName: "trash") }
+                    .buttonStyle(.badgipIcon(tint: .red))
+                Spacer()
+                Button(expanded ? "Show less" : "Show more") { expanded.toggle() }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             .padding(.top, 4)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 12).fill(Color.badgipSurface))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.badgipBorder, lineWidth: 1))
+        .contentShape(Rectangle())
+        .onTapGesture { expanded.toggle() }
+    }
+
+    private func reply() {
+        guard let encoded = "Re: your message".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "mailto:\(message.email)?subject=\(encoded)")
+        else { return }
+        NSWorkspace.shared.open(url)
+        if !message.read { rtdb.markMessageRead(id: message.id, read: true) }
     }
 }

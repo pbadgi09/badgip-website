@@ -122,6 +122,18 @@ struct Project: Identifiable, Codable, Equatable {
     var createdAt: Double = 0
     var updatedAt: Double = 0
 
+    /// Every stored image path this project references (cover + gallery +
+    /// mosaic tile images) — used for reference-safe cleanup on delete so
+    /// tile/carousel images aren't left orphaned.
+    var allImagePaths: [String] {
+        var paths = [coverImage] + gallery
+        for tile in tiles {
+            if !tile.image.isEmpty { paths.append(tile.image) }
+            paths.append(contentsOf: tile.images)
+        }
+        return paths.filter { !$0.isEmpty }
+    }
+
     var asDictionary: [String: Any] {
         [
             "title": title,

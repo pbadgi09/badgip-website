@@ -33,6 +33,18 @@ enum ImageReferenceScanner {
             for path in project.gallery where !path.isEmpty {
                 refs.append(ImageReference(path: path, label: "\(project.title) — Gallery"))
             }
+            // Detail-view mosaic tiles (added in the two-column redesign):
+            // a generic image/both tile's `image` and a carousel tile's
+            // `images` are real references too — without these, tile images
+            // are invisible to the picker and can be wrongly deleted.
+            for tile in project.tiles {
+                if !tile.image.isEmpty {
+                    refs.append(ImageReference(path: tile.image, label: "\(project.title) — Tile"))
+                }
+                for path in tile.images where !path.isEmpty {
+                    refs.append(ImageReference(path: path, label: "\(project.title) — Carousel"))
+                }
+            }
         }
 
         for post in await posts {

@@ -12,6 +12,30 @@ enum GitHubServiceError: LocalizedError {
             return message
         }
     }
+
+    /// Maps a GitHub HTTP status (and raw body) to a friendly message instead
+    /// of surfacing raw API JSON to the user.
+    static func friendly(statusCode: Int, body: String, action: String) -> GitHubServiceError {
+        switch statusCode {
+        case 401:
+            return .requestFailed("GitHub rejected your token (401) — it may be expired or missing permissions. Update it in Deploy settings.")
+        case 403:
+            if body.lowercased().contains("rate limit") {
+                return .requestFailed("GitHub API rate limit reached. Wait a few minutes and try again.")
+            }
+            return .requestFailed("GitHub denied the request (403). Check your token's repo permissions.")
+        case 404:
+            return .requestFailed("GitHub couldn't find that path (404).")
+        case 409:
+            return .requestFailed("GitHub reported a conflict (409) — try again.")
+        case 422:
+            return .requestFailed("GitHub rejected the \(action) (422): \(body)")
+        case 500...599:
+            return .requestFailed("GitHub had a server error (\(statusCode)). Try again shortly.")
+        default:
+            return .requestFailed("GitHub \(action) failed (\(statusCode)): \(body)")
+        }
+    }
 }
 
 final class GitHubService {
@@ -100,9 +124,10 @@ final class GitHubService {
         putRequest.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (responseData, response) = try await URLSession.shared.data(for: putRequest)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        let uploadStatus = (response as? HTTPURLResponse)?.statusCode ?? -1
+        guard (200..<300).contains(uploadStatus) else {
             let message = String(data: responseData, encoding: .utf8) ?? "Unknown error"
-            throw GitHubServiceError.requestFailed("GitHub upload failed: \(message)")
+            throw GitHubServiceError.friendly(statusCode: uploadStatus, body: message, action: "upload")
         }
     }
 
@@ -139,9 +164,10 @@ final class GitHubService {
         deleteRequest.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (responseData, response) = try await URLSession.shared.data(for: deleteRequest)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        let deleteStatus = (response as? HTTPURLResponse)?.statusCode ?? -1
+        guard (200..<300).contains(deleteStatus) else {
             let message = String(data: responseData, encoding: .utf8) ?? "Unknown error"
-            throw GitHubServiceError.requestFailed("GitHub delete failed: \(message)")
+            throw GitHubServiceError.friendly(statusCode: deleteStatus, body: message, action: "delete")
         }
     }
 

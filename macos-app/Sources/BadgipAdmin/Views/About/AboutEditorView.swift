@@ -72,14 +72,12 @@ struct AboutEditorView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         EditorCard(title: "Professional Bio") {
-                            TextEditor(text: $about.professionalBio)
-                                .frame(minHeight: 90)
+                            MarkdownField(label: "Bio", text: $about.professionalBio)
                             fontSizeControl(label: "Bio font size", size: $about.professionalBioFontSize)
                             highlightsEditor(label: "Highlighted Keywords", keywords: $about.professionalHighlights, draft: $draftProfessionalKeyword)
                         }
                         EditorCard(title: "Personal Bio") {
-                            TextEditor(text: $about.personalBio)
-                                .frame(minHeight: 90)
+                            MarkdownField(label: "Bio", text: $about.personalBio)
                             fontSizeControl(label: "Bio font size", size: $about.personalBioFontSize)
                             highlightsEditor(label: "Highlighted Keywords", keywords: $about.personalHighlights, draft: $draftPersonalKeyword)
                         }
