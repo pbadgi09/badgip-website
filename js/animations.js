@@ -69,7 +69,14 @@ export function initScrollReveals() {
   window.gsap.registerPlugin(window.ScrollTrigger);
 
   const targets = document.querySelectorAll('.reveal:not(.hero .reveal)');
+  // Stagger siblings that reveal together: track how many reveals we've
+  // already seen under each parent, so e.g. a row of project cards cascades
+  // in instead of every card popping at the same instant.
+  const indexByParent = new Map();
   targets.forEach((el) => {
+    const parent = el.parentElement;
+    const idx = indexByParent.get(parent) || 0;
+    indexByParent.set(parent, idx + 1);
     window.gsap.fromTo(
       el,
       { opacity: 0, y: 32 },
@@ -78,6 +85,7 @@ export function initScrollReveals() {
         y: 0,
         duration: 0.8,
         ease: 'power3.out',
+        delay: Math.min(idx * 0.05, 0.3),
         scrollTrigger: {
           trigger: el,
           start: 'top 88%',

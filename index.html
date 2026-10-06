@@ -113,23 +113,26 @@
           <p class="contact-form-panel__subtitle" id="contactFormSubtitle"></p>
 
           <form class="contact-form-grid" id="contactForm" novalidate>
-            <div class="form-field">
+            <div class="form-field" data-field="name">
               <label for="cfName">Name <span class="required-mark">*</span></label>
               <div class="form-field__input-icon">
                 <span class="form-field__icon" aria-hidden="true">👤</span>
-                <input type="text" id="cfName" name="name" autocomplete="name" required />
+                <input type="text" id="cfName" name="name" autocomplete="name" required aria-describedby="errName" />
               </div>
+              <span class="form-field__error" id="errName" aria-live="polite"></span>
             </div>
-            <div class="form-field form-field--message">
+            <div class="form-field form-field--message" data-field="message">
               <label for="cfMessage">Message <span class="required-mark">*</span></label>
-              <textarea id="cfMessage" name="message" required></textarea>
+              <textarea id="cfMessage" name="message" required aria-describedby="errMessage"></textarea>
+              <span class="form-field__error" id="errMessage" aria-live="polite"></span>
             </div>
-            <div class="form-field">
+            <div class="form-field" data-field="email">
               <label for="cfEmail">Email ID <span class="required-mark">*</span></label>
               <div class="form-field__input-icon">
                 <span class="form-field__icon" aria-hidden="true">✉️</span>
-                <input type="email" id="cfEmail" name="email" autocomplete="email" required />
+                <input type="email" id="cfEmail" name="email" autocomplete="email" required aria-describedby="errEmail" />
               </div>
+              <span class="form-field__error" id="errEmail" aria-live="polite"></span>
             </div>
             <div class="form-field">
               <label for="cfPhone">Phone</label>
@@ -142,7 +145,10 @@
               <label for="cfCompany">Company</label>
               <input type="text" id="cfCompany" name="company" tabindex="-1" autocomplete="off" />
             </div>
-            <button type="submit" class="btn btn--primary" id="contactSubmit">Send Message</button>
+            <button type="submit" class="btn btn--primary" id="contactSubmit">
+              <span class="btn__spinner" aria-hidden="true"></span>
+              <span class="btn__label">Send Message</span>
+            </button>
             <p class="contact-form__status mono" id="contactStatus" role="status" aria-live="polite"></p>
           </form>
         </div>

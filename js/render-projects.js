@@ -29,9 +29,18 @@ let currentDetailProject = null;
 
 function buildProjectCard(project) {
   const card = document.createElement('article');
-  card.className = 'project-card reveal';
+  card.className = `project-card reveal${project.featured ? ' project-card--featured' : ''}`;
   card.tabIndex = 0;
   card.setAttribute('role', 'button');
+
+  // Cap visible tags so cards stay tidy; the rest collapse into a +N chip.
+  const MAX_TAGS = 3;
+  const tags = project.tags || [];
+  const shownTags = tags.slice(0, MAX_TAGS).map((t) => `<span class="tag mono">${escapeHtml(t)}</span>`);
+  if (tags.length > MAX_TAGS) {
+    shownTags.push(`<span class="tag mono tag--more">+${tags.length - MAX_TAGS}</span>`);
+  }
+
   card.innerHTML = `
     <div class="project-card__media${project.coverImage ? '' : ' project-card__media--empty'}">
       ${
@@ -45,7 +54,7 @@ function buildProjectCard(project) {
       <h3 class="project-card__title">${escapeHtml(project.title)}</h3>
       <p class="project-card__summary">${escapeHtml(project.summary)}</p>
       <div class="project-card__tags">
-        ${(project.tags || []).map((t) => `<span class="tag mono">${escapeHtml(t)}</span>`).join('')}
+        ${shownTags.join('')}
       </div>
     </div>
   `;
@@ -91,7 +100,11 @@ export function renderProjects(projects) {
   });
 
   if (projects.length === 0) {
-    grid.innerHTML = '<p class="mono" style="color: var(--color-text-dim)">No projects published yet.</p>';
+    grid.innerHTML = `
+      <div class="projects__empty">
+        <span class="projects__empty-icon" aria-hidden="true">✦</span>
+        <p class="mono">No projects published yet — check back soon.</p>
+      </div>`;
     return;
   }
 
